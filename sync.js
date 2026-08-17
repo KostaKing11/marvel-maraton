@@ -30,7 +30,6 @@ window.MM = window.MM || {};
       myPosters: {},        // rucno nalepljen URL postera (ima prednost)
       log: {},              // "iron-man" | "loki-s1#3"  ->  {w: nedelja, d: "2026-08-17"}
       skipDays: {},         // "2026-08-17": true  ("nemam vremena danas")
-      postponed: [],        // kljucevi odlozeni sa "Kasnije" - idu na kraj spila
       deckSince: 0,         // koliko je oznaceno od poslednje provere tempa
       updatedAt: 0
     };

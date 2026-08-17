@@ -149,19 +149,40 @@ window.MM = window.MM || {};
   }
 
   /**
-   * Spil za "Danas": sve neodgledane jedinice u redosledu gledanja.
-   * Ono sto je odlozeno ("Kasnije") ide na kraj umesto da blokira spil.
+   * SVE jedinice u redosledu gledanja - i odgledane i neodgledane.
+   * Sluzi za "nazad" u spilu: da se zna sta je bilo pre tekuce kartice.
    */
-  function deck(items, state) {
-    var units = buildUnits(items, state);
-    var post = (state.postponed || []);
-    if (!post.length) return units;
-    var later = [], now = [];
-    units.forEach(function (u) {
-      (post.indexOf(u.key) !== -1 ? later : now).push(u);
+  function allUnits(items, state) {
+    var plans = state.plans || [];
+    var pool = items.filter(function (i) {
+      return plans.indexOf(i.priority) !== -1 && PINNED.indexOf(i.id) === -1;
     });
-    // Odlozeni zadrzavaju medjusobni redosled, samo idu iza svega ostalog.
-    return now.concat(later);
+    pool.sort(function (a, b) { return sortKey(a) - sortKey(b); });
+
+    var units = [];
+    pool.forEach(function (item) {
+      if (item.type === 'serija' && item.episodes) {
+        var per = episodeMinutes(item);
+        var seen = watchedEpisodes(item, state);
+        for (var e = 1; e <= item.episodes; e++) {
+          units.push({
+            id: item.id, item: item, ep: e, minutes: per,
+            key: unitKey(item.id, e), watched: seen.indexOf(e) !== -1
+          });
+        }
+      } else {
+        units.push({
+          id: item.id, item: item, ep: null, minutes: item.runtime,
+          key: unitKey(item.id, null), watched: state.watched[item.id] === true
+        });
+      }
+    });
+    return units;
+  }
+
+  /** Spil za "Danas": neodgledane jedinice u redosledu gledanja. */
+  function deck(items, state) {
+    return buildUnits(items, state);
   }
 
   /** Kapacitet nedelje N u SATIMA: override ako postoji, inace default. */
@@ -448,6 +469,7 @@ window.MM = window.MM || {};
     buildUnits: buildUnits,
     ordinals: ordinals,
     deck: deck,
+    allUnits: allUnits,
     splitWeekIntoDays: splitWeekIntoDays,
     stats: stats,
     tierMinutes: tierMinutes,

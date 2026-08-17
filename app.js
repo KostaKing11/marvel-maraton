@@ -298,11 +298,11 @@ window.MM = window.MM || {};
       html += '<div class="dcard peek art">' + artHTML(nxt.item) + '<div class="dscrim"></div></div>';
     }
 
-    html += '<div class="dcard cur art" id="deckCard" data-key="' + esc(u.key) + '">' +
+    html += '<div class="dcard cur art" id="deckCard" data-key="' + esc(u.key) + '" data-id="' + esc(i.id) + '">' +
       artHTML(i) +
       '<div class="dscrim"></div>' +
       '<div class="dstamp yes">ODGLEDANO</div>' +
-      '<div class="dstamp no">KASNIJE</div>' +
+      '<div class="dstamp back">NAZAD</div>' +
       '<div class="dinfo">' +
         '<div class="dnum">#' + ord + '</div>' +
         '<h1 class="dtitle">' + esc(unitTitle(u)) + '</h1>' +
@@ -311,12 +311,11 @@ window.MM = window.MM || {};
       '</div>' +
       '</div></div>';
 
-    html += '<div class="deck-btns">' +
-      '<button class="dbtn later" data-act="deck-later">Kasnije</button>' +
-      '<button class="dbtn info" data-act="open" data-id="' + esc(i.id) + '">Detalji</button>' +
-      '<button class="dbtn watched" data-act="deck-watched">✓ Odgledano</button>' +
-      '</div>' +
-      '<div class="deck-hint">Prevuci desno = odgledano · levo = kasnije</div>';
+    html += '<div class="deck-hint">' +
+      '<span class="hl"><i class="ar">←</i> odgledano</span>' +
+      '<span class="hm">tapni za detalje</span>' +
+      '<span class="hr">nazad <i class="ar">→</i></span>' +
+      '</div>';
 
     return html;
   }
@@ -333,7 +332,11 @@ window.MM = window.MM || {};
   /* ---- swipe ---- */
 
   /**
-   * Prevlacenje kartice. Desno = odgledano, levo = kasnije.
+   * Prevlacenje kartice:
+   *   LEVO  = odgledano, ide na sledeci
+   *   DESNO = nazad (skida oznaku sa prethodnog i vraca ga)
+   * Tap na karticu otvara detalje.
+   *
    * Vertikalni pokret se prepusta stranici da skrol i dalje radi
    * (zato i `touch-action:pan-y` na kartici).
    */
@@ -341,12 +344,13 @@ window.MM = window.MM || {};
     var card = $('#deckCard');
     if (!card) return;
 
-    var x0 = 0, y0 = 0, dx = 0, drag = false, locked = null, gone = false;
-    var THRESHOLD = 90;
+    var x0 = 0, y0 = 0, dx = 0, drag = false, locked = null, gone = false, moved = false;
+    var THRESHOLD = 90;    // odluka pri pustanju
+    var COMMIT = 130;      // odluka jos u toku prevlacenja
 
     card.addEventListener('pointerdown', function (e) {
       if (gone || e.target.closest('button')) return;
-      drag = true; locked = null; dx = 0;
+      drag = true; locked = null; dx = 0; moved = false;
       x0 = e.clientX; y0 = e.clientY;
       card.style.transition = 'none';
       try { card.setPointerCapture(e.pointerId); } catch (err) {}
@@ -361,52 +365,77 @@ window.MM = window.MM || {};
       }
       if (locked === 'y') return;      // korisnik skroluje, ne prevlaci
       dx = mx;
+      moved = Math.abs(mx) > 8;
       card.style.transform = 'translateX(' + dx + 'px) rotate(' + (dx / 24) + 'deg)';
-      card.classList.toggle('to-yes', dx > 40);
-      card.classList.toggle('to-no', dx < -40);
+      card.classList.toggle('to-yes', dx < -40);
+      card.classList.toggle('to-back', dx > 40);
+      // Odluka jos u toku prevlacenja: ako browser kasnije otme gest
+      // (pointercancel), odluka je vec doneta i nista se ne gubi.
+      if (dx < -COMMIT) flyOut('watched');
+      else if (dx > COMMIT) flyOut('back');
     });
 
     function release() {
       if (!drag) return;
       drag = false;
       card.style.transition = '';
-      if (locked === 'x' && dx > THRESHOLD) return flyOut('yes');
-      if (locked === 'x' && dx < -THRESHOLD) return flyOut('no');
+      if (locked === 'x' && dx < -THRESHOLD) return flyOut('watched');
+      if (locked === 'x' && dx > THRESHOLD) return flyOut('back');
       card.style.transform = '';
-      card.classList.remove('to-yes', 'to-no');
+      card.classList.remove('to-yes', 'to-back');
     }
     card.addEventListener('pointerup', release);
     card.addEventListener('pointercancel', release);
 
+    // Tap = detalji. Oslanjamo se na pravi `click` (pouzdaniji od
+    // pogadjanja iz pointer dogadjaja), a `moved` odbacuje prevlacenja.
+    card.addEventListener('click', function () {
+      if (gone || moved) return;
+      openItem(card.dataset.id, 'plan');
+    });
+
     function flyOut(dir) {
       if (gone) return;
       gone = true;
-      var to = dir === 'yes' ? window.innerWidth + 200 : -(window.innerWidth + 200);
+      var to = dir === 'watched' ? -(window.innerWidth + 200) : (window.innerWidth + 200);
       card.classList.add('flying');
       card.style.transform = 'translateX(' + to + 'px) rotate(' + (to / 24) + 'deg)';
-      card.classList.toggle('to-yes', dir === 'yes');
-      card.classList.toggle('to-no', dir === 'no');
-      if (navigator.vibrate) navigator.vibrate(dir === 'yes' ? 18 : 8);
-      setTimeout(function () { deckAdvance(card.dataset.key, dir === 'yes'); }, 210);
+      card.classList.toggle('to-yes', dir === 'watched');
+      card.classList.toggle('to-back', dir === 'back');
+      if (navigator.vibrate) navigator.vibrate(dir === 'watched' ? 18 : 8);
+      setTimeout(function () {
+        if (dir === 'watched') deckWatched(card.dataset.key);
+        else deckBack(card.dataset.key);
+      }, 200);
     }
 
     card._flyOut = flyOut;
   }
 
-  /** Primeni odluku i pomeri spil. */
-  function deckAdvance(key, watched) {
-    if (watched) {
-      markUnits([key], true, 'plan');          // kvacica u planu -> broji se u nedelju
-      Store.mutate(function (s) {
-        s.deckSince = (s.deckSince || 0) + 1;
-        s.postponed = (s.postponed || []).filter(function (k) { return k !== key; });
-      });
-    } else {
-      Store.mutate(function (s) {
-        s.postponed = (s.postponed || []).filter(function (k) { return k !== key; });
-        s.postponed.push(key);                 // na kraj spila, ne gubi se
-      });
+  /** Levo: oznaci kao odgledano i pomeri spil. */
+  function deckWatched(key) {
+    markUnits([key], true, 'plan');            // kvacica u planu -> broji se u nedelju
+    Store.mutate(function (s) { s.deckSince = (s.deckSince || 0) + 1; });
+  }
+
+  /**
+   * Desno: vrati se korak nazad. Nadje poslednju odgledanu jedinicu PRE
+   * tekuce i skine joj oznaku - pa se ona opet pojavi kao tekuca kartica.
+   * Nista se ne pamti posebno; sve se cita iz redosleda gledanja.
+   */
+  function deckBack(currentKey) {
+    var all = P.allUnits(ITEMS, state());
+    var idx = all.findIndex(function (u) { return u.key === currentKey; });
+    if (idx === -1) idx = all.length;
+    for (var i = idx - 1; i >= 0; i--) {
+      if (all[i].watched) {
+        markUnits([all[i].key], false, 'plan');
+        Store.mutate(function (s) { s.deckSince = Math.max(0, (s.deckSince || 0) - 1); });
+        return;
+      }
     }
+    toast('Nema šta da se vrati — ovo je početak.');
+    render();
   }
 
   /* ---- provera tempa ---- */
@@ -1037,12 +1066,6 @@ window.MM = window.MM || {};
       Store.mutate(function (s) { if (v) s.links[id] = v; else delete s.links[id]; });
       if (v) window.open(v, '_blank', 'noopener');
       else toast('Nalepi link pa probaj ponovo.');
-    },
-    'deck-watched': function () {
-      var c = $('#deckCard'); if (c && c._flyOut) c._flyOut('yes');
-    },
-    'deck-later': function () {
-      var c = $('#deckCard'); if (c && c._flyOut) c._flyOut('no');
     },
     'pace-ok': function () {
       Store.mutate(function (s) { s.deckSince = 0; });
