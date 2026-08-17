@@ -1205,6 +1205,34 @@ window.MM = window.MM || {};
     }
   }
 
+  /**
+   * Service worker + automatsko preuzimanje nove verzije.
+   *
+   * GitHub Pages salje `Cache-Control: max-age=600` i za sam sw.js, pa
+   * browser do 10 minuta servira STARI service worker iz HTTP kesa i
+   * novi deploy jednostavno ne stigne. `updateViaCache:'none'` tera
+   * browser da sw.js uvek povuce sa mreze.
+   *
+   * Kad novi SW preuzme kontrolu, stranica se osvezi jednom - tako se
+   * nova verzija vidi pri sledecem otvaranju app-a, bez rucnog brisanja.
+   */
+  function registerSW() {
+    if (!('serviceWorker' in navigator)) return;
+    var hadController = !!navigator.serviceWorker.controller;
+    var reloaded = false;
+
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (!hadController) return;   // prva instalacija - nema sta da se osvezava
+      if (reloaded) return;
+      reloaded = true;
+      location.reload();
+    });
+
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+      .then(function (reg) { reg.update(); })
+      .catch(function (e) { console.warn('SW:', e); });
+  }
+
   /* ============================================================
      START
      ============================================================ */
@@ -1229,9 +1257,7 @@ window.MM = window.MM || {};
         // uspore prvo crtanje.
         setTimeout(function () { startPosterFetch(false); }, 1200);
 
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.register('sw.js').catch(function (e) { console.warn('SW:', e); });
-        }
+        registerSW();
       })
       .catch(function (e) {
         $('#view').innerHTML = '<section class="card warn"><h2>Ne mogu da učitam data.json</h2>' +
