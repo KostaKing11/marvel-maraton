@@ -26,6 +26,8 @@ window.MM = window.MM || {};
       capacity: {},         // "12": 4  (sati za tu nedelju)
       defaultCapacity: 10,  // sati/nedeljno
       plans: ['must', 'good', 'skip', 'bonus'],
+      posters: {},          // automatski nadjeni posteri ('' = trazeno, nije nadjeno)
+      myPosters: {},        // rucno nalepljen URL postera (ima prednost)
       log: {},              // "iron-man" | "loki-s1#3"  ->  {w: nedelja, d: "2026-08-17"}
       skipDays: {},         // "2026-08-17": true  ("nemam vremena danas")
       updatedAt: 0

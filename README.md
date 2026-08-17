@@ -163,18 +163,28 @@ prikazuje samo kad app otvoriš, i najviše jednom dnevno.
 
 ## 6. Posteri
 
-`poster` polje u `data.json` je prazno za sve naslove. Da dodaš sliku:
+**Ne moraš ništa da radiš — povlače se sami.** Pri prvom pokretanju app u
+pozadini traži poster za svaki naslov:
 
-```json
-{
-  "id": "iron-man",
-  "poster": "https://image.tmdb.org/t/p/w500/xxxxxxxx.jpg"
-}
-```
+- **serije** → [TVMaze](https://www.tvmaze.com) (`api.tvmaze.com`), slike ~1000×1500
+- **filmovi i specijali** → Wikipedia `pageimages` sa `pilicense=any`
 
-Bilo koji direktan URL do slike radi (TMDb, Wikipedia, tvoj hosting). Dok je
-polje prazno, kartica prikazuje gradijent sa naslovom — izgleda uredno, tako da
-ovo nije obavezno.
+Oba servisa su besplatna, bez API ključa i bez naloga, i šalju CORS zaglavlja
+pa rade direktno sa GitHub Pages. Na testu su nađena sva 69 postera.
+
+> Bitno: bez parametra `pilicense=any` Wikipedia vraća **samo slobodne slike**,
+> a filmski posteri su non-free — API tada tiho vrati `null`. To je jedina
+> kvaka u celoj priči.
+
+Nađeni URL se pamti u tvom stanju (localStorage + Firestore), pa se traži
+jednom — telefon ga posle samo pročita. Filmski posteri sa Wikipedije su
+niske rezolucije (~260×384) jer su non-free; serije su znatno oštrije.
+
+Ako hoćeš drugu sliku za neki naslov: otvori naslov → polje **Poster (URL)** →
+nalepi svoj link (ima prednost nad automatskim). Dugme **Nađi** ponovo traži.
+Redosled prioriteta: tvoj URL → `poster` polje u `data.json` → automatski nađen.
+
+U **Ja → Posteri** vidiš koliko ih ima i možeš ručno da pokreneš povlačenje.
 
 ---
 
@@ -198,6 +208,19 @@ predlog i app ih ignoriše. Plan se preračunava od nule na svaku promenu
 Zato „zaostatak" ne postoji kao lista koja raste: ono što ne odgledaš ove
 nedelje samo ponovo uđe u pakovanje i pojavi se u sledećoj.
 
+### Biblioteka ne dira nedeljni plan
+
+Postoje dva različita „odgledano", i to namerno:
+
+| gde označiš | šta se dešava |
+|---|---|
+| kvačica u planu (**Danas** / **Kalendar**) | broji se u „3.2h / 9.8h" i troši kapacitet te nedelje |
+| **Biblioteka** (kartica, modal, dugi pritisak → višestruki izbor) | samo skida naslov sa spiska; nedeljni plan ostaje netaknut |
+
+Razlog: kad označiš 20 filmova koje si davno gledao, njihovih 40h ne sme da se
+upiše kao „odgledano ove nedelje" — pojelo bi kapacitet i ostavilo nedelju
+praznu.
+
 ---
 
 ## Platforme
@@ -219,6 +242,7 @@ Dugme „Gde gledati u Srbiji?" otvara JustWatch pretragu za taj naslov.
 | `app.js` | UI, četiri ekrana, interakcija |
 | `planner.js` | dinamički raspored (najkomplikovaniji deo, detaljno komentarisan) |
 | `sync.js` | stanje korisnika, localStorage + Firestore |
+| `posters.js` | automatsko povlačenje postera (TVMaze + Wikipedia) |
 | `ics.js` | izvoz u `.ics` |
 | `firebase-config.js` | tvoj Firebase config (placeholder) |
 | `data.json` | 69 naslova (63 MCU + 6 Fox bonus) |
