@@ -249,8 +249,8 @@ window.MM = window.MM || {};
       '<div class="hero-bg">' + artHTML(nextItem) + '</div>' +
       '<div class="hero-fade"></div>' +
       '<div class="hero-in">' +
+        '<div class="cd-label">DOOMSDAY ZA</div>' +
         '<div class="cd">' +
-          '<span class="cd-label">DOOMSDAY ZA</span>' +
           '<span class="cd-num">' + dd + '</span>' +
           '<span class="cd-unit">dana</span>' +
         '</div>' +
@@ -476,30 +476,30 @@ window.MM = window.MM || {};
     var arr = libraryItems();
     var out = '';
 
-    out += '<section class="card filters">' +
+    // Cipovi u dve horizontalne trake koje se skroluju - na telefonu su
+    // ranije prelamali u 4 reda i pojeli pola ekrana.
+    out += '<section class="filters">' +
       '<input id="q" class="search" type="search" placeholder="Pretraga po naslovu…" value="' + esc(lib.q) + '">' +
-      '<div class="chips">' +
+      '<div class="chips scroll">' +
         chip('Sve', 'f-type', 'sve', lib.type === 'sve') +
         chip('Filmovi', 'f-type', 'film', lib.type === 'film') +
         chip('Serije', 'f-type', 'serija', lib.type === 'serija') +
-      '</div>' +
-      '<div class="chips">' +
+        '<span class="chip-sep"></span>' +
         chip('Must', 'f-tier', 'must', !!lib.tiers.must) +
         chip('Good', 'f-tier', 'good', !!lib.tiers.good) +
         chip('Skip', 'f-tier', 'skip', !!lib.tiers.skip) +
         chip('Bonus', 'f-tier', 'bonus', !!lib.tiers.bonus) +
       '</div>' +
-      '<div class="chips">' +
-        chip('Odgledano', 'f-status', 'odgledano', lib.status === 'odgledano') +
+      '<div class="chips scroll">' +
         chip('Neodgledano', 'f-status', 'neodgledano', lib.status === 'neodgledano') +
+        chip('Odgledano', 'f-status', 'odgledano', lib.status === 'odgledano') +
         chip('Imam pretplatu', 'f-sub', '1', lib.sub) +
-      '</div>' +
-      '<div class="chips">' +
+        '<span class="chip-sep"></span>' +
         chip('Po izlasku', 'f-sort', 'release', lib.sort === 'release') +
         chip('Hronološki', 'f-sort', 'chrono', lib.sort === 'chrono') +
         chip('Po fazama', 'f-sort', 'phase', lib.sort === 'phase') +
       '</div>' +
-      '<div class="count">' + arr.length + ' naslova' + (lib.sub ? ' · filter koristi TVOJ izbor platforme' : '') + '</div>' +
+      '<div class="count">' + arr.length + ' naslova' + (lib.sub ? ' · po tvom izboru platforme' : '') + '</div>' +
     '</section>';
 
     if (selectMode) {
