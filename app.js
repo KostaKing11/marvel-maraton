@@ -585,7 +585,9 @@ window.MM = window.MM || {};
       }
       out += '<span class="cell-d">' + d + '</span>';
       if (isDoom) out += '<span class="cell-doom">🎬</span>';
-      else if (info && info.units.length) {
+      else if (info && info.units.length > 1) {
+        // Brojka samo kad ima vise od jedne stavke - inace je bedz na
+        // skoro svakom danu i mreza deluje bucno.
         out += '<span class="cell-n">' + info.units.length + '</span>';
       }
       out += '</div>';
