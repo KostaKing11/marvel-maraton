@@ -187,7 +187,7 @@ window.MM = window.MM || {};
     view.dataset.tab = tab;
 
     if (tab === 'kalendar' && !calendarScrolled) {
-      var cur = $('.week.is-current');
+      var cur = $('.cell.today') || $('.month');
       if (cur) cur.scrollIntoView({ block: 'center' });
       calendarScrolled = true;
     } else {
@@ -341,12 +341,6 @@ window.MM = window.MM || {};
       '</div>' +
       '</div></div>';
 
-    html += '<div class="deck-hint">' +
-      '<span class="hl"><i class="ar">←</i> odgledano</span>' +
-      '<span class="hm">tapni za detalje</span>' +
-      '<span class="hr">nazad <i class="ar">→</i></span>' +
-      '</div>';
-
     return html;
   }
 
@@ -375,8 +369,7 @@ window.MM = window.MM || {};
     if (!card) return;
 
     var x0 = 0, y0 = 0, dx = 0, drag = false, locked = null, gone = false, moved = false;
-    var THRESHOLD = 90;    // odluka pri pustanju
-    var COMMIT = 130;      // odluka jos u toku prevlacenja
+    var THRESHOLD = 110;   // odluka se donosi tek kad pustis prst
 
     card.addEventListener('pointerdown', function (e) {
       if (gone || e.target.closest('button')) return;
@@ -399,10 +392,8 @@ window.MM = window.MM || {};
       card.style.transform = 'translateX(' + dx + 'px) rotate(' + (dx / 24) + 'deg)';
       card.classList.toggle('to-yes', dx < -40);
       card.classList.toggle('to-back', dx > 40);
-      // Odluka jos u toku prevlacenja: ako browser kasnije otme gest
-      // (pointercancel), odluka je vec doneta i nista se ne gubi.
-      if (dx < -COMMIT) flyOut('watched');
-      else if (dx > COMMIT) flyOut('back');
+      // Namerno bez odluke u toku prevlacenja: dokle god drzis prst,
+      // mozes da vratis karticu nazad i nista se nije desilo.
     });
 
     function release() {
@@ -513,57 +504,123 @@ window.MM = window.MM || {};
      EKRAN 2: KALENDAR
      ============================================================ */
 
+  var MONTH_NAMES = ['januar', 'februar', 'mart', 'april', 'maj', 'jun',
+    'jul', 'avgust', 'septembar', 'oktobar', 'novembar', 'decembar'];
+  var DOW = ['P', 'U', 'S', 'Č', 'P', 'S', 'N'];
+
+  /**
+   * Mapa: "2026-08-17" -> {entries, minutes, week}
+   * Nedeljni plan se deli na dane, pa se dani spljoste u jednu mapu
+   * da bi kalendar mogao da crta mesec po mesec.
+   */
+  function buildDayMap() {
+    var s = state(), map = {};
+    PLAN.weeks.forEach(function (w) {
+      P.splitWeekIntoDays(w, s, new Date()).forEach(function (d) {
+        map[d.iso] = {
+          week: w.n, minutes: d.minutes, units: d.units,
+          entries: d.entries || [], skipped: d.skipped
+        };
+      });
+    });
+    return map;
+  }
+
   function viewKalendar() {
     var s = state();
+    var map = buildDayMap();
+    var today = P.startOfDay(new Date());
     var out = '';
 
-    out += '<section class="card">' +
-      '<button class="btn" data-act="export-ics">Izvezi u kalendar (.ics)</button>' +
-      '<p class="note small">Skini fajl i uvezi ga u Google Kalendar (Podešavanja → Uvoz) — tek tako dobijaš prave notifikacije na telefonu.</p>' +
-      '</section>';
+    out += '<div class="cal-top">' +
+      '<button class="btn small" data-act="export-ics">Izvezi .ics</button>' +
+      '<span class="cal-note">za podsetnike u Google / Samsung kalendaru</span>' +
+      '</div>';
 
     if (PLAN.warning) {
       out += '<section class="card warn"><p class="note">' + esc(PLAN.warning.text) + '</p></section>';
     }
 
-    PLAN.weeks.forEach(function (w) {
-      var tags = [];
-      if (w.n <= 2) tags.push('<span class="tag">raspust</span>');
-      if (w.n === P.TOTAL_WEEKS) tags.push('<span class="tag finale">FINALE 🎬</span>');
-      if (w.current) tags.push('<span class="tag now">sad</span>');
+    // Maraton ide od avgusta do decembra 2026.
+    for (var m = 7; m <= 11; m++) out += monthHTML(2026, m, map, today);
 
-      var totalMin = w.plannedMinutes + w.doneMinutes;
-      out += '<section class="card week' + (w.current ? ' is-current' : '') + (w.past ? ' is-past' : '') + '">' +
-        '<div class="week-head">' +
-          '<div class="week-id"><b>N' + w.n + '</b><span>' + P.fmtRange(w.start, w.end) + '</span></div>' +
-          '<div class="week-tags">' + tags.join('') + '</div>' +
-          '<div class="week-hours">' + hStr(totalMin) + '</div>' +
-          '<button class="icon-btn" data-act="cap" data-week="' + w.n + '" title="Kapacitet ove nedelje">' +
-            '<svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zM20.7 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>' +
-          '</button>' +
-        '</div>';
-
-      if (P.capacityFor(s, w.n) !== s.defaultCapacity) {
-        out += '<div class="cap-note">kapacitet: ' + P.capacityFor(s, w.n) + 'h (podešeno ručno)</div>';
-      }
-
-      if (w.past && !w.doneEntries.length) {
-        out += '<p class="empty">Prošlo.</p>';
-      } else if (!w.planned.length && !w.doneEntries.length && !w.pinned.length) {
-        out += '<p class="empty">Slobodna nedelja.</p>';
-      } else {
-        out += '<div class="rail">';
-        w.planned.forEach(function (e) { out += railEntry(e, false); });
-        w.doneEntries.forEach(function (e) { out += railEntry(e, true); });
-        w.pinned.forEach(function (i) {
-          out += railPinned(i, P.isFullyWatched(i, s));
-        });
-        out += '</div>';
-      }
-      out += '</section>';
-    });
-
+    out += '<p class="foot">Tapni dan da vidiš šta pada na njega.</p>';
     return out;
+  }
+
+  function monthHTML(year, month, map, today) {
+    var first = new Date(year, month, 1);
+    var startCol = (first.getDay() + 6) % 7;          // ponedeljak = 0
+    var days = new Date(year, month + 1, 0).getDate();
+
+    var out = '<section class="month">' +
+      '<h2 class="month-name">' + MONTH_NAMES[month] + ' <i>' + year + '</i></h2>' +
+      '<div class="dow">';
+    DOW.forEach(function (d) { out += '<span>' + d + '</span>'; });
+    out += '</div><div class="mgrid">';
+
+    for (var i = 0; i < startCol; i++) out += '<div class="cell blank"></div>';
+
+    for (var d = 1; d <= days; d++) {
+      var date = new Date(year, month, d);
+      var iso = P.iso(date);
+      var info = map[iso];
+      var isToday = P.daysBetween(date, today) === 0;
+      var isPast = date < today;
+      var isDoom = (month === 11 && d === 18);
+
+      var cls = 'cell';
+      if (isToday) cls += ' today';
+      if (isPast) cls += ' past';
+      if (isDoom) cls += ' doom';
+      if (info && info.minutes > 0) cls += ' has';
+      if (info && info.skipped) cls += ' skipped';
+
+      out += '<div class="' + cls + '" data-act="day" data-iso="' + iso + '">';
+
+      // Poster prve stavke tog dana kao pozadina celije.
+      if (info && info.units.length) {
+        var pu = posterUrl(info.units[0].item);
+        if (pu) out += '<img class="cell-bg" src="' + esc(pu) + '" alt="" loading="lazy">';
+      }
+      out += '<span class="cell-d">' + d + '</span>';
+      if (isDoom) out += '<span class="cell-doom">🎬</span>';
+      else if (info && info.units.length) {
+        out += '<span class="cell-n">' + info.units.length + '</span>';
+      }
+      out += '</div>';
+    }
+
+    out += '</div></section>';
+    return out;
+  }
+
+  /** Sadržaj jednog dana u modalu. */
+  function openDay(iso) {
+    var map = buildDayMap();
+    var info = map[iso];
+    var parts = iso.split('-');
+    var date = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+    var naslov = date.getDate() + '. ' + MONTH_NAMES[date.getMonth()];
+
+    var html = '<div class="sheet"><div class="sheet-body day-sheet">' +
+      '<button class="close" data-act="close" aria-label="Zatvori">✕</button>' +
+      '<h2>' + esc(naslov) + '</h2>' +
+      '<div class="sub">' + (info ? 'Nedelja ' + info.week + ' · ' + hStr(info.minutes) : 'van maratona') + '</div>';
+
+    if (!info || !info.entries.length) {
+      html += '<p class="empty">Ništa ne pada na ovaj dan.</p>';
+    } else {
+      html += '<div class="rows">';
+      info.entries.forEach(function (e) { html += rowEntry(e, false); });
+      html += '</div>';
+    }
+    if (info) {
+      html += '<button class="btn ghost" data-act="cap" data-week="' + info.week + '">' +
+        'Koliko imam vremena u nedelji ' + info.week + '?</button>';
+    }
+    html += '</div></div>';
+    showModal(html);
   }
 
   /* ============================================================
@@ -1089,6 +1146,8 @@ window.MM = window.MM || {};
       if (v) window.open(v, '_blank', 'noopener');
       else toast('Nalepi link pa probaj ponovo.');
     },
+    'day': function (n) { openDay(n.dataset.iso); },
+
     'pace-ok': function () {
       Store.mutate(function (s) { s.deckSince = 0; });
     },
