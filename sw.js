@@ -4,7 +4,7 @@
    VAZNO: podigni CACHE verziju na svaki deploy, inace se
    korisnik zaglavi na staroj verziji app-a.
    ============================================================ */
-const CACHE = 'marvel-maraton-v11';
+const CACHE = 'marvel-maraton-v12';
 
 // App shell — cache-first
 const SHELL = [
@@ -27,7 +27,11 @@ const SHELL = [
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE)
-      .then((c) => c.addAll(SHELL))
+      // VAZNO: `cache: 'reload'`. Bez toga addAll() pokupi fajlove iz
+      // HTTP kesa browsera (GitHub Pages salje max-age=600), pa se u
+      // novi kes upise STARI style.css/app.js - verzija kesa se promeni,
+      // a sadrzaj ostane isti. Ovako svaki fajl ide sa mreze.
+      .then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' }))))
       .then(() => self.skipWaiting())
   );
 });
