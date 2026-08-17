@@ -136,6 +136,34 @@ window.MM = window.MM || {};
     return units;
   }
 
+  /**
+   * Redni broj svakog naslova u kanonskom redosledu gledanja: Iron Man = #1.
+   * Racuna se preko SVIH naslova (i onih van tvojih tierova) da bi broj bio
+   * stabilan - da ti "Thor #4" ne postane "#3" cim izbacis skip tier.
+   */
+  function ordinals(items) {
+    var map = {};
+    items.slice().sort(function (a, b) { return sortKey(a) - sortKey(b); })
+      .forEach(function (i, idx) { map[i.id] = idx + 1; });
+    return map;
+  }
+
+  /**
+   * Spil za "Danas": sve neodgledane jedinice u redosledu gledanja.
+   * Ono sto je odlozeno ("Kasnije") ide na kraj umesto da blokira spil.
+   */
+  function deck(items, state) {
+    var units = buildUnits(items, state);
+    var post = (state.postponed || []);
+    if (!post.length) return units;
+    var later = [], now = [];
+    units.forEach(function (u) {
+      (post.indexOf(u.key) !== -1 ? later : now).push(u);
+    });
+    // Odlozeni zadrzavaju medjusobni redosled, samo idu iza svega ostalog.
+    return now.concat(later);
+  }
+
   /** Kapacitet nedelje N u SATIMA: override ako postoji, inace default. */
   function capacityFor(state, n) {
     var c = state.capacity ? state.capacity[String(n)] : undefined;
@@ -418,6 +446,8 @@ window.MM = window.MM || {};
     DAY_NAMES: DAY_NAMES,
     buildPlan: buildPlan,
     buildUnits: buildUnits,
+    ordinals: ordinals,
+    deck: deck,
     splitWeekIntoDays: splitWeekIntoDays,
     stats: stats,
     tierMinutes: tierMinutes,

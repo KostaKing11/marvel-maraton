@@ -16,6 +16,8 @@ window.MM = window.MM || {};
   var modalItemId = null;       // koji naslov je trenutno otvoren u modalu
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
+  var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
+  var PACE_EVERY = 5;           // posle koliko oznacenih ide provera tempa
 
   var lib = {
     type: 'sve',                // sve | film | serija
@@ -192,6 +194,8 @@ window.MM = window.MM || {};
       window.scrollTo(0, y);
     }
 
+    if (tab === 'danas') bindDeck();
+
     if (flashKey) {
       $$('[data-flash="' + CSS.escape(flashKey) + '"]').forEach(function (n) {
         n.classList.add('bounce');
@@ -233,132 +237,217 @@ window.MM = window.MM || {};
   function viewDanas() {
     var s = state();
     var week = PLAN.weeks[PLAN.currentWeek - 1];
-    var days = P.splitWeekIntoDays(week, s, new Date());
-    var today = days.filter(function (d) { return d.isToday; })[0];
     var st = P.stats(ITEMS, s, PLAN, new Date());
     var dd = P.daysToDoomsday(new Date());
+    var deck = P.deck(ITEMS, s);
 
-    var out = '';
+    var watchedTitles = st.watchedTitles;
+    var out = '<section class="deck">';
 
-    /* --- HERO: countdown + sledeci naslov na redu --- */
-    var next = week.planned[0] || null;
-    var nextItem = next ? next.item : BY_ID['avengers-doomsday'];
-    var link = next ? ((s.links || {})[next.id] || '') : '';
+    out += '<div class="deck-top">' +
+      '<span class="dpill"><b>' + dd + '</b> dana do Doomsdaya</span>' +
+      '<span class="dcount">' + watchedTitles + ' / ' + ITEMS.length + '</span>' +
+      '</div>';
 
-    out += '<section class="hero art">' +
-      '<div class="hero-bg">' + artHTML(nextItem) + '</div>' +
-      '<div class="hero-fade"></div>' +
-      '<div class="hero-in">' +
-        '<div class="cd-label">DOOMSDAY ZA</div>' +
-        '<div class="cd">' +
-          '<span class="cd-num">' + dd + '</span>' +
-          '<span class="cd-unit">dana</span>' +
-        '</div>' +
-        '<div class="cd-date">18.12.2026. · bioskop</div>';
-
-    if (next) {
-      out += '<div class="hero-kicker">Sledeće na redu</div>' +
-        '<h1 class="hero-title">' + esc(next.label) + '</h1>' +
-        '<div class="hero-meta">' + TYPE_LABEL[next.type] + ' · ' + next.minutes + ' min · Nedelja ' + week.n + '</div>' +
-        '<div class="hero-btns">';
-      if (link) {
-        out += '<button class="btn play" data-act="play" data-id="' + esc(next.id) + '">▶ Pusti</button>' +
-          '<button class="btn ghost" data-act="entry" data-keys="' + esc(next.keys.join(',')) + '">Odgledano</button>';
-      } else {
-        out += '<button class="btn play" data-act="entry" data-keys="' + esc(next.keys.join(',')) + '">✓ Odgledano</button>' +
-          '<button class="btn ghost" data-act="open" data-id="' + esc(next.id) + '">Detalji</button>';
-      }
-      out += '</div>';
+    if (!deck.length) {
+      out += deckDoneHTML();
+    } else if ((s.deckSince || 0) >= PACE_EVERY) {
+      // Posle svakih PACE_EVERY oznacenih ubaci provеru tempa u sam spil.
+      out += paceCardHTML(st, s);
     } else {
-      out += '<div class="hero-kicker">Ova nedelja je čista</div>' +
-        '<h1 class="hero-title">Nemaš šta da gledaš</h1>' +
-        '<div class="hero-meta">Sve iz plana je odgledano.</div>';
+      out += deckCardHTML(deck, s);
     }
-    out += '</div></section>';
 
-    /* --- ove nedelje --- */
-    var doneMin = week.doneMinutes;
-    var totalMin = week.doneMinutes + week.plannedMinutes;
-    out += '<section class="card">' +
+    out += '</section>';
+
+    /* --- tanka traka: dokle si ove nedelje --- */
+    var doneMin = week.doneMinutes, totalMin = week.doneMinutes + week.plannedMinutes;
+    out += '<section class="card weekstrip">' +
       '<div class="card-head">' +
-        '<div><h2>Ove nedelje</h2><div class="sub">Nedelja ' + week.n + ' · ' + P.fmtRange(week.start, week.end) + '</div></div>' +
+        '<div><h2>Nedelja ' + week.n + '</h2><div class="sub">' + P.fmtRange(week.start, week.end) + '</div></div>' +
         '<div class="hours"><b>' + hStr(doneMin) + '</b> / ' + hStr(totalMin) + '</div>' +
       '</div>' +
-      progressBar(doneMin, totalMin, 'green');
-
-    if (!week.planned.length && !week.doneEntries.length) {
-      out += '<p class="empty">Ove nedelje nema ničega u planu. Ili si sve odgledao, ili je kapacitet 0h.</p>';
-    } else {
-      out += '<div class="rows">';
-      week.planned.forEach(function (e) { out += rowEntry(e, false); });
-      week.doneEntries.forEach(function (e) { out += rowEntry(e, true); });
-      out += '</div>';
-    }
-    out += '</section>';
-
-    /* --- danas --- */
-    var dName = today ? (P.DAY_NAMES[(today.date.getDay() + 6) % 7] + ' ' + P.fmtDate(today.date)) : '';
-    out += '<section class="card">' +
-      '<div class="card-head"><div><h2>Danas</h2><div class="sub">' + esc(dName) + '</div></div>' +
-      (today ? '<div class="hours"><b>' + hStr(today.minutes) + '</b></div>' : '') + '</div>';
-
-    if (!today) {
-      out += '<p class="empty">Maraton još nije počeo — kreće 17.08.2026.</p>';
-    } else if (today.skipped) {
-      out += '<p class="empty">Danas je slobodan dan. Ono što je palo na danas je prebačeno na ostatak nedelje.</p>' +
-        '<button class="btn ghost" data-act="unskip-today">Ipak imam vremena</button>';
-    } else if (!today.entries.length) {
-      out += '<p class="empty">Danas ti ništa ne pada. Uživaj.</p>';
-    } else {
-      out += '<div class="rows">';
-      today.entries.forEach(function (e) { out += rowEntry(e, false); });
-      out += '</div>' +
-        '<button class="btn ghost" data-act="skip-today">Nemam vremena danas</button>';
-    }
-
-    // sta je danas vec odgledano
-    var doneToday = (week.doneUnits || []).filter(function (u) { return u.date === todayISO(); });
-    if (doneToday.length) {
-      out += '<div class="rows dim">';
-      P.groupUnits(doneToday).forEach(function (e) { out += rowEntry(e, true); });
-      out += '</div>';
-    }
-    out += '</section>';
-
-    /* --- tempo --- */
-    var tempoTxt = st.perWeekHours.toFixed(1) + 'h';
-    out += '<section class="card tempo tempo-' + st.tempo + '">' +
-      '<div class="card-head"><div><h2>Tempo</h2>' +
-      '<div class="sub">' + hStr(PLAN.totalRemainingMinutes) + ' neodgledano · ' + st.weeksLeft + ' ' +
-      (st.weeksLeft === 1 ? 'nedelja' : (st.weeksLeft < 5 ? 'nedelje' : 'nedelja')) + ' do finala</div></div>' +
-      '<div class="tempo-num">' + tempoTxt + '<span>/ned</span></div></div>';
-
-    if (st.tempo === 'ok') out += '<p class="note">Komotno. Ovako stižeš bez trke.</p>';
-    else if (st.tempo === 'warn') out += '<p class="note">Ide, ali bez mnogo pauza.</p>';
-    else out += '<p class="note">Ovo je puno. Vredi skratiti listu.</p>';
-
-    if (st.tempo === 'hot') {
-      var skipH = h(P.tierMinutes(ITEMS, s, 'skip'));
-      if (s.plans.indexOf('skip') !== -1 && skipH > 0) {
-        out += '<button class="btn" data-act="drop-skip">Izbaci „skip" naslove (-' + skipH.toFixed(1) + 'h)</button>';
-      }
-    }
-    out += '</section>';
-
-    /* --- upozorenje o preklapanju --- */
-    if (PLAN.warning) {
-      out += '<section class="card warn">' +
-        '<h2>Ovo ti neće stati</h2>' +
-        '<p class="note">' + esc(PLAN.warning.text) + '</p>' +
-        '<div class="btn-row">';
-      if (s.plans.indexOf('skip') !== -1 && PLAN.warning.skipHours > 0) {
-        out += '<button class="btn ghost" data-act="drop-skip">Izbaci skip (-' + PLAN.warning.skipHours.toFixed(1) + 'h)</button>';
-      }
-      out += '<button class="btn ghost" data-act="raise-tempo" data-val="' + PLAN.warning.neededPerWeek + '">Digni tempo na ' + PLAN.warning.neededPerWeek + 'h</button>' +
-        '</div></section>';
-    }
+      progressBar(doneMin, totalMin, 'green') +
+      '<div class="tempo-line tempo-' + st.tempo + '">' +
+        '<span class="dot"></span>' + st.perWeekHours.toFixed(1) + 'h nedeljno do finala' +
+      '</div>' +
+      '</section>';
 
     return out;
+  }
+
+  /* ---- kartica sa filmom ---- */
+
+  function unitTitle(u) {
+    return u.item.title.replace(/\s*\(Sezona\s*(\d+)\)/i, ' · S$1');
+  }
+
+  function deckCardHTML(deck, s) {
+    var u = deck[0], nxt = deck[1];
+    var i = u.item;
+    var ord = ORD[i.id] || 0;
+
+    var sub = u.ep
+      ? 'Epizoda ' + u.ep + ' od ' + i.episodes
+      : TYPE_LABEL[i.type];
+
+    var html = '<div class="swipe-area">';
+
+    // Kartica iza - da se vidi da spil ima nastavak.
+    if (nxt) {
+      html += '<div class="dcard peek art">' + artHTML(nxt.item) + '<div class="dscrim"></div></div>';
+    }
+
+    html += '<div class="dcard cur art" id="deckCard" data-key="' + esc(u.key) + '">' +
+      artHTML(i) +
+      '<div class="dscrim"></div>' +
+      '<div class="dstamp yes">ODGLEDANO</div>' +
+      '<div class="dstamp no">KASNIJE</div>' +
+      '<div class="dinfo">' +
+        '<div class="dnum">#' + ord + '</div>' +
+        '<h1 class="dtitle">' + esc(unitTitle(u)) + '</h1>' +
+        '<div class="dmeta">' + i.year + ' · ' + sub + ' · ' + u.minutes + ' min</div>' +
+        (i.note ? '<p class="ddesc">' + esc(i.note) + '</p>' : '') +
+      '</div>' +
+      '</div></div>';
+
+    html += '<div class="deck-btns">' +
+      '<button class="dbtn later" data-act="deck-later">Kasnije</button>' +
+      '<button class="dbtn info" data-act="open" data-id="' + esc(i.id) + '">Detalji</button>' +
+      '<button class="dbtn watched" data-act="deck-watched">✓ Odgledano</button>' +
+      '</div>' +
+      '<div class="deck-hint">Prevuci desno = odgledano · levo = kasnije</div>';
+
+    return html;
+  }
+
+  function deckDoneHTML() {
+    return '<div class="dcard done-card">' +
+      '<div class="dinfo center">' +
+        '<div class="dnum">✓</div>' +
+        '<h1 class="dtitle">Nema više ničega</h1>' +
+        '<p class="ddesc">Sve iz tvojih tierova je odgledano. Ostaje ti samo bioskop 18.12.</p>' +
+      '</div></div>';
+  }
+
+  /* ---- swipe ---- */
+
+  /**
+   * Prevlacenje kartice. Desno = odgledano, levo = kasnije.
+   * Vertikalni pokret se prepusta stranici da skrol i dalje radi
+   * (zato i `touch-action:pan-y` na kartici).
+   */
+  function bindDeck() {
+    var card = $('#deckCard');
+    if (!card) return;
+
+    var x0 = 0, y0 = 0, dx = 0, drag = false, locked = null, gone = false;
+    var THRESHOLD = 90;
+
+    card.addEventListener('pointerdown', function (e) {
+      if (gone || e.target.closest('button')) return;
+      drag = true; locked = null; dx = 0;
+      x0 = e.clientX; y0 = e.clientY;
+      card.style.transition = 'none';
+      try { card.setPointerCapture(e.pointerId); } catch (err) {}
+    });
+
+    card.addEventListener('pointermove', function (e) {
+      if (!drag) return;
+      var mx = e.clientX - x0, my = e.clientY - y0;
+      if (locked === null) {
+        if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
+        locked = Math.abs(mx) > Math.abs(my) ? 'x' : 'y';
+      }
+      if (locked === 'y') return;      // korisnik skroluje, ne prevlaci
+      dx = mx;
+      card.style.transform = 'translateX(' + dx + 'px) rotate(' + (dx / 24) + 'deg)';
+      card.classList.toggle('to-yes', dx > 40);
+      card.classList.toggle('to-no', dx < -40);
+    });
+
+    function release() {
+      if (!drag) return;
+      drag = false;
+      card.style.transition = '';
+      if (locked === 'x' && dx > THRESHOLD) return flyOut('yes');
+      if (locked === 'x' && dx < -THRESHOLD) return flyOut('no');
+      card.style.transform = '';
+      card.classList.remove('to-yes', 'to-no');
+    }
+    card.addEventListener('pointerup', release);
+    card.addEventListener('pointercancel', release);
+
+    function flyOut(dir) {
+      if (gone) return;
+      gone = true;
+      var to = dir === 'yes' ? window.innerWidth + 200 : -(window.innerWidth + 200);
+      card.classList.add('flying');
+      card.style.transform = 'translateX(' + to + 'px) rotate(' + (to / 24) + 'deg)';
+      card.classList.toggle('to-yes', dir === 'yes');
+      card.classList.toggle('to-no', dir === 'no');
+      if (navigator.vibrate) navigator.vibrate(dir === 'yes' ? 18 : 8);
+      setTimeout(function () { deckAdvance(card.dataset.key, dir === 'yes'); }, 210);
+    }
+
+    card._flyOut = flyOut;
+  }
+
+  /** Primeni odluku i pomeri spil. */
+  function deckAdvance(key, watched) {
+    if (watched) {
+      markUnits([key], true, 'plan');          // kvacica u planu -> broji se u nedelju
+      Store.mutate(function (s) {
+        s.deckSince = (s.deckSince || 0) + 1;
+        s.postponed = (s.postponed || []).filter(function (k) { return k !== key; });
+      });
+    } else {
+      Store.mutate(function (s) {
+        s.postponed = (s.postponed || []).filter(function (k) { return k !== key; });
+        s.postponed.push(key);                 // na kraj spila, ne gubi se
+      });
+    }
+  }
+
+  /* ---- provera tempa ---- */
+
+  function paceCardHTML(st, s) {
+    var verdict, tone;
+    if (st.tempo === 'ok') {
+      verdict = 'Stižeš komotno. Nastavi ovim tempom i gotov si pre Doomsdaya.';
+      tone = 'ok';
+    } else if (st.tempo === 'warn') {
+      verdict = 'Stižeš, ali bez mnogo pauza. Drži se plana.';
+      tone = 'warn';
+    } else {
+      verdict = 'Ovako ne stižeš. Ili dižeš tempo, ili nešto izbacuješ.';
+      tone = 'hot';
+    }
+
+    var skipH = h(P.tierMinutes(ITEMS, s, 'skip'));
+    var need = PLAN.warning ? PLAN.warning.neededPerWeek : Math.ceil(st.perWeekHours);
+
+    var html = '<div class="dcard pace pace-' + tone + '">' +
+      '<div class="dinfo center">' +
+        '<div class="pace-kicker">PROVERA TEMPA</div>' +
+        '<div class="pace-num">' + st.perWeekHours.toFixed(1) + '<span>h/ned</span></div>' +
+        '<p class="ddesc">' + esc(verdict) + '</p>' +
+        '<div class="pace-facts">' +
+          '<div><b>' + hStr(PLAN.totalRemainingMinutes) + '</b><span>ostalo</span></div>' +
+          '<div><b>' + st.weeksLeft + '</b><span>nedelja</span></div>' +
+          '<div><b>' + st.percent + '%</b><span>gotovo</span></div>' +
+        '</div>' +
+      '</div></div>';
+
+    html += '<div class="pace-btns">';
+    if (st.tempo !== 'ok' && s.plans.indexOf('skip') !== -1 && skipH > 0) {
+      html += '<button class="btn ghost" data-act="drop-skip">Izbaci „skip" naslove (−' + skipH.toFixed(1) + 'h)</button>';
+    }
+    if (st.tempo !== 'ok' && need > s.defaultCapacity) {
+      html += '<button class="btn ghost" data-act="raise-tempo" data-val="' + need + '">Digni tempo na ' + need + 'h nedeljno</button>';
+    }
+    html += '<button class="btn" data-act="pace-ok">Nastavi</button></div>';
+    return html;
   }
 
   /* ============================================================
@@ -532,6 +621,7 @@ window.MM = window.MM || {};
         artHTML(i) +
         '<div class="scrim"></div>' +
         '<div class="badges">' +
+          '<span class="b num">#' + (ORD[i.id] || 0) + '</span>' +
           '<span class="b tier ' + i.priority + '">' + TIER_LABEL[i.priority] + '</span>' +
           (i.type !== 'film' ? '<span class="b type ' + i.type + '">' + TYPE_LABEL[i.type] + '</span>' : '') +
         '</div>' +
@@ -679,6 +769,7 @@ window.MM = window.MM || {};
         '<div class="sheet-head">' +
           '<h2>' + esc(i.title) + '</h2>' +
           '<div class="sheet-meta">' +
+            '<span class="b num">#' + (ORD[i.id] || 0) + '</span>' +
             '<span class="b tier ' + i.priority + '">' + TIER_LABEL[i.priority] + '</span>' +
             '<span class="b type ' + i.type + '">' + TYPE_LABEL[i.type] + '</span>' +
             '<span>' + i.year + '</span><span>' + (PHASE_NAME[i.phase] || '') + '</span>' +
@@ -844,13 +935,16 @@ window.MM = window.MM || {};
     },
 
     'drop-skip': function () {
-      Store.mutate(function (s) { s.plans = s.plans.filter(function (p) { return p !== 'skip'; }); });
+      Store.mutate(function (s) {
+        s.plans = s.plans.filter(function (p) { return p !== 'skip'; });
+        s.deckSince = 0;
+      });
       toast('Skip tier izbačen iz plana.');
     },
     'raise-tempo': function (n) {
-      var v = parseInt(n.dataset.val, 10);
-      Store.mutate(function (s) { s.defaultCapacity = Math.min(25, v); });
-      toast('Tempo: ' + Math.min(25, v) + 'h nedeljno.');
+      var v = Math.min(25, parseInt(n.dataset.val, 10));
+      Store.mutate(function (s) { s.defaultCapacity = v; s.deckSince = 0; });
+      toast('Tempo: ' + v + 'h nedeljno.');
     },
 
     'cap': function (n) { openCapacity(parseInt(n.dataset.week, 10)); },
@@ -944,6 +1038,16 @@ window.MM = window.MM || {};
       if (v) window.open(v, '_blank', 'noopener');
       else toast('Nalepi link pa probaj ponovo.');
     },
+    'deck-watched': function () {
+      var c = $('#deckCard'); if (c && c._flyOut) c._flyOut('yes');
+    },
+    'deck-later': function () {
+      var c = $('#deckCard'); if (c && c._flyOut) c._flyOut('no');
+    },
+    'pace-ok': function () {
+      Store.mutate(function (s) { s.deckSince = 0; });
+    },
+
     'play': function (n) {
       var v = (state().links || {})[n.dataset.id];
       if (v) window.open(v, '_blank', 'noopener');
@@ -1243,6 +1347,7 @@ window.MM = window.MM || {};
       .then(function (data) {
         ITEMS = data;
         ITEMS.forEach(function (i) { BY_ID[i.id] = i; });
+        ORD = P.ordinals(ITEMS);
 
         Store.init();
         Store.onChange(function () { refresh(); });

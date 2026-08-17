@@ -4,7 +4,7 @@
    VAZNO: podigni CACHE verziju na svaki deploy, inace se
    korisnik zaglavi na staroj verziji app-a.
    ============================================================ */
-const CACHE = 'marvel-maraton-v6';
+const CACHE = 'marvel-maraton-v7';
 
 // App shell — cache-first
 const SHELL = [
