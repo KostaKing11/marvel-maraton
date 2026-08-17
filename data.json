@@ -1,0 +1,1339 @@
+[
+ {
+  "id": "iron-man",
+  "title": "Iron Man",
+  "type": "film",
+  "year": 2008,
+  "phase": 1,
+  "releaseOrder": 1,
+  "chronoOrder": 3,
+  "runtime": 126,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Pocetak svega.",
+  "week": 1,
+  "weeks": [
+   1
+  ]
+ },
+ {
+  "id": "incredible-hulk",
+  "title": "The Incredible Hulk",
+  "type": "film",
+  "year": 2008,
+  "phase": 1,
+  "releaseOrder": 2,
+  "chronoOrder": 4,
+  "runtime": 112,
+  "priority": "skip",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Najlabavije vezan film; moze da se preskoci.",
+  "week": 1,
+  "weeks": [
+   1
+  ]
+ },
+ {
+  "id": "iron-man-2",
+  "title": "Iron Man 2",
+  "type": "film",
+  "year": 2010,
+  "phase": 1,
+  "releaseOrder": 3,
+  "chronoOrder": 5,
+  "runtime": 124,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Uvodi Black Widow i Rhodeya.",
+  "week": 1,
+  "weeks": [
+   1
+  ]
+ },
+ {
+  "id": "thor",
+  "title": "Thor",
+  "type": "film",
+  "year": 2011,
+  "phase": 1,
+  "releaseOrder": 4,
+  "chronoOrder": 6,
+  "runtime": 115,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Uvodi Thora i Lokija.",
+  "week": 1,
+  "weeks": [
+   1
+  ]
+ },
+ {
+  "id": "captain-america-first-avenger",
+  "title": "Captain America: The First Avenger",
+  "type": "film",
+  "year": 2011,
+  "phase": 1,
+  "releaseOrder": 5,
+  "chronoOrder": 1,
+  "runtime": 124,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Steve, Bucky, Kockica (Tesseract) - temelj.",
+  "week": 1,
+  "weeks": [
+   1
+  ]
+ },
+ {
+  "id": "avengers",
+  "title": "The Avengers",
+  "type": "film",
+  "year": 2012,
+  "phase": 1,
+  "releaseOrder": 6,
+  "chronoOrder": 7,
+  "runtime": 143,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Prvi tim, prvi Kamen beskraja u fokusu.",
+  "week": 1,
+  "weeks": [
+   1
+  ]
+ },
+ {
+  "id": "iron-man-3",
+  "title": "Iron Man 3",
+  "type": "film",
+  "year": 2013,
+  "phase": 2,
+  "releaseOrder": 7,
+  "chronoOrder": 8,
+  "runtime": 130,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Trevor Slattery - vazan za Shang-Chi i Wonder Man.",
+  "week": 1,
+  "weeks": [
+   1
+  ]
+ },
+ {
+  "id": "thor-dark-world",
+  "title": "Thor: The Dark World",
+  "type": "film",
+  "year": 2013,
+  "phase": 2,
+  "releaseOrder": 8,
+  "chronoOrder": 9,
+  "runtime": 112,
+  "priority": "skip",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Najslabiji, ali uvodi Etar (Kamen Realnosti) i Jane.",
+  "week": 1,
+  "weeks": [
+   1
+  ]
+ },
+ {
+  "id": "winter-soldier",
+  "title": "Captain America: The Winter Soldier",
+  "type": "film",
+  "year": 2014,
+  "phase": 2,
+  "releaseOrder": 9,
+  "chronoOrder": 10,
+  "runtime": 136,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Pad SHIELD-a, Bucky kao Winter Soldier.",
+  "week": 1,
+  "weeks": [
+   1
+  ]
+ },
+ {
+  "id": "guardians",
+  "title": "Guardians of the Galaxy",
+  "type": "film",
+  "year": 2014,
+  "phase": 2,
+  "releaseOrder": 10,
+  "chronoOrder": 11,
+  "runtime": 121,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Thanos, Nebula, Gamora, svemirska strana.",
+  "week": 1,
+  "weeks": [
+   1
+  ]
+ },
+ {
+  "id": "age-of-ultron",
+  "title": "Avengers: Age of Ultron",
+  "type": "film",
+  "year": 2015,
+  "phase": 2,
+  "releaseOrder": 11,
+  "chronoOrder": 13,
+  "runtime": 141,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Rodjenje Visiona, Wande i Pietra.",
+  "week": 1,
+  "weeks": [
+   1
+  ]
+ },
+ {
+  "id": "ant-man",
+  "title": "Ant-Man",
+  "type": "film",
+  "year": 2015,
+  "phase": 2,
+  "releaseOrder": 12,
+  "chronoOrder": 14,
+  "runtime": 117,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Uvodi Kvantno carstvo.",
+  "week": 1,
+  "weeks": [
+   1
+  ]
+ },
+ {
+  "id": "civil-war",
+  "title": "Captain America: Civil War",
+  "type": "film",
+  "year": 2016,
+  "phase": 3,
+  "releaseOrder": 13,
+  "chronoOrder": 15,
+  "runtime": 147,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Tim se raspada; uvodi Spider-Mana i Black Panthera.",
+  "week": 2,
+  "weeks": [
+   2
+  ]
+ },
+ {
+  "id": "doctor-strange",
+  "title": "Doctor Strange",
+  "type": "film",
+  "year": 2016,
+  "phase": 3,
+  "releaseOrder": 14,
+  "chronoOrder": 19,
+  "runtime": 115,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Magija, Kamen Vremena, prvo pominjanje multiverzuma.",
+  "week": 2,
+  "weeks": [
+   2
+  ]
+ },
+ {
+  "id": "guardians-2",
+  "title": "Guardians of the Galaxy Vol. 2",
+  "type": "film",
+  "year": 2017,
+  "phase": 3,
+  "releaseOrder": 15,
+  "chronoOrder": 12,
+  "runtime": 136,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "",
+  "week": 2,
+  "weeks": [
+   2
+  ]
+ },
+ {
+  "id": "spider-man-homecoming",
+  "title": "Spider-Man: Homecoming",
+  "type": "film",
+  "year": 2017,
+  "phase": 3,
+  "releaseOrder": 16,
+  "chronoOrder": 18,
+  "runtime": 133,
+  "priority": "good",
+  "platform": "check",
+  "link": "",
+  "poster": "",
+  "note": "Sony film - proveri gde ima.",
+  "week": 2,
+  "weeks": [
+   2
+  ]
+ },
+ {
+  "id": "thor-ragnarok",
+  "title": "Thor: Ragnarok",
+  "type": "film",
+  "year": 2017,
+  "phase": 3,
+  "releaseOrder": 17,
+  "chronoOrder": 20,
+  "runtime": 130,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Novi Thor, Valkyrie, Korg; vodi direktno u Infinity War.",
+  "week": 2,
+  "weeks": [
+   2
+  ]
+ },
+ {
+  "id": "black-panther",
+  "title": "Black Panther",
+  "type": "film",
+  "year": 2018,
+  "phase": 3,
+  "releaseOrder": 18,
+  "chronoOrder": 17,
+  "runtime": 134,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Wakanda i vibranijum - vazno i za Doomsday.",
+  "week": 2,
+  "weeks": [
+   2
+  ]
+ },
+ {
+  "id": "infinity-war",
+  "title": "Avengers: Infinity War",
+  "type": "film",
+  "year": 2018,
+  "phase": 3,
+  "releaseOrder": 19,
+  "chronoOrder": 22,
+  "runtime": 149,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "",
+  "week": 2,
+  "weeks": [
+   2
+  ]
+ },
+ {
+  "id": "ant-man-wasp",
+  "title": "Ant-Man and the Wasp",
+  "type": "film",
+  "year": 2018,
+  "phase": 3,
+  "releaseOrder": 20,
+  "chronoOrder": 21,
+  "runtime": 118,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "",
+  "week": 2,
+  "weeks": [
+   2
+  ]
+ },
+ {
+  "id": "captain-marvel",
+  "title": "Captain Marvel",
+  "type": "film",
+  "year": 2019,
+  "phase": 3,
+  "releaseOrder": 21,
+  "chronoOrder": 2,
+  "runtime": 123,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Desava se 1995. ali gledaj ga ovde - inace spoiluje Endgame.",
+  "week": 2,
+  "weeks": [
+   2
+  ]
+ },
+ {
+  "id": "endgame",
+  "title": "Avengers: Endgame",
+  "type": "film",
+  "year": 2019,
+  "phase": 3,
+  "releaseOrder": 22,
+  "chronoOrder": 23,
+  "runtime": 181,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Kraj Sage beskraja. Ovde krece multiverzum.",
+  "week": 2,
+  "weeks": [
+   2
+  ]
+ },
+ {
+  "id": "far-from-home",
+  "title": "Spider-Man: Far From Home",
+  "type": "film",
+  "year": 2019,
+  "phase": 3,
+  "releaseOrder": 23,
+  "chronoOrder": 24,
+  "runtime": 129,
+  "priority": "must",
+  "platform": "check",
+  "link": "",
+  "poster": "",
+  "note": "Sony film. Kraj vodi pravo u No Way Home.",
+  "week": 2,
+  "weeks": [
+   2
+  ]
+ },
+ {
+  "id": "wandavision",
+  "title": "WandaVision",
+  "type": "serija",
+  "year": 2021,
+  "phase": 4,
+  "releaseOrder": 24,
+  "chronoOrder": 25,
+  "episodes": 9,
+  "runtime": 340,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Wanda kao Scarlet Witch, beli Vision - direktno vodi u VisionQuest.",
+  "week": 3,
+  "weeks": [
+   3
+  ]
+ },
+ {
+  "id": "falcon-winter-soldier",
+  "title": "The Falcon and the Winter Soldier",
+  "type": "serija",
+  "year": 2021,
+  "phase": 4,
+  "releaseOrder": 25,
+  "chronoOrder": 26,
+  "episodes": 6,
+  "runtime": 300,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Sam postaje Kapetan Amerika; uvodi Val i novog John Walkera.",
+  "week": 3,
+  "weeks": [
+   3,
+   4
+  ]
+ },
+ {
+  "id": "loki-s1",
+  "title": "Loki (Sezona 1)",
+  "type": "serija",
+  "year": 2021,
+  "phase": 4,
+  "releaseOrder": 26,
+  "chronoOrder": 27,
+  "episodes": 6,
+  "runtime": 300,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "TVA, He Who Remains, multiverzum - obavezno za Doomsday.",
+  "week": 4,
+  "weeks": [
+   4
+  ]
+ },
+ {
+  "id": "black-widow",
+  "title": "Black Widow",
+  "type": "film",
+  "year": 2021,
+  "phase": 4,
+  "releaseOrder": 27,
+  "chronoOrder": 16,
+  "runtime": 134,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Uvodi Yelenu - kljucna u Thunderbolts.",
+  "week": 4,
+  "weeks": [
+   4
+  ]
+ },
+ {
+  "id": "what-if-s1",
+  "title": "What If...? (Sezona 1)",
+  "type": "serija",
+  "year": 2021,
+  "phase": 4,
+  "releaseOrder": 28,
+  "chronoOrder": 28,
+  "episodes": 9,
+  "runtime": 290,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Animirano. Objasni kako radi multiverzum.",
+  "week": 4,
+  "weeks": [
+   4,
+   5
+  ]
+ },
+ {
+  "id": "shang-chi",
+  "title": "Shang-Chi and the Legend of the Ten Rings",
+  "type": "film",
+  "year": 2021,
+  "phase": 4,
+  "releaseOrder": 29,
+  "chronoOrder": 29,
+  "runtime": 132,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "",
+  "week": 5,
+  "weeks": [
+   5
+  ]
+ },
+ {
+  "id": "eternals",
+  "title": "Eternals",
+  "type": "film",
+  "year": 2021,
+  "phase": 4,
+  "releaseOrder": 30,
+  "chronoOrder": 30,
+  "runtime": 156,
+  "priority": "skip",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Stoji sam za sebe, spor. Preskocivo.",
+  "week": 5,
+  "weeks": [
+   5
+  ]
+ },
+ {
+  "id": "hawkeye",
+  "title": "Hawkeye",
+  "type": "serija",
+  "year": 2021,
+  "phase": 4,
+  "releaseOrder": 31,
+  "chronoOrder": 31,
+  "episodes": 6,
+  "runtime": 290,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Kate Bishop i Yelena.",
+  "week": 5,
+  "weeks": [
+   5,
+   6
+  ]
+ },
+ {
+  "id": "no-way-home",
+  "title": "Spider-Man: No Way Home",
+  "type": "film",
+  "year": 2021,
+  "phase": 4,
+  "releaseOrder": 32,
+  "chronoOrder": 32,
+  "runtime": 148,
+  "priority": "must",
+  "platform": "check",
+  "link": "",
+  "poster": "",
+  "note": "Multiverzum se otvara. Sony - proveri gde ima.",
+  "week": 6,
+  "weeks": [
+   6
+  ]
+ },
+ {
+  "id": "moon-knight",
+  "title": "Moon Knight",
+  "type": "serija",
+  "year": 2022,
+  "phase": 4,
+  "releaseOrder": 33,
+  "chronoOrder": 33,
+  "episodes": 6,
+  "runtime": 300,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "",
+  "week": 6,
+  "weeks": [
+   6
+  ]
+ },
+ {
+  "id": "multiverse-of-madness",
+  "title": "Doctor Strange in the Multiverse of Madness",
+  "type": "film",
+  "year": 2022,
+  "phase": 4,
+  "releaseOrder": 34,
+  "chronoOrder": 34,
+  "runtime": 126,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Inkurzije - tacno ono na cemu stoji Doomsday. Gledaj posle WandaVision.",
+  "week": 7,
+  "weeks": [
+   7
+  ]
+ },
+ {
+  "id": "ms-marvel",
+  "title": "Ms. Marvel",
+  "type": "serija",
+  "year": 2022,
+  "phase": 4,
+  "releaseOrder": 35,
+  "chronoOrder": 35,
+  "episodes": 6,
+  "runtime": 280,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "",
+  "week": 7,
+  "weeks": [
+   7
+  ]
+ },
+ {
+  "id": "love-and-thunder",
+  "title": "Thor: Love and Thunder",
+  "type": "film",
+  "year": 2022,
+  "phase": 4,
+  "releaseOrder": 36,
+  "chronoOrder": 36,
+  "runtime": 118,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Gde je Thor sada.",
+  "week": 7,
+  "weeks": [
+   7
+  ]
+ },
+ {
+  "id": "she-hulk",
+  "title": "She-Hulk: Attorney at Law",
+  "type": "serija",
+  "year": 2022,
+  "phase": 4,
+  "releaseOrder": 37,
+  "chronoOrder": 37,
+  "episodes": 9,
+  "runtime": 290,
+  "priority": "skip",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Zabavno ali nevazno; ima Daredevila u jednoj epizodi.",
+  "week": 7,
+  "weeks": [
+   7,
+   8
+  ]
+ },
+ {
+  "id": "werewolf-by-night",
+  "title": "Werewolf by Night",
+  "type": "special",
+  "year": 2022,
+  "phase": 4,
+  "releaseOrder": 38,
+  "chronoOrder": 38,
+  "runtime": 52,
+  "priority": "skip",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Kratko i super, ali van glavne price.",
+  "week": 8,
+  "weeks": [
+   8
+  ]
+ },
+ {
+  "id": "wakanda-forever",
+  "title": "Black Panther: Wakanda Forever",
+  "type": "film",
+  "year": 2022,
+  "phase": 4,
+  "releaseOrder": 39,
+  "chronoOrder": 39,
+  "runtime": 161,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Novi Black Panther, Namor.",
+  "week": 8,
+  "weeks": [
+   8
+  ]
+ },
+ {
+  "id": "gotg-holiday-special",
+  "title": "The Guardians of the Galaxy Holiday Special",
+  "type": "special",
+  "year": 2022,
+  "phase": 4,
+  "releaseOrder": 40,
+  "chronoOrder": 40,
+  "runtime": 44,
+  "priority": "skip",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "",
+  "week": 8,
+  "weeks": [
+   8
+  ]
+ },
+ {
+  "id": "quantumania",
+  "title": "Ant-Man and the Wasp: Quantumania",
+  "type": "film",
+  "year": 2023,
+  "phase": 5,
+  "releaseOrder": 41,
+  "chronoOrder": 41,
+  "runtime": 124,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Kang u punom svetlu - vazno za setup Doomsdaya.",
+  "week": 8,
+  "weeks": [
+   8
+  ]
+ },
+ {
+  "id": "guardians-3",
+  "title": "Guardians of the Galaxy Vol. 3",
+  "type": "film",
+  "year": 2023,
+  "phase": 5,
+  "releaseOrder": 42,
+  "chronoOrder": 42,
+  "runtime": 150,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Kraj Guardiansa.",
+  "week": 9,
+  "weeks": [
+   9
+  ]
+ },
+ {
+  "id": "secret-invasion",
+  "title": "Secret Invasion",
+  "type": "serija",
+  "year": 2023,
+  "phase": 5,
+  "releaseOrder": 43,
+  "chronoOrder": 43,
+  "episodes": 6,
+  "runtime": 300,
+  "priority": "skip",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Slabo primljeno, ali menja Furyja i Rhodeya.",
+  "week": 9,
+  "weeks": [
+   9
+  ]
+ },
+ {
+  "id": "loki-s2",
+  "title": "Loki (Sezona 2)",
+  "type": "serija",
+  "year": 2023,
+  "phase": 5,
+  "releaseOrder": 44,
+  "chronoOrder": 44,
+  "episodes": 6,
+  "runtime": 300,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Loki drzi multiverzum - najvazniji setup za Doomsday.",
+  "week": 9,
+  "weeks": [
+   9,
+   10
+  ]
+ },
+ {
+  "id": "what-if-s2",
+  "title": "What If...? (Sezona 2)",
+  "type": "serija",
+  "year": 2023,
+  "phase": 5,
+  "releaseOrder": 45,
+  "chronoOrder": 45,
+  "episodes": 9,
+  "runtime": 280,
+  "priority": "skip",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "",
+  "week": 10,
+  "weeks": [
+   10
+  ]
+ },
+ {
+  "id": "the-marvels",
+  "title": "The Marvels",
+  "type": "film",
+  "year": 2023,
+  "phase": 5,
+  "releaseOrder": 46,
+  "chronoOrder": 46,
+  "runtime": 105,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Scena posle spice ima X-Mene - vazno.",
+  "week": 10,
+  "weeks": [
+   10
+  ]
+ },
+ {
+  "id": "echo",
+  "title": "Echo",
+  "type": "serija",
+  "year": 2024,
+  "phase": 5,
+  "releaseOrder": 47,
+  "chronoOrder": 47,
+  "episodes": 5,
+  "runtime": 220,
+  "priority": "skip",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Vezano za Daredevila i Kingpina.",
+  "week": 10,
+  "weeks": [
+   10,
+   11
+  ]
+ },
+ {
+  "id": "deadpool-wolverine",
+  "title": "Deadpool & Wolverine",
+  "type": "film",
+  "year": 2024,
+  "phase": 5,
+  "releaseOrder": 48,
+  "chronoOrder": 48,
+  "runtime": 128,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "TVA, inkurzije, Fox univerzum ulazi u MCU.",
+  "week": 12,
+  "weeks": [
+   12
+  ]
+ },
+ {
+  "id": "agatha-all-along",
+  "title": "Agatha All Along",
+  "type": "serija",
+  "year": 2024,
+  "phase": 5,
+  "releaseOrder": 49,
+  "chronoOrder": 49,
+  "episodes": 9,
+  "runtime": 320,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Nastavak WandaVision; uvodi Wiccana.",
+  "week": 12,
+  "weeks": [
+   12,
+   13
+  ]
+ },
+ {
+  "id": "what-if-s3",
+  "title": "What If...? (Sezona 3)",
+  "type": "serija",
+  "year": 2024,
+  "phase": 5,
+  "releaseOrder": 50,
+  "chronoOrder": 50,
+  "episodes": 8,
+  "runtime": 240,
+  "priority": "skip",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "",
+  "week": 13,
+  "weeks": [
+   13
+  ]
+ },
+ {
+  "id": "friendly-spider-man-s1",
+  "title": "Your Friendly Neighborhood Spider-Man (Sezona 1)",
+  "type": "serija",
+  "year": 2025,
+  "phase": 5,
+  "releaseOrder": 51,
+  "chronoOrder": 51,
+  "episodes": 10,
+  "runtime": 280,
+  "priority": "skip",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Animirano, alternativna verzija.",
+  "week": 13,
+  "weeks": [
+   13,
+   14
+  ]
+ },
+ {
+  "id": "daredevil-born-again-s1",
+  "title": "Daredevil: Born Again (Sezona 1)",
+  "type": "serija",
+  "year": 2025,
+  "phase": 5,
+  "releaseOrder": 52,
+  "chronoOrder": 52,
+  "episodes": 9,
+  "runtime": 420,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Kingpin kao gradonacelnik NY-a.",
+  "week": 14,
+  "weeks": [
+   14
+  ]
+ },
+ {
+  "id": "brave-new-world",
+  "title": "Captain America: Brave New World",
+  "type": "film",
+  "year": 2025,
+  "phase": 5,
+  "releaseOrder": 53,
+  "chronoOrder": 53,
+  "runtime": 118,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Sam kao Kap, Red Hulk, adamantijum.",
+  "week": 15,
+  "weeks": [
+   15
+  ]
+ },
+ {
+  "id": "thunderbolts",
+  "title": "Thunderbolts*",
+  "type": "film",
+  "year": 2025,
+  "phase": 5,
+  "releaseOrder": 54,
+  "chronoOrder": 54,
+  "runtime": 127,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Novi Avengers tim - oni ulaze u Doomsday.",
+  "week": 15,
+  "weeks": [
+   15
+  ]
+ },
+ {
+  "id": "ironheart",
+  "title": "Ironheart",
+  "type": "serija",
+  "year": 2025,
+  "phase": 5,
+  "releaseOrder": 55,
+  "chronoOrder": 55,
+  "episodes": 6,
+  "runtime": 300,
+  "priority": "skip",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "",
+  "week": 15,
+  "weeks": [
+   15
+  ]
+ },
+ {
+  "id": "eyes-of-wakanda",
+  "title": "Eyes of Wakanda",
+  "type": "serija",
+  "year": 2025,
+  "phase": 5,
+  "releaseOrder": 56,
+  "chronoOrder": 56,
+  "episodes": 4,
+  "runtime": 100,
+  "priority": "skip",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Animirano, istorija Wakande.",
+  "week": 15,
+  "weeks": [
+   15,
+   16
+  ]
+ },
+ {
+  "id": "fantastic-four-first-steps",
+  "title": "The Fantastic Four: First Steps",
+  "type": "film",
+  "year": 2025,
+  "phase": 6,
+  "releaseOrder": 57,
+  "chronoOrder": 57,
+  "runtime": 130,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "OBAVEZNO - Fantasticna cetvorka je centar Doomsdaya.",
+  "week": 16,
+  "weeks": [
+   16
+  ]
+ },
+ {
+  "id": "marvel-zombies",
+  "title": "Marvel Zombies",
+  "type": "serija",
+  "year": 2025,
+  "phase": 6,
+  "releaseOrder": 58,
+  "chronoOrder": 58,
+  "episodes": 4,
+  "runtime": 130,
+  "priority": "skip",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Animirano, alternativna linija. Proveri datum izlaska.",
+  "week": 16,
+  "weeks": [
+   16
+  ]
+ },
+ {
+  "id": "wonder-man",
+  "title": "Wonder Man",
+  "type": "serija",
+  "year": 2026,
+  "phase": 6,
+  "releaseOrder": 59,
+  "chronoOrder": 59,
+  "episodes": 8,
+  "runtime": 260,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Trevor Slattery se vraca; MCU Holivud.",
+  "week": 16,
+  "weeks": [
+   16
+  ]
+ },
+ {
+  "id": "visionquest",
+  "title": "VisionQuest",
+  "type": "serija",
+  "year": 2026,
+  "phase": 6,
+  "releaseOrder": 60,
+  "chronoOrder": 60,
+  "episodes": 8,
+  "runtime": 380,
+  "priority": "must",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Vision se vraca - gledaj posle WandaVision i Agathe.",
+  "week": 16,
+  "weeks": [
+   16,
+   17
+  ]
+ },
+ {
+  "id": "daredevil-born-again-s2",
+  "title": "Daredevil: Born Again (Sezona 2)",
+  "type": "serija",
+  "year": 2026,
+  "phase": 6,
+  "releaseOrder": 61,
+  "chronoOrder": 61,
+  "episodes": 9,
+  "runtime": 420,
+  "priority": "good",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "",
+  "week": 17,
+  "weeks": [
+   17
+  ]
+ },
+ {
+  "id": "spider-man-brand-new-day",
+  "title": "Spider-Man: Brand New Day",
+  "type": "film",
+  "year": 2026,
+  "phase": 6,
+  "releaseOrder": 62,
+  "chronoOrder": 62,
+  "runtime": 140,
+  "priority": "must",
+  "platform": "check",
+  "link": "",
+  "poster": "",
+  "note": "Izasao 31.7.2026 - u bioskopu, na striming stize kasnije.",
+  "week": 18
+ },
+ {
+  "id": "avengers-doomsday",
+  "title": "Avengers: Doomsday",
+  "type": "film",
+  "year": 2026,
+  "phase": 6,
+  "releaseOrder": 63,
+  "chronoOrder": 63,
+  "runtime": 160,
+  "priority": "must",
+  "platform": "bioskop",
+  "link": "",
+  "poster": "",
+  "note": "CILJ: 18.12.2026, bioskop.",
+  "week": 18
+ },
+ {
+  "id": "x-men-2000",
+  "title": "X-Men (2000)",
+  "type": "film",
+  "year": 2000,
+  "phase": 0,
+  "releaseOrder": 101,
+  "chronoOrder": 101,
+  "runtime": 104,
+  "priority": "bonus",
+  "platform": "check",
+  "link": "",
+  "poster": "",
+  "note": "Fox era - Patrick Stewart kao Xavier, vraca se u Doomsday.",
+  "week": 11,
+  "weeks": [
+   11
+  ]
+ },
+ {
+  "id": "x2",
+  "title": "X2: X-Men United",
+  "type": "film",
+  "year": 2003,
+  "phase": 0,
+  "releaseOrder": 102,
+  "chronoOrder": 102,
+  "runtime": 134,
+  "priority": "bonus",
+  "platform": "check",
+  "link": "",
+  "poster": "",
+  "note": "Fox era.",
+  "week": 11,
+  "weeks": [
+   11
+  ]
+ },
+ {
+  "id": "days-of-future-past",
+  "title": "X-Men: Days of Future Past",
+  "type": "film",
+  "year": 2014,
+  "phase": 0,
+  "releaseOrder": 103,
+  "chronoOrder": 103,
+  "runtime": 132,
+  "priority": "bonus",
+  "platform": "check",
+  "link": "",
+  "poster": "",
+  "note": "Najvazniji Fox X-Men film za Doomsday.",
+  "week": 11,
+  "weeks": [
+   11
+  ]
+ },
+ {
+  "id": "logan",
+  "title": "Logan",
+  "type": "film",
+  "year": 2017,
+  "phase": 0,
+  "releaseOrder": 104,
+  "chronoOrder": 104,
+  "runtime": 137,
+  "priority": "bonus",
+  "platform": "check",
+  "link": "",
+  "poster": "",
+  "note": "Vazno za Deadpool & Wolverine.",
+  "week": 12,
+  "weeks": [
+   12
+  ]
+ },
+ {
+  "id": "deadpool",
+  "title": "Deadpool",
+  "type": "film",
+  "year": 2016,
+  "phase": 0,
+  "releaseOrder": 105,
+  "chronoOrder": 105,
+  "runtime": 108,
+  "priority": "bonus",
+  "platform": "check",
+  "link": "",
+  "poster": "",
+  "note": "Gledaj pre Deadpool & Wolverine.",
+  "week": 12,
+  "weeks": [
+   12
+  ]
+ },
+ {
+  "id": "deadpool-2",
+  "title": "Deadpool 2",
+  "type": "film",
+  "year": 2018,
+  "phase": 0,
+  "releaseOrder": 106,
+  "chronoOrder": 106,
+  "runtime": 119,
+  "priority": "bonus",
+  "platform": "check",
+  "link": "",
+  "poster": "",
+  "note": "Gledaj pre Deadpool & Wolverine.",
+  "week": 12,
+  "weeks": [
+   12
+  ]
+ }
+]
