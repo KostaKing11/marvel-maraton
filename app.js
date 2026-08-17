@@ -225,6 +225,36 @@ window.MM = window.MM || {};
       '</div>';
   }
 
+  /** Jedna stavka u horizontalnoj traci (Kalendar). */
+  function railEntry(e, done) {
+    var i = e.item;
+    var sub = e.eps.length
+      ? (e.eps.length === 1 ? 'ep ' + e.eps[0] : 'ep ' + e.eps[0] + '-' + e.eps[e.eps.length - 1])
+      : e.minutes + ' min';
+    return '<div class="ritem' + (done ? ' is-done' : '') + '" data-flash="' + esc(e.keys[0]) + '">' +
+      '<div class="rart art" data-act="open" data-id="' + esc(i.id) + '">' +
+        artHTML(i) +
+        '<span class="rnum">#' + (ORD[i.id] || 0) + '</span>' +
+        chk(done, 'entry', 'data-keys="' + esc(e.keys.join(',')) + '"', e.keys[0]) +
+      '</div>' +
+      '<div class="rtitle">' + esc(i.title) + '</div>' +
+      '<div class="rmeta">' + sub + '</div>' +
+      '</div>';
+  }
+
+  /** Fiksno finale u 18. nedelji. */
+  function railPinned(i, done) {
+    return '<div class="ritem' + (done ? ' is-done' : '') + '" data-flash="' + esc(i.id) + '">' +
+      '<div class="rart art" data-act="open" data-id="' + esc(i.id) + '">' +
+        artHTML(i) +
+        '<span class="rnum">#' + (ORD[i.id] || 0) + '</span>' +
+        chk(done, 'item', 'data-id="' + esc(i.id) + '"', i.id) +
+      '</div>' +
+      '<div class="rtitle">★ ' + esc(i.title) + '</div>' +
+      '<div class="rmeta">fiksno</div>' +
+      '</div>';
+  }
+
   function progressBar(done, total, cls) {
     var pct = total ? Math.min(100, Math.round(done / total * 100)) : 0;
     return '<div class="bar ' + (cls || '') + '"><i style="width:' + pct + '%"></i></div>';
@@ -246,7 +276,7 @@ window.MM = window.MM || {};
 
     out += '<div class="deck-top">' +
       '<span class="dpill"><b>' + dd + '</b> dana do Doomsdaya</span>' +
-      '<span class="dcount">' + watchedTitles + ' / ' + ITEMS.length + '</span>' +
+      '<span class="dcount">' + watchedTitles + '<i>/' + ITEMS.length + '</i></span>' +
       '</div>';
 
     if (!deck.length) {
@@ -518,23 +548,15 @@ window.MM = window.MM || {};
       }
 
       if (w.past && !w.doneEntries.length) {
-        out += '<p class="empty">Prošlo. Ništa se ne planira unazad.</p>';
+        out += '<p class="empty">Prošlo.</p>';
       } else if (!w.planned.length && !w.doneEntries.length && !w.pinned.length) {
         out += '<p class="empty">Slobodna nedelja.</p>';
       } else {
-        out += '<div class="rows">';
-        w.planned.forEach(function (e) { out += rowEntry(e, false); });
-        w.doneEntries.forEach(function (e) { out += rowEntry(e, true); });
+        out += '<div class="rail">';
+        w.planned.forEach(function (e) { out += railEntry(e, false); });
+        w.doneEntries.forEach(function (e) { out += railEntry(e, true); });
         w.pinned.forEach(function (i) {
-          var done = P.isFullyWatched(i, s);
-          out += '<div class="row pinned' + (done ? ' is-done' : '') + '">' +
-            thumbHTML(i) +
-            '<div class="row-main" data-act="open" data-id="' + esc(i.id) + '">' +
-              '<div class="row-title">★ ' + esc(i.title) + '</div>' +
-              '<div class="row-meta">fiksno · ' + i.runtime + ' min</div>' +
-            '</div>' +
-            chk(done, 'item', 'data-id="' + esc(i.id) + '"', i.id) +
-            '</div>';
+          out += railPinned(i, P.isFullyWatched(i, s));
         });
         out += '</div>';
       }

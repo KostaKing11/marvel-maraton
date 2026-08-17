@@ -84,11 +84,54 @@ img{display:block}
 #view{max-width:900px;margin:0 auto;padding:0 14px 24px}
 #view[data-tab="danas"]{padding-top:0}
 #view[data-tab="kalendar"],#view[data-tab="biblioteka"],#view[data-tab="ja"]{padding-top:8px}
+/* U "Ja" sekcije razdvaja tanka linija umesto kutija. */
+#view[data-tab="ja"] .card + .card{border-top:1px solid var(--line);padding-top:22px}
+#view[data-tab="ja"] .card.warn{border-top:1px solid rgba(242,193,78,.35)}
+/* Sekcije su ravne: bez kutije, bez okvira, bez senke - samo naslov i
+   sadrzaj na crnom. Kutija ostaje samo tamo gde stvarno nosi znacenje
+   (upozorenje, provera tempa, modal). */
 .card{
-  background:var(--card);border:1px solid var(--line);border-radius:var(--r);
-  padding:16px;margin-bottom:14px;box-shadow:var(--shadow);
+  background:transparent;border:0;border-radius:0;
+  padding:0;margin:0 0 28px;box-shadow:none;
 }
+.card.boxed,.card.warn{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:16px;box-shadow:var(--shadow);
+}
+.card>h2{margin-bottom:10px}
 .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
+
+/* ---------- horizontalne trake postera ---------- */
+.rail{
+  display:flex;gap:10px;overflow-x:auto;
+  margin:0 -14px;padding:2px 14px 4px;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  scroll-snap-type:x proximity;
+}
+.rail::-webkit-scrollbar{display:none}
+.ritem{flex:none;width:106px;scroll-snap-align:start}
+.rart{
+  position:relative;aspect-ratio:2/3;border-radius:9px;overflow:hidden;
+  background:var(--card-2);cursor:pointer;
+}
+.rart img{width:100%;height:100%;object-fit:cover}
+.rart .fallback span{font-size:11px;line-height:1.15}
+.ritem.is-done .rart img,.ritem.is-done .rart .fallback{opacity:.35}
+.ritem.is-done .rtitle{color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(138,138,146,.5)}
+.rart .chk{
+  position:absolute;top:5px;right:5px;width:25px;height:25px;
+  background:rgba(0,0,0,.55);border-color:rgba(255,255,255,.85);backdrop-filter:blur(4px);
+}
+.rart .chk svg{width:13px;height:13px}
+.rnum{
+  position:absolute;top:5px;left:5px;font-size:10.5px;font-weight:800;
+  background:rgba(0,0,0,.7);color:#fff;padding:2px 5px;border-radius:5px;
+}
+.rtitle{
+  font-size:12.5px;font-weight:600;line-height:1.25;margin-top:6px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.rmeta{font-size:11.5px;color:var(--muted);margin-top:1px}
 .sub{color:var(--muted);font-size:13px;margin-top:2px}
 .note{color:var(--muted);font-size:14px;margin:10px 0 0}
 .note.small{font-size:13px}
@@ -116,13 +159,11 @@ img{display:block}
 
 /* ---------- ŠPIL (Danas) ---------- */
 .deck{margin:6px 0 14px}
-.deck-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
-.dpill{
-  background:rgba(230,36,41,.14);border:1px solid rgba(230,36,41,.35);
-  color:#ff8a8d;border-radius:999px;padding:6px 13px;font-size:13px;font-weight:600;
-}
-.dpill b{color:#fff;font-size:15px;font-weight:900}
-.dcount{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
+.deck-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:2px 0 12px}
+.dpill{color:var(--muted);font-size:13.5px;letter-spacing:.2px}
+.dpill b{color:var(--accent);font-size:19px;font-weight:900;letter-spacing:-.5px}
+.dcount{color:var(--text);font-size:17px;font-weight:800;font-variant-numeric:tabular-nums}
+.dcount i{color:var(--muted);font-style:normal;font-size:13.5px;font-weight:500}
 
 .swipe-area{position:relative;touch-action:pan-y}
 .dcard{
@@ -325,17 +366,19 @@ img{display:block}
 .card.warn{border-color:rgba(242,193,78,.35);background:linear-gradient(180deg,#211d13,var(--card))}
 
 /* ---------- kalendar ---------- */
-.week-head{display:flex;align-items:center;gap:10px}
+.week{padding-top:18px;border-top:1px solid var(--line);margin-bottom:22px}
+.week:first-of-type{border-top:0;padding-top:4px}
+.week-head{display:flex;align-items:center;gap:9px;margin-bottom:10px}
 .week-id{display:flex;flex-direction:column;line-height:1.2}
-.week-id b{font-size:17px}
+.week-id b{font-size:18px;font-weight:800}
 .week-id span{font-size:13px;color:var(--muted)}
 .week-tags{flex:1;display:flex;gap:6px;flex-wrap:wrap}
 .week-hours{font-size:13px;color:var(--muted)}
 .tag{font-size:11.5px;letter-spacing:.5px;padding:3px 8px;border-radius:999px;background:var(--card-2);color:var(--muted)}
 .tag.finale{background:rgba(230,36,41,.16);color:#ff6b6f}
 .tag.now{background:rgba(61,220,132,.14);color:var(--green)}
-.week.is-current{border-color:rgba(230,36,41,.5);box-shadow:0 0 0 1px rgba(230,36,41,.25),var(--shadow)}
-.week.is-past{opacity:.45}
+.week.is-current .week-id b{color:var(--accent)}
+.week.is-past{opacity:.4}
 .cap-note{font-size:13px;color:var(--yellow);margin-top:8px}
 .cap-val{text-align:center;font-size:15px;color:var(--muted);margin-top:14px}
 .cap-val b{font-size:38px;color:var(--text);font-weight:800}
