@@ -15,7 +15,7 @@ window.MM = window.MM || {};
   var modalItemId = null;       // koji naslov je trenutno otvoren u modalu
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
-  var VERSION = '0.21.1';       // pise se u "Ja"; podize se uz svaki deploy
+  var VERSION = '0.21.2';       // pise se u "Ja"; podize se uz svaki deploy
   var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
   var countdownTimer = null;
   var PACE_AFTER_MS = 7 * 24 * 3600 * 1000;   // provera tempa jednom nedeljno
@@ -290,6 +290,26 @@ window.MM = window.MM || {};
     out += '</section>';
 
     return out;
+  }
+
+  /**
+   * Pospremi notifikacije koje je APP ranije prikazao: prazne (bez
+   * naslova i teksta) i one starije od dan dana. getNotifications()
+   * vidi samo nase - ako neka stavka ostane u traci posle ovoga, znaci
+   * da je Chrome-ova, ne nasa, i iz koda joj ne mozemo nista.
+   */
+  function cleanupNotifications() {
+    if (!navigator.serviceWorker) return;
+    navigator.serviceWorker.ready.then(function (reg) {
+      if (!reg.getNotifications) return;
+      return reg.getNotifications().then(function (list) {
+        list.forEach(function (n) {
+          var prazna = !n.title && !n.body;
+          var stara = n.timestamp && (Date.now() - n.timestamp > 24 * 3600 * 1000);
+          if (prazna || stara) n.close();
+        });
+      });
+    }).catch(function () {});
   }
 
   /* ---- upozorenje da si stao ---- */
@@ -1510,6 +1530,7 @@ window.MM = window.MM || {};
     if (!d || !d.entries || !d.entries.length) return;
 
     var body = d.entries.map(function (e) { return e.label; }).join(' + ');
+    if (!body) return;                       // bez sadrzaja nema ni notifikacije
     localStorage.setItem('mm-last-notif', today);
 
     var opts = { body: hStr(d.minutes) + ' danas', icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: 'mm-daily' };
@@ -1595,6 +1616,7 @@ window.MM = window.MM || {};
         setTimeout(function () { startPosterFetch(false); }, 1200);
         setTimeout(function () { loadReviews(true); }, 2000);
         setTimeout(function () {
+          cleanupNotifications();
           var h = idleHours();
           if (h >= 24) fireWarning(h);
           writeWarnMeta();
