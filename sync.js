@@ -17,6 +17,7 @@ window.MM = window.MM || {};
 
   var LS_STATE = 'mm-state-v1';
   var LS_CODE  = 'mm-sync-code';
+  var LS_USER  = 'mm-username';
 
   function defaultState() {
     return {
@@ -265,6 +266,28 @@ window.MM = window.MM || {};
     statusNote: function () { return statusNote; },
 
     code: function () { return localStorage.getItem(LS_CODE) || ''; },
+    username: function () { return localStorage.getItem(LS_USER) || ''; },
+
+    /**
+     * Nalog = korisnicko ime + lozinka spojeni u jedan kljuc, koji je
+     * ujedno i id dokumenta u Firestore-u. Dve tajne umesto jedne.
+     * Ime se koristi i kao potpis uz ocene.
+     */
+    signIn: function (username, password) {
+      var u = String(username || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+      var p = String(password || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+      if (u.length < 3 || p.length < 4) return null;
+      var key = u + '-' + p;
+      if (key.length > 64) key = key.slice(0, 64);
+      localStorage.setItem(LS_USER, u);
+      state.displayName = username.trim().slice(0, 24);
+      return key;
+    },
+
+    signOut: function () {
+      localStorage.removeItem(LS_USER);
+      Store.disconnect();
+    },
     hasSeenOnboarding: function () { return localStorage.getItem('mm-onboarded') === '1'; },
     markOnboarded: function () { localStorage.setItem('mm-onboarded', '1'); },
 

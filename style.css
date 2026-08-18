@@ -684,3 +684,33 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px}
 .check span b{display:block;font-weight:700}
 .check span em{display:block;font-style:normal;font-size:12.5px;color:var(--muted);margin-top:1px}
 .check i{font-style:normal;font-size:12.5px;color:var(--muted);flex:none}
+
+/* ---------- odbrojavanje dan:sat:min:sek ---------- */
+.cdown{display:flex;align-items:flex-end;gap:5px}
+.cu{display:flex;flex-direction:column;align-items:center;line-height:1}
+.cu b{
+  font-size:23px;font-weight:900;color:var(--accent);letter-spacing:-.5px;
+  font-variant-numeric:tabular-nums;
+}
+.cu i{font-style:normal;font-size:9.5px;color:var(--muted);letter-spacing:.6px;margin-top:3px;text-transform:uppercase}
+.csep{font-size:19px;font-weight:900;color:#4a2224;line-height:1;padding-bottom:13px}
+
+/* ---------- prijava ---------- */
+.sheet.login{padding:26px 20px calc(30px + env(safe-area-inset-bottom,0px))}
+.login-logo{display:flex;align-items:center;gap:9px;justify-content:center;margin-bottom:18px}
+.sheet.login h2{text-align:center;font-size:23px}
+.sheet.login .note{text-align:center}
+
+/* ---------- nalog u "Ja" ---------- */
+.acct{display:flex;align-items:center;gap:12px;margin:10px 0 4px}
+.acct-av{
+  width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;
+  display:grid;place-items:center;font-weight:900;font-size:19px;flex:none;
+}
+.acct b{display:block;font-size:17px}
+.acct em{font-style:normal;font-size:13px;color:var(--muted)}
+
+/* ---------- detalji naslova ---------- */
+.sheet-num{font-size:13px;font-weight:900;color:var(--accent);letter-spacing:1px;margin-bottom:2px}
+.sheet-meta .av{color:#f5c341}
+.sheet-desc{font-size:14.5px;color:#c2c2ca;line-height:1.5;margin:18px 0 0}

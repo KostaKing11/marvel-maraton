@@ -16,6 +16,7 @@ window.MM = window.MM || {};
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
   var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
+  var countdownTimer = null;
   var PACE_AFTER_MS = 7 * 24 * 3600 * 1000;   // provera tempa jednom nedeljno
 
   var lib = {
@@ -184,7 +185,7 @@ window.MM = window.MM || {};
 
     window.scrollTo(0, y);
 
-    if (tab === 'danas') bindDeck();
+    if (tab === 'danas') { bindDeck(); if ($('#cdown')) startCountdown(); }
 
     if (flashKey) {
       $$('[data-flash="' + CSS.escape(flashKey) + '"]').forEach(function (n) {
@@ -265,7 +266,7 @@ window.MM = window.MM || {};
     var out = '<section class="deck">';
 
     out += '<div class="deck-top">' +
-      '<span class="dpill"><b>' + dd + '</b> dana do Doomsdaya</span>' +
+      '<div class="cdown" id="cdown">' + countdownHTML() + '</div>' +
       '<span class="dcount">' + watchedTitles + '<i>/' + ITEMS.length + '</i></span>' +
       '</div>';
 
@@ -281,6 +282,44 @@ window.MM = window.MM || {};
     out += '</section>';
 
     return out;
+  }
+
+  /* ---- odbrojavanje ---- */
+
+  /** Dani : sati : minuti : sekunde do 18.12.2026. */
+  function countdownParts() {
+    var diff = Math.max(0, P.DOOMSDAY.getTime() - Date.now());
+    var sec = Math.floor(diff / 1000);
+    return {
+      d: Math.floor(sec / 86400),
+      h: Math.floor(sec / 3600) % 24,
+      m: Math.floor(sec / 60) % 60,
+      s: sec % 60
+    };
+  }
+
+  function countdownHTML() {
+    var c = countdownParts();
+    function unit(v, lbl, pad) {
+      return '<span class="cu"><b>' + (pad ? String(v).padStart(2, '0') : v) + '</b><i>' + lbl + '</i></span>';
+    }
+    return unit(c.d, 'dana', false) + '<span class="csep">:</span>' +
+      unit(c.h, 'sati', true) + '<span class="csep">:</span>' +
+      unit(c.m, 'min', true) + '<span class="csep">:</span>' +
+      unit(c.s, 'sek', true);
+  }
+
+  /**
+   * Kuca svake sekunde, ali menja samo taj jedan element - ceo ekran
+   * se ne prekrtava, pa prevlacenje kartice ostaje glatko.
+   */
+  function startCountdown() {
+    if (countdownTimer) clearInterval(countdownTimer);
+    countdownTimer = setInterval(function () {
+      var el = document.getElementById('cdown');
+      if (!el) { clearInterval(countdownTimer); countdownTimer = null; return; }
+      el.innerHTML = countdownHTML();
+    }, 1000);
   }
 
   /* ---- kartica sa filmom ---- */
@@ -742,14 +781,6 @@ window.MM = window.MM || {};
         (MM.Posters.isRunning() ? 'Radi… <span id="posterProgress"></span>' : 'Povuci postere' + (miss ? ' (' + miss + ' fali)' : ' ponovo')) +
       '</button></section>';
 
-    /* --- podesavanja --- */
-    out += '<section class="card"><h2>Podešavanja</h2>' +
-      '<label class="slider-row"><span>Sati nedeljno</span><b id="capVal">' + s.defaultCapacity + 'h</b></label>' +
-      '<input id="capSlider" type="range" min="2" max="25" step="1" value="' + s.defaultCapacity + '">' +
-      '<label class="field"><span>Ime uz tvoje ocene</span>' +
-      '<input id="dispName" type="text" maxlength="24" placeholder="npr. Kosta" value="' + esc(s.displayName || '') + '"></label>' +
-      '</section>';
-
     /* --- notifikacije --- */
     var perm = ('Notification' in window) ? Notification.permission : 'unsupported';
     out += '<section class="card"><h2>Notifikacije</h2>' +
@@ -762,16 +793,18 @@ window.MM = window.MM || {};
           : '<button class="btn ghost" data-act="ask-notif">Dozvoli notifikacije u aplikaciji</button>')) +
       '</section>';
 
-    /* --- sync --- */
-    var code = Store.code();
-    out += '<section class="card"><h2>Sinhronizacija</h2>' +
-      '<label class="field"><span>Kod</span>' +
-      '<input id="syncCode" type="text" placeholder="npr. kosta-marvel-7f3a" value="' + esc(code) + '"></label>' +
-      '<p class="note small">Isti kod na telefonu i laptopu. Status: <b id="syncStatusTxt">' + esc(statusText()) + '</b></p>' +
-      '<div class="btn-row">' +
-        '<button class="btn" data-act="save-code">Sačuvaj i poveži</button>' +
-        '<button class="btn ghost" data-act="sync-now">Sinhronizuj</button>' +
-      '</div>' +
+    /* --- nalog --- */
+    var uname = Store.username();
+    out += '<section class="card"><h2>Nalog</h2>' +
+      (uname
+        ? '<div class="acct"><span class="acct-av">' + esc(uname.slice(0, 1).toUpperCase()) + '</span>' +
+          '<div><b>' + esc(uname) + '</b><em id="syncStatusTxt">' + esc(statusText()) + '</em></div></div>' +
+          '<div class="btn-row">' +
+            '<button class="btn ghost" data-act="sync-now">Sinhronizuj</button>' +
+            '<button class="btn ghost" data-act="sign-out">Odjavi se</button>' +
+          '</div>'
+        : '<p class="note">Nisi prijavljen — lista postoji samo na ovom uređaju.</p>' +
+          '<button class="btn" data-act="go-login">Prijavi se</button>') +
       '<div class="btn-row">' +
         '<button class="btn ghost" data-act="export-json">Export JSON</button>' +
         '<button class="btn ghost" data-act="import-json">Import JSON</button>' +
@@ -798,9 +831,8 @@ window.MM = window.MM || {};
     var s = state();
     var full = P.isFullyWatched(i, s);
     var seen = P.watchedEpisodes(i, s);
-    var pf = platformOf(i);
-    var link = (s.links && s.links[id]) || '';
-    var myPoster = (s.myPosters && s.myPosters[id]) || '';
+    var av = MM.Reviews.avg(id);
+    var revs = MM.Reviews.forItem(id);
 
     var html = '<div class="sheet">' +
       '<div class="sheet-hero art">' +
@@ -808,49 +840,24 @@ window.MM = window.MM || {};
         '<div class="sheet-fade"></div>' +
         '<button class="close" data-act="close" aria-label="Zatvori">✕</button>' +
         '<div class="sheet-head">' +
+          '<div class="sheet-num">#' + (ORD[i.id] || 0) + '</div>' +
           '<h2>' + esc(i.title) + '</h2>' +
-          '<div class="sheet-meta">' +
-            '<span class="b num">#' + (ORD[i.id] || 0) + '</span>' +
-            '<span class="b tier ' + i.priority + '">' + TIER_LABEL[i.priority] + '</span>' +
-            '<span class="b type ' + i.type + '">' + TYPE_LABEL[i.type] + '</span>' +
-            '<span>' + i.year + '</span><span>' + (PHASE_NAME[i.phase] || '') + '</span>' +
-            '<span>' + i.runtime + ' min' + (i.episodes ? ' · ' + i.episodes + ' ep' : '') + '</span>' +
+          '<div class="sheet-meta">' + i.year + ' · ' + TYPE_LABEL[i.type] + ' · ' + i.runtime + ' min' +
+            (i.episodes ? ' · ' + i.episodes + ' ep' : '') +
+            (av ? ' · <b class="av">★ ' + av.toFixed(1) + '</b>' : '') +
           '</div>' +
         '</div>' +
       '</div>' +
-      '<div class="sheet-body">' +
-      (i.note ? '<p class="note">' + esc(i.note) + '</p>' : '');
+      '<div class="sheet-body">';
 
-    if (i.type === 'serija' && i.episodes) {
-      html += '<div class="ep-head"><h3>Epizode</h3><button class="btn small ghost" data-act="item" data-id="' + esc(id) + '">' +
-        (full ? 'Skini sve' : 'Označi sve') + '</button></div><div class="eps">';
-      for (var e = 1; e <= i.episodes; e++) {
-        var on = seen.indexOf(e) !== -1;
-        html += '<button type="button" class="ep' + (on ? ' on' : '') + '" data-act="ep" data-id="' + esc(id) + '" data-ep="' + e + '">' + e + '</button>';
-      }
-      html += '</div>';
-    } else {
-      html += '<button class="btn' + (full ? ' ghost' : '') + '" data-act="item" data-id="' + esc(id) + '">' +
-        (full ? 'Skini oznaku „odgledano"' : 'Označi kao odgledano') + '</button>';
-    }
+    // 1) oznaci kao odgledano
+    html += '<button class="btn' + (full ? ' ghost' : '') + '" data-act="item" data-id="' + esc(id) + '">' +
+      (full ? '✓ Odgledano — skini oznaku' : 'Označi kao odgledano') + '</button>';
 
-    html += '<label class="field"><span>Moj link</span>' +
-      '<div class="field-row"><input id="myLink" type="url" placeholder="https://…" value="' + esc(link) + '">' +
-      '<button class="btn small" data-act="open-link" data-id="' + esc(id) + '">Otvori</button></div></label>';
-
-    html += '<label class="field"><span>Platforma (tvoj podatak, ne naš)</span><select id="pfSel" data-id="' + esc(id) + '">';
-    [['netflix', 'Netflix'], ['hbo', 'HBO Max'], ['disney', 'Disney+'], ['other', 'Ostalo'], ['link', 'Imam link'], ['check', 'Nisam proverio'], ['bioskop', 'Bioskop']].forEach(function (o) {
-      html += '<option value="' + o[0] + '"' + (pf === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
-    });
-    html += '</select></label>';
-
-    // Ocene zajednice
-    var av = MM.Reviews.avg(id);
-    var revs = MM.Reviews.forItem(id);
-    html += '<div class="rev-block"><div class="rev-head">' +
-      '<h3>Ocene</h3>' +
-      (av ? stars(Math.round(av)) + '<b>' + av.toFixed(1) + '</b><span>(' + revs.length + ')</span>' : '<span class="note small">još nema</span>') +
-      '</div>' +
+    // 2) ocene
+    html += '<div class="rev-block"><div class="rev-head"><h3>Ocene</h3>' +
+      (av ? stars(Math.round(av)) + '<b>' + av.toFixed(1) + '</b><span>(' + revs.length + ')</span>'
+          : '<span class="note small">još nema</span>') + '</div>' +
       '<button class="btn small ghost" data-act="rate-open" data-id="' + esc(id) + '">' +
       (MM.Reviews.mine(id) ? 'Izmeni svoju ocenu' : 'Oceni') + '</button>';
     revs.slice(0, 5).forEach(function (r) {
@@ -860,15 +867,19 @@ window.MM = window.MM || {};
     });
     html += '</div>';
 
-    html += '<button class="btn ghost" data-act="justwatch" data-id="' + esc(id) + '">Gde gledati u Srbiji?</button>' +
-      '<p class="note small">Otvara JustWatch pretragu. Ako ti ta adresa ne radi, <a href="https://www.justwatch.com/rs/search?q=' +
-      encodeURIComponent(i.title) + '" target="_blank" rel="noopener">probaj ovu</a>.</p>';
+    // 3) opis
+    if (i.note) html += '<p class="sheet-desc">' + esc(i.note) + '</p>';
 
-    // Poster: automatski se povlaci sa interneta, ali sme da se pregazi rucno.
-    html += '<label class="field"><span>Poster (URL) — prazno = automatski</span>' +
-      '<div class="field-row"><input id="myPoster" type="url" placeholder="https://…/poster.jpg" value="' + esc(myPoster) + '">' +
-      '<button class="btn small ghost" data-act="reposter" data-id="' + esc(id) + '">Nađi</button></div></label>' +
-      '<p class="note small">„Nađi" traži poster na internetu (TVMaze za serije, Wikipedia za filmove).</p>';
+    // Epizode - jedino sto serijama treba pored ovoga.
+    if (i.type === 'serija' && i.episodes) {
+      html += '<div class="ep-head"><h3>Epizode</h3></div><div class="eps">';
+      for (var e = 1; e <= i.episodes; e++) {
+        var on = seen.indexOf(e) !== -1;
+        html += '<button type="button" class="ep' + (on ? ' on' : '') + '" data-act="ep" data-id="' +
+          esc(id) + '" data-ep="' + e + '">' + e + '</button>';
+      }
+      html += '</div>';
+    }
 
     html += '</div></div>';
     showModal(html);
@@ -954,18 +965,21 @@ window.MM = window.MM || {};
 
   function showOnboarding() {
     var o = $('#onboarding');
-    var suggested = 'maraton-' + Math.random().toString(16).slice(2, 6);
-    o.innerHTML = '<div class="sheet">' +
-      '<h2>Marvel Maraton</h2>' +
-      '<p class="note">Ceo MCU do <b>18.12.2026</b>. Plan se sam preračunava — ništa ne moraš da nameštaš ručno.</p>' +
-      '<label class="field"><span>Kod za sinhronizaciju (opciono)</span>' +
-      '<input id="obCode" type="text" placeholder="' + suggested + '"></label>' +
-      '<p class="note small">Isti kod na telefonu i laptopu = ista lista. Ostavi prazno ako ti treba samo na ovom uređaju — sve radi i bez toga.</p>' +
-      '<div class="btn-row"><button class="btn" data-act="ob-save">Kreni</button>' +
-      '<button class="btn ghost" data-act="ob-skip">Samo lokalno</button></div></div>';
+    o.innerHTML = '<div class="sheet login">' +
+      '<div class="login-logo"><span class="mlogo">MARVEL</span><span class="brand-sub">MARATON</span></div>' +
+      '<h2>Napravi nalog</h2>' +
+      '<p class="note small">Isto ime i lozinka na svakom uređaju = ista lista. Ako nalog ne postoji, napraviće se sam.</p>' +
+      '<label class="field"><span>Korisničko ime</span>' +
+      '<input id="obUser" type="text" autocomplete="username" maxlength="24" placeholder="kosta"></label>' +
+      '<label class="field"><span>Lozinka</span>' +
+      '<input id="obPass" type="password" autocomplete="current-password" maxlength="40" placeholder="min. 4 znaka"></label>' +
+      '<p class="note small">Ime stoji uz tvoje ocene, pa ga vide drugi. Lozinka se nigde ne prikazuje.</p>' +
+      '<div class="btn-row"><button class="btn" data-act="ob-login">Uđi</button>' +
+      '<button class="btn ghost" data-act="ob-skip">Samo na ovom telefonu</button></div></div>';
     o.classList.remove('hidden');
     document.body.classList.add('locked');
   }
+
   function hideOnboarding() {
     $('#onboarding').classList.add('hidden');
     document.body.classList.remove('locked');
@@ -1047,12 +1061,12 @@ window.MM = window.MM || {};
       Notification.requestPermission().then(function () { render(); maybeDailyNotification(); });
     },
 
-    'save-code': function () {
-      var v = normalizeCode($('#syncCode').value);
-      if (!v) { toast('Kod: 8-64 znaka, mala slova, cifre i crtice.'); return; }
-      Store.connect(v).then(function () { render(); });
-      toast('Kod sačuvan: ' + v);
+    'sign-out': function () {
+      confirmDialog('Odjava', 'Lista ostaje na ovom uređaju, ali se više ne sinhronizuje dok se ponovo ne prijaviš.', 'sign-out-yes', 'Odjavi me');
     },
+    'sign-out-yes': function () { Store.signOut(); closeModal(); render(); toast('Odjavljen.'); },
+    'go-login': function () { showOnboarding(); },
+
     'sync-now': function () { Store.syncNow().then(function () { render(); toast('Sinhronizovano.'); }); },
     'export-json': function () {
       var blob = new Blob([Store.exportJSON()], { type: 'application/json' });
@@ -1084,13 +1098,6 @@ window.MM = window.MM || {};
 
     'go-sync': function () { tab = 'ja'; render(); window.scrollTo(0, document.body.scrollHeight); },
 
-    'open-link': function (n) {
-      var v = ($('#myLink').value || '').trim();
-      var id = n.dataset.id;
-      Store.mutate(function (s) { if (v) s.links[id] = v; else delete s.links[id]; });
-      if (v) window.open(v, '_blank', 'noopener');
-      else toast('Nalepi link pa probaj ponovo.');
-    },
     'star': function (n) {
       var v = parseInt(n.dataset.n, 10);
       $('#modal').dataset.stars = v;
@@ -1115,87 +1122,21 @@ window.MM = window.MM || {};
       Store.mutate(function (s) { s.deckSince = 0; s.lastPaceAt = Date.now(); });
     },
 
-    'play': function (n) {
-      var v = (state().links || {})[n.dataset.id];
-      if (v) window.open(v, '_blank', 'noopener');
-    },
-
-    'reposter': function (n) {
-      var id = n.dataset.id, item = BY_ID[id];
-      n.textContent = '…';
-      MM.Posters.findOne(item).then(function (url) {
-        n.textContent = 'Nađi';
-        if (!url) { toast('Nije nađen poster za „' + item.title + '".'); return; }
-        Store.mutate(function (s) { s.posters[id] = url; delete s.myPosters[id]; });
-        var inp = $('#myPoster'); if (inp) inp.value = '';
-        var bg = $('#modal .sheet-bg'); if (bg) bg.innerHTML = artHTML(item);
-        toast('Poster povučen.');
-      });
-    },
-
     'fetch-posters': function () {
       if (MM.Posters.isRunning()) { toast('Već radi…'); return; }
       startPosterFetch(true);
     },
 
-    'justwatch': function (n) {
-      var i = BY_ID[n.dataset.id];
-      window.open('https://www.justwatch.com/rs/pretraga?q=' + encodeURIComponent(i.title), '_blank', 'noopener');
-    },
-
-    'ob-save': function () {
-      var raw = ($('#obCode').value || '').trim();
-      if (raw) {
-        var v = normalizeCode(raw);
-        if (!v) { toast('Kod: 8-64 znaka, mala slova, cifre i crtice.'); return; }
-        Store.connect(v).then(render);
-        toast('Kod: ' + v);
-      }
+    'ob-login': function () {
+      var u = $('#obUser').value, p = $('#obPass').value;
+      var key = Store.signIn(u, p);
+      if (!key) { toast('Ime bar 3 znaka, lozinka bar 4.'); return; }
       hideOnboarding();
+      Store.connect(key).then(render);
+      toast('Zdravo, ' + u.trim() + '.');
     },
     'ob-skip': function () { hideOnboarding(); }
   };
-
-  /**
-   * Kod za sync mora da prezivi Firestore rules iz README-a:
-   * mala slova/cifre/crtice, 8-64 znaka, ne pocinje crticom.
-   * Vraca ocisceni kod ili '' ako ne valja.
-   */
-  /**
-   * Povlacenje postera u pozadini. Radi tiho na startu (samo za one kojima
-   * poster fali), a preko dugmeta u "Ja" i za one koji ranije nisu nadjeni.
-   */
-  function startPosterFetch(includeFailed) {
-    if (MM.Posters.isRunning()) return;
-    if (!navigator.onLine) return;
-    if (!MM.Posters.missing(ITEMS, state(), includeFailed).length) {
-      if (includeFailed) toast('Svi posteri su već tu.');
-      return;
-    }
-    MM.Posters.fetchMissing(ITEMS, state(), Store, function (done, total, finished) {
-      posterJob = finished ? null : { done: done, total: total };
-      var el = $('#posterProgress');
-      if (el) el.textContent = finished ? 'gotovo' : (done + ' / ' + total);
-      if (finished) { render(); toast('Posteri povučeni.'); }
-    }, includeFailed);
-  }
-
-  function normalizeCode(raw) {
-    var v = String(raw || '').trim().toLowerCase()
-      .replace(/[^a-z0-9-]+/g, '-')
-      .replace(/^-+/, '');
-    return (v.length >= 8 && v.length <= 64) ? v : '';
-  }
-
-  /**
-   * Odakle dolazi klik? Kvacica unutar reda nedeljnog plana broji se u nedelju;
-   * sve iz Biblioteke (i modala otvorenog iz nje) samo skida naslov sa spiska.
-   */
-  function sourceOf(node) {
-    if (node.closest('.row')) return 'plan';
-    if (node.closest('#modal')) return modalSource || 'library';
-    return 'library';
-  }
 
   function bulkIds(ids, on) {
     var keys = [];
@@ -1253,15 +1194,8 @@ window.MM = window.MM || {};
         var q = $('#q');
         if (q) { q.focus(); try { q.setSelectionRange(pos, pos); } catch (e) {} }
       }
-      if (ev.target.id === 'capSlider') {
-        $('#capVal').textContent = ev.target.value + 'h';
-      }
     });
     document.addEventListener('change', function (ev) {
-      if (ev.target.id === 'capSlider') {
-        var v = parseInt(ev.target.value, 10);
-        Store.mutate(function (s) { s.defaultCapacity = v; });
-      }
       if (ev.target.dataset && ev.target.dataset.act === 'plan') {
         var t = ev.target.dataset.val, on = ev.target.checked;
         Store.mutate(function (s) {
@@ -1269,39 +1203,7 @@ window.MM = window.MM || {};
           if (!on) s.plans = s.plans.filter(function (p) { return p !== t; });
         });
       }
-      if (ev.target.id === 'dispName') {
-        var nm = ev.target.value.trim().slice(0, 24);
-        Store.mutate(function (st) { st.displayName = nm; });
-      }
-      if (ev.target.id === 'pfSel') {
-        var id = ev.target.dataset.id, val = ev.target.value;
-        Store.mutate(function (s) { s.platforms[id] = val; });
-        toast('Platforma sačuvana.');
-      }
     });
-    // rucno unet poster se cuva na blur
-    document.addEventListener('blur', function (ev) {
-      if (ev.target.id === 'myPoster') {
-        var pid = modalItemId, pv = ev.target.value.trim();
-        if (!pid) return;
-        if (((state().myPosters || {})[pid] || '') === pv) return;
-        Store.mutate(function (s) { if (pv) s.myPosters[pid] = pv; else delete s.myPosters[pid]; });
-        var bg = $('#modal .sheet-bg'); if (bg) bg.innerHTML = artHTML(BY_ID[pid]);
-      }
-    }, true);
-
-    // link se cuva i na blur
-    document.addEventListener('blur', function (ev) {
-      if (ev.target.id === 'myLink') {
-        var sheet = ev.target.closest('.sheet');
-        var btn = sheet && sheet.querySelector('[data-act="open-link"]');
-        if (!btn) return;
-        var id = btn.dataset.id, v = ev.target.value.trim();
-        if (((state().links || {})[id] || '') === v) return;  // nista se nije promenilo
-        Store.mutate(function (s) { if (v) s.links[id] = v; else delete s.links[id]; });
-      }
-    }, true);
-
     // dugi pritisak -> visestruki izbor u Biblioteci
     var lpTimer = null;
     document.addEventListener('pointerdown', function (ev) {
@@ -1365,6 +1267,8 @@ window.MM = window.MM || {};
       })[s] || s;
       var t = $('#syncStatusTxt');
       if (t) t.textContent = statusText();
+      var u = $('#syncPill .sync-label');
+      if (u && Store.username()) u.textContent = Store.username();
     });
   }
 
