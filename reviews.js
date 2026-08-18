@@ -41,12 +41,12 @@ window.MM = window.MM || {};
     if (!f) throw new Error('offline');
     var uid = MM.Store.uid();
     if (!uid) throw new Error('nije prijavljen');
-    var u = MM.Store.user() || {};
+    var st = MM.Store.get();
     var rec = {
       itemId: String(itemId),
       uid: uid,
-      name: (MM.Store.get().displayName || u.name || 'Bez imena').slice(0, 40),
-      photo: u.photo || '',
+      name: (st.displayName || 'Bez imena').slice(0, 40),
+      photo: (st.avatar || '').slice(0, 400),
       stars: Math.max(1, Math.min(5, parseInt(stars, 10) || 0)),
       text: String(text || '').slice(0, 500),
       at: Date.now()
@@ -75,6 +75,15 @@ window.MM = window.MM || {};
   }
   function cachedPeople() { return people; }
 
+  /** Obrisi svoju ocenu. Pravila dozvoljavaju brisanje samo svoje. */
+  async function remove(itemId) {
+    var f = await MM.Store.firestore();
+    var uid = MM.Store.uid();
+    if (!f || !uid) throw new Error('nije prijavljen');
+    await f.deleteDoc(f.doc(f.db, 'reviews', String(itemId) + '__' + uid));
+    cache = cache.filter(function (r) { return !(r.itemId === itemId && r.uid === uid); });
+  }
+
   function cached() { return cache; }
   function forItem(id) { return cache.filter(function (r) { return r.itemId === id; }); }
   function mine(id) {
@@ -92,6 +101,6 @@ window.MM = window.MM || {};
   MM.Reviews = {
     load: load, save: save, cached: cached,
     forItem: forItem, mine: mine, avg: avg, isStale: isStale,
-    loadPeople: loadPeople, people: cachedPeople
+    loadPeople: loadPeople, people: cachedPeople, remove: remove
   };
 })();

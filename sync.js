@@ -34,7 +34,8 @@ window.MM = window.MM || {};
       deckSince: 0,         // koliko je oznaceno od poslednje provere tempa
       firstWatchAt: 0,      // kad je oznacen prvi naslov (za nedeljnu proveru tempa)
       lastPaceAt: 0,        // kad je poslednji put pokazana provera tempa
-      displayName: '',      // ime uz tvoje ocene
+      displayName: '',      // ime uz tvoje ocene (ti ga biras, ne Google)
+      avatar: '',           // URL slike profila (prazno = slovo u krugu)
       updatedAt: 0
     };
   }
@@ -114,7 +115,7 @@ window.MM = window.MM || {};
       app: app, db: db,
       doc: fsMod.doc, setDoc: fsMod.setDoc, getDoc: fsMod.getDoc, onSnapshot: fsMod.onSnapshot,
       collection: fsMod.collection, query: fsMod.query, orderBy: fsMod.orderBy,
-      limit: fsMod.limit, getDocs: fsMod.getDocs
+      limit: fsMod.limit, getDocs: fsMod.getDocs, deleteDoc: fsMod.deleteDoc
     };
     return fb;
   }
@@ -132,11 +133,8 @@ window.MM = window.MM || {};
     authMod = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
     auth = authMod.getAuth(f.app);
     authMod.onAuthStateChanged(auth, function (u) {
-      user = u ? { uid: u.uid, name: u.displayName || '', photo: u.photoURL || '', email: u.email || '' } : null;
-      if (user) {
-        state.displayName = user.name || state.displayName;
-        connect(user.uid);
-      }
+      user = u ? { uid: u.uid, email: u.email || '' } : null;
+      if (user) connect(user.uid);
       authListeners.forEach(function (fn) { try { fn(user); } catch (e) { console.error(e); } });
     });
     // Vrati se sa redirect prijave ako je popup bio blokiran.
@@ -170,8 +168,8 @@ window.MM = window.MM || {};
     try {
       await withTimeout(fb.setDoc(fb.doc(fb.db, 'profiles', user.uid), {
         uid: user.uid,
-        name: (state.displayName || user.name || 'Bez imena').slice(0, 40),
-        photo: user.photo || '',
+        name: (state.displayName || 'Bez imena').slice(0, 40),
+        photo: (state.avatar || '').slice(0, 400),
         watched: data.watched | 0,
         total: data.total | 0,
         minutes: data.minutes | 0,
@@ -202,7 +200,10 @@ window.MM = window.MM || {};
   }
 
   async function connect(code) {
-    code = (code || '').trim().toLowerCase();
+    // Nikakvo "sredjivanje" kljuca! Firebase uid razlikuje mala i velika
+    // slova, pa bi toLowerCase() napravio putanju koja se ne poklapa sa
+    // request.auth.uid i pravila bi (s pravom) odbila upis.
+    code = (code || '').trim();
     if (!code) return;
     localStorage.setItem(LS_CODE, code);
 
@@ -330,7 +331,7 @@ window.MM = window.MM || {};
     statusNote: function () { return statusNote; },
 
     code: function () { return localStorage.getItem(LS_CODE) || ''; },
-    username: function () { return (user && (state.displayName || user.name)) || localStorage.getItem(LS_USER) || ''; },
+    username: function () { return state.displayName || ''; },
     user: function () { return user; },
     uid: function () { return user ? user.uid : ''; },
     onAuth: function (fn) { authListeners.push(fn); fn(user); },

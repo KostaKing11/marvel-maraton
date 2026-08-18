@@ -741,3 +741,6 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px}
 .pnum b{color:var(--text);font-size:16px}
 .acct-av{object-fit:cover}
 .acct em{display:block}
+
+.verline{text-align:center;color:var(--muted);font-size:12.5px;padding:4px 0 22px}
+.verline b{color:#6d6d78;font-weight:700}

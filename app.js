@@ -15,6 +15,7 @@ window.MM = window.MM || {};
   var modalItemId = null;       // koji naslov je trenutno otvoren u modalu
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
+  var VERSION = '0.20.0';       // pise se u "Ja"; podize se uz svaki deploy
   var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
   var countdownTimer = null;
   var PACE_AFTER_MS = 7 * 24 * 3600 * 1000;   // provera tempa jednom nedeljno
@@ -750,6 +751,19 @@ window.MM = window.MM || {};
     }, 3000);
   }
 
+  /** Prvo prijavljivanje: postavi ime pod kojim te ekipa vidi. */
+  function askName() {
+    if (state().displayName) return;
+    showModal('<div class="sheet"><div class="sheet-body rate-sheet">' +
+      '<button class="close" data-act="close" aria-label="Zatvori">✕</button>' +
+      '<h2>Kako da te zovemo?</h2>' +
+      '<p class="note small">Ovo ime ekipa vidi uz tvoje ocene i napredak. Nema veze sa Google nalogom i možeš ga promeniti u Ja → Nalog.</p>' +
+      '<label class="field"><span>Ime</span>' +
+      '<input id="nameFirst" type="text" maxlength="40" placeholder="npr. Kosta"></label>' +
+      '<button class="btn" data-act="name-save">Sačuvaj</button>' +
+      '</div></div>');
+  }
+
   /* ---- ocenjivanje posle gledanja ---- */
 
   var ratingFor = null;
@@ -782,7 +796,8 @@ window.MM = window.MM || {};
       '<textarea id="revText" maxlength="500" rows="3" placeholder="U jednoj rečenici…">' + esc(txt) + '</textarea></label>' +
       '<div class="btn-row">' +
         '<button class="btn" data-act="rate-save" data-id="' + esc(id) + '">Objavi</button>' +
-        '<button class="btn ghost" data-act="close">Preskoči</button>' +
+        (mine ? '<button class="btn danger" data-act="rate-del" data-id="' + esc(id) + '">Obriši</button>'
+              : '<button class="btn ghost" data-act="close">Preskoči</button>') +
       '</div></div></div>');
     $('#modal').dataset.stars = val;
   }
@@ -837,21 +852,30 @@ window.MM = window.MM || {};
 
     /* --- nalog --- */
     var u = Store.user();
-    out += '<section class="card"><h2>Nalog</h2>' +
-      (u
-        ? '<div class="acct">' +
-            (u.photo ? '<img class="acct-av" src="' + esc(u.photo) + '" alt="" referrerpolicy="no-referrer">'
-                     : '<span class="acct-av">' + esc((u.name || '?').slice(0, 1).toUpperCase()) + '</span>') +
-            '<div><b>' + esc(u.name || 'Bez imena') + '</b>' +
-            '<em>' + esc(u.email || '') + '</em>' +
-            '<em id="syncStatusTxt">' + esc(statusText()) + '</em></div></div>' +
-          '<div class="btn-row">' +
-            '<button class="btn ghost" data-act="sync-now">Sinhronizuj</button>' +
-            '<button class="btn ghost" data-act="sign-out">Odjavi se</button>' +
-          '</div>'
-        : '<p class="note">Nisi prijavljen — lista postoji samo na ovom uređaju, i ne vidiš ekipu.</p>' +
-          '<button class="btn" data-act="go-login">Prijavi se Google nalogom</button>') +
-      '<div class="btn-row">' +
+    var av = s.avatar || '';
+    var nm = s.displayName || '';
+    out += '<section class="card"><h2>Nalog</h2>';
+    if (u) {
+      out += '<div class="acct">' +
+        (av ? '<img class="acct-av" src="' + esc(av) + '" alt="" referrerpolicy="no-referrer">'
+            : '<span class="acct-av">' + esc((nm || '?').slice(0, 1).toUpperCase()) + '</span>') +
+        '<div><b>' + esc(nm || 'Postavi ime') + '</b>' +
+        '<em>' + esc(u.email || '') + '</em>' +
+        '<em id="syncStatusTxt">' + esc(statusText()) + '</em></div></div>' +
+        '<label class="field"><span>Ime koje ekipa vidi</span>' +
+        '<input id="profName" type="text" maxlength="40" placeholder="npr. Kosta" value="' + esc(nm) + '"></label>' +
+        '<label class="field"><span>Slika profila (URL, prazno = slovo)</span>' +
+        '<input id="profAvatar" type="url" maxlength="400" placeholder="https://…/slika.jpg" value="' + esc(av) + '"></label>' +
+        '<p class="note small">Ime i slika su tvoji — ne uzimaju se sa Google naloga.</p>' +
+        '<div class="btn-row">' +
+          '<button class="btn ghost" data-act="sync-now">Sinhronizuj</button>' +
+          '<button class="btn ghost" data-act="sign-out">Odjavi se</button>' +
+        '</div>';
+    } else {
+      out += '<p class="note">Nisi prijavljen — lista postoji samo na ovom uređaju, i ne vidiš ekipu.</p>' +
+        '<button class="btn" data-act="go-login">Prijavi se Google nalogom</button>';
+    }
+    out += '<div class="btn-row">' +
         '<button class="btn ghost" data-act="export-json">Export JSON</button>' +
         '<button class="btn ghost" data-act="import-json">Import JSON</button>' +
       '</div></section>';
@@ -859,6 +883,8 @@ window.MM = window.MM || {};
     /* --- reset --- */
     out += '<section class="card"><h2>Opasna zona</h2>' +
       '<button class="btn danger" data-act="reset">Resetuj napredak</button></section>';
+
+    out += '<p class="verline">Marvel Maraton <b>v' + VERSION + '</b></p>';
 
     return out;
   }
@@ -1167,7 +1193,19 @@ window.MM = window.MM || {};
           toast(String(e && e.message) === 'offline' ? 'Nema veze sa serverom.' : 'Nije uspelo — proveri Firestore pravila.');
         });
     },
+    'name-save': function () {
+      var v = ($('#nameFirst') && $('#nameFirst').value || '').trim().slice(0, 40);
+      if (v.length < 2) { toast('Bar dva znaka.'); return; }
+      Store.mutate(function (st) { st.displayName = v; });
+      closeModal(); toast('Zdravo, ' + v + '.');
+    },
     'rate-open': function (n) { openRating(n.dataset.id, 0, ''); },
+    'rate-del': function (n) {
+      var id = n.dataset.id;
+      MM.Reviews.remove(id)
+        .then(function () { closeModal(); toast('Ocena obrisana.'); render(); })
+        .catch(function (e) { console.warn(e); toast('Brisanje nije uspelo.'); });
+    },
 
     'pace-ok': function () {
       Store.mutate(function (s) { s.deckSince = 0; s.lastPaceAt = Date.now(); });
@@ -1272,6 +1310,12 @@ window.MM = window.MM || {};
       }
     });
     document.addEventListener('change', function (ev) {
+      if (ev.target.id === 'profName' || ev.target.id === 'profAvatar') {
+        var isName = ev.target.id === 'profName';
+        var v = ev.target.value.trim().slice(0, isName ? 40 : 400);
+        Store.mutate(function (st) { if (isName) st.displayName = v; else st.avatar = v; });
+        toast('Sačuvano.');
+      }
       if (ev.target.dataset && ev.target.dataset.act === 'plan') {
         var t = ev.target.dataset.val, on = ev.target.checked;
         Store.mutate(function (s) {
@@ -1425,7 +1469,13 @@ window.MM = window.MM || {};
         Store.init();
         Store.onChange(function () { refresh(); });
         Store.onAuth(function (u) {
-          if (u) { hideOnboarding(); loadReviews(true); }
+          if (u) {
+            hideOnboarding();
+            loadReviews(true);
+            // Ime biras ti - ne preuzima se sa Google naloga, pa ga
+            // trazimo jednom, odmah posle prve prijave.
+            if (!state().displayName) setTimeout(askName, 700);
+          }
           render();
         });
         bindStatus();
