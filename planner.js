@@ -114,8 +114,9 @@ window.MM = window.MM || {};
    */
   function buildUnits(items, state) {
     var plans = state.plans || [];
+    var skipped = state.skipped || {};
     var pool = items.filter(function (i) {
-      return plans.indexOf(i.priority) !== -1 && PINNED.indexOf(i.id) === -1;
+      return plans.indexOf(i.priority) !== -1 && PINNED.indexOf(i.id) === -1 && !skipped[i.id];
     });
     pool.sort(function (a, b) { return sortKey(a) - sortKey(b); });
 
@@ -154,8 +155,9 @@ window.MM = window.MM || {};
    */
   function allUnits(items, state) {
     var plans = state.plans || [];
+    var skipped = state.skipped || {};
     var pool = items.filter(function (i) {
-      return plans.indexOf(i.priority) !== -1 && PINNED.indexOf(i.id) === -1;
+      return plans.indexOf(i.priority) !== -1 && PINNED.indexOf(i.id) === -1 && !skipped[i.id];
     });
     pool.sort(function (a, b) { return sortKey(a) - sortKey(b); });
 
@@ -457,6 +459,28 @@ window.MM = window.MM || {};
     };
   }
 
+  /**
+   * Raspored do Doomsdaya: koliko moras DNEVNO da bi stigao sve
+   * neodgledano (bez preskocenog) do 18.12.2026.
+   */
+  function schedule(items, state, today) {
+    today = today || new Date();
+    var units = buildUnits(items, state);
+    var minutes = units.reduce(function (s, u) { return s + u.minutes; }, 0);
+    var ids = {};
+    units.forEach(function (u) { ids[u.id] = 1; });
+
+    var days = Math.max(1, daysBetween(startOfDay(today), DOOMSDAY));
+    return {
+      titles: Object.keys(ids).length,
+      minutes: minutes,
+      days: days,
+      perDay: minutes / days,                 // minuta dnevno
+      perWeek: minutes / days * 7 / 60,       // sati nedeljno
+      doable: (minutes / days) <= 240         // preko 4h dnevno vise nije realno
+    };
+  }
+
   /* ---------------- Export ---------------- */
 
   MM.Planner = {
@@ -466,6 +490,7 @@ window.MM = window.MM || {};
     PINNED: PINNED,
     DAY_NAMES: DAY_NAMES,
     buildPlan: buildPlan,
+    schedule: schedule,
     buildUnits: buildUnits,
     ordinals: ordinals,
     deck: deck,

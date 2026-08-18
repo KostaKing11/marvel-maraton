@@ -166,7 +166,7 @@ img{display:block}
 .dcount{color:var(--text);font-size:17px;font-weight:800;font-variant-numeric:tabular-nums}
 .dcount i{color:var(--muted);font-style:normal;font-size:13.5px;font-weight:500}
 
-.swipe-area{position:relative;touch-action:pan-y}
+.swipe-area{position:relative}
 .dcard{
   position:relative;width:100%;aspect-ratio:2/3;max-height:62vh;
   border-radius:18px;overflow:hidden;background:var(--card-2);
@@ -177,7 +177,7 @@ img{display:block}
   filter:brightness(.5);z-index:0;
 }
 .dcard.cur{
-  z-index:1;cursor:grab;touch-action:pan-y;user-select:none;
+  z-index:1;cursor:grab;touch-action:none;user-select:none;
   transition:transform .28s cubic-bezier(.2,.7,.3,1);
 }
 .dcard.cur:active{cursor:grabbing}
@@ -771,3 +771,30 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px}
 .alarm.hard{border-color:rgba(230,36,41,.75)}
 .alarm.hard .alarm-big{color:var(--accent)}
 .alarm.hard .alarm-glow{animation-duration:1.4s}
+
+/* ---------- raspored do Doomsdaya ---------- */
+.sched{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  background:var(--card-2);border:1px solid var(--line);
+  border-radius:13px;padding:12px 14px;margin:0 0 14px;
+}
+.sched-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+.sched-lbl{font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);font-weight:700}
+.sched-num{font-size:24px;font-weight:900;letter-spacing:-.5px;line-height:1.1}
+.sched-num i{font-style:normal;font-size:13px;font-weight:600;color:var(--muted);margin-left:7px}
+.sched-side{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-size:12.5px;color:var(--muted)}
+.sched-ok .sched-num{color:var(--green)}
+.sched-warn .sched-num{color:var(--yellow)}
+.sched-hot .sched-num{color:var(--accent)}
+.sched-hot{border-color:rgba(230,36,41,.4)}
+.sched-warn{border-color:rgba(242,193,78,.32)}
+.sched .sched-warn{flex-basis:100%;font-size:12.5px;color:var(--yellow);border:0;padding:0}
+
+/* preskakanje */
+.dstamp.skip{left:50%;top:16px;transform:translateX(-50%) rotate(-4deg);color:#9bb0ff;border-color:#9bb0ff}
+.dcard.to-skip .dstamp.skip{opacity:1}
+.dcard.to-skip{filter:brightness(.75)}
+.skipmark{
+  position:absolute;left:6px;bottom:26px;font-size:10px;font-weight:800;letter-spacing:.5px;
+  background:rgba(0,0,0,.75);color:#9bb0ff;padding:2px 6px;border-radius:5px;
+}

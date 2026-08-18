@@ -15,7 +15,7 @@ window.MM = window.MM || {};
   var modalItemId = null;       // koji naslov je trenutno otvoren u modalu
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
-  var VERSION = '0.22.0';       // pise se u "Ja"; podize se uz svaki deploy
+  var VERSION = '0.23.0';       // pise se u "Ja"; podize se uz svaki deploy
   var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
   var countdownTimer = null;
   var PACE_AFTER_MS = 7 * 24 * 3600 * 1000;   // provera tempa jednom nedeljno
@@ -278,6 +278,8 @@ window.MM = window.MM || {};
     var idle = idleHours();
     if (idle >= 24 && deck.length) out += alarmHTML(idle);
 
+    if (deck.length) out += scheduleHTML(P.schedule(ITEMS, s, new Date()));
+
     if (!deck.length) {
       out += deckDoneHTML();
     } else if (paceDue(s)) {
@@ -310,6 +312,31 @@ window.MM = window.MM || {};
         });
       });
     }).catch(function () {});
+  }
+
+  /**
+   * Raspored do Doomsdaya: koliko dnevno moras da bi stigao sve.
+   * Racuna se od preostalog, pa se sam popravlja kad odgledas ili
+   * preskocis nesto - nema fiksnog plana koji zastareva.
+   */
+  function scheduleHTML(sc) {
+    var h = Math.floor(sc.perDay / 60);
+    var m = Math.round(sc.perDay % 60);
+    var perDay = (h ? h + 'h ' : '') + m + 'min';
+    var tone = sc.perDay <= 90 ? 'ok' : (sc.perDay <= 180 ? 'warn' : 'hot');
+
+    return '<div class="sched sched-' + tone + '">' +
+      '<div class="sched-main">' +
+        '<span class="sched-lbl">Da stigneš sve</span>' +
+        '<span class="sched-num">' + perDay + '<i>dnevno</i></span>' +
+      '</div>' +
+      '<div class="sched-side">' +
+        '<span>' + sc.titles + ' naslova</span>' +
+        '<span>' + sc.days + ' dana</span>' +
+        '<span>' + sc.perWeek.toFixed(1) + 'h/ned</span>' +
+      '</div>' +
+      (sc.doable ? '' : '<div class="sched-warn">Ovo je preko 4h dnevno — preskoči nešto prevlačenjem nagore.</div>') +
+      '</div>';
   }
 
   /* ---- upozorenje da si stao ---- */
@@ -476,6 +503,7 @@ window.MM = window.MM || {};
       '<div class="dscrim"></div>' +
       '<div class="dstamp yes">ODGLEDANO</div>' +
       '<div class="dstamp back">NAZAD</div>' +
+      '<div class="dstamp skip">PRESKAČEM</div>' +
       '<div class="dinfo">' +
         '<div class="dnum">#' + ord + '</div>' +
         '<h1 class="dtitle">' + esc(unitTitle(u)) + '</h1>' +
@@ -511,12 +539,12 @@ window.MM = window.MM || {};
     var card = $('#deckCard');
     if (!card) return;
 
-    var x0 = 0, y0 = 0, dx = 0, drag = false, locked = null, gone = false, moved = false;
+    var x0 = 0, y0 = 0, dx = 0, dy = 0, drag = false, locked = null, gone = false, moved = false;
     var THRESHOLD = 110;   // odluka se donosi tek kad pustis prst
 
     card.addEventListener('pointerdown', function (e) {
       if (gone || e.target.closest('button')) return;
-      drag = true; locked = null; dx = 0; moved = false;
+      drag = true; locked = null; dx = 0; dy = 0; moved = false;
       x0 = e.clientX; y0 = e.clientY;
       card.style.transition = 'none';
       try { card.setPointerCapture(e.pointerId); } catch (err) {}
@@ -529,7 +557,13 @@ window.MM = window.MM || {};
         if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
         locked = Math.abs(mx) > Math.abs(my) ? 'x' : 'y';
       }
-      if (locked === 'y') return;      // korisnik skroluje, ne prevlaci
+      if (locked === 'y') {
+        // Nagore = preskoci. Nadole ne radi nista (da ne bude slucajno).
+        dy = my;
+        card.classList.toggle('to-skip', dy < -50);
+        card.style.transform = 'translateY(' + Math.min(0, dy) + 'px)';
+        return;
+      }
       dx = mx;
       moved = Math.abs(mx) > 8;
       card.style.transform = 'translateX(' + dx + 'px) rotate(' + (dx / 24) + 'deg)';
@@ -545,8 +579,9 @@ window.MM = window.MM || {};
       card.style.transition = '';
       if (locked === 'x' && dx < -THRESHOLD) return flyOut('watched');
       if (locked === 'x' && dx > THRESHOLD) return flyOut('back');
+      if (locked === 'y' && dy < -THRESHOLD) return flyOut('skip');
       card.style.transform = '';
-      card.classList.remove('to-yes', 'to-back');
+      card.classList.remove('to-yes', 'to-back', 'to-skip');
     }
     card.addEventListener('pointerup', release);
     card.addEventListener('pointercancel', release);
@@ -561,14 +596,20 @@ window.MM = window.MM || {};
     function flyOut(dir) {
       if (gone) return;
       gone = true;
-      var to = dir === 'watched' ? -(window.innerWidth + 200) : (window.innerWidth + 200);
       card.classList.add('flying');
-      card.style.transform = 'translateX(' + to + 'px) rotate(' + (to / 24) + 'deg)';
-      card.classList.toggle('to-yes', dir === 'watched');
-      card.classList.toggle('to-back', dir === 'back');
+      if (dir === 'skip') {
+        card.style.transform = 'translateY(-' + (window.innerHeight + 200) + 'px) scale(.85)';
+        card.classList.add('to-skip');
+      } else {
+        var to = dir === 'watched' ? -(window.innerWidth + 200) : (window.innerWidth + 200);
+        card.style.transform = 'translateX(' + to + 'px) rotate(' + (to / 24) + 'deg)';
+        card.classList.toggle('to-yes', dir === 'watched');
+        card.classList.toggle('to-back', dir === 'back');
+      }
       if (navigator.vibrate) navigator.vibrate(dir === 'watched' ? 18 : 8);
       setTimeout(function () {
         if (dir === 'watched') deckWatched(card.dataset.key);
+        else if (dir === 'skip') deckSkip(card.dataset.id);
         else deckBack(card.dataset.key);
       }, 200);
     }
@@ -585,6 +626,13 @@ window.MM = window.MM || {};
       if (!s.firstWatchAt) s.firstWatchAt = Date.now();
     });
     askRating(key);
+  }
+
+  /** Nagore: necu ovo da gledam - van spiska i van rasporeda. */
+  function deckSkip(id) {
+    var it = BY_ID[id];
+    Store.mutate(function (s) { s.skipped[id] = true; });
+    toast('„' + (it ? it.title : id) + '" preskočeno. Vrati u Biblioteci.');
   }
 
   /**
@@ -766,6 +814,7 @@ window.MM = window.MM || {};
           '</div>' +
         '</div>' +
         (pct > 0 ? '<div class="cardbar' + (full ? ' full' : '') + '"><i style="width:' + pct + '%"></i></div>' : '') +
+        (s.skipped && s.skipped[i.id] ? '<div class="skipmark">PRESKOČENO</div>' : '') +
         (selectMode ? '<div class="selmark' + (selected[i.id] ? ' on' : '') + '">' + (selected[i.id] ? '✓' : '') + '</div>' : '') +
       '</div></article>';
   }
@@ -1050,6 +1099,9 @@ window.MM = window.MM || {};
     // 1) oznaci kao odgledano
     html += '<button class="btn' + (full ? ' ghost' : '') + '" data-act="item" data-id="' + esc(id) + '">' +
       (full ? '✓ Odgledano — skini oznaku' : 'Označi kao odgledano') + '</button>';
+    if (s.skipped && s.skipped[id]) {
+      html += '<button class="btn ghost" data-act="unskip" data-id="' + esc(id) + '">↩ Preskočeno — vrati u spisak</button>';
+    }
 
     // 2) ocene
     html += '<div class="rev-block"><div class="rev-head"><h3>Ocene</h3>' +
@@ -1323,6 +1375,11 @@ window.MM = window.MM || {};
       if (v.length < 2) { toast('Bar dva znaka.'); return; }
       Store.mutate(function (st) { st.displayName = v; });
       closeModal(); toast('Zdravo, ' + v + '.');
+    },
+    'unskip': function (n) {
+      var id = n.dataset.id;
+      Store.mutate(function (st) { delete st.skipped[id]; });
+      closeModal(); toast('Vraćeno u spisak.');
     },
     'rate-open': function (n) { openRating(n.dataset.id, 0, ''); },
     'rate-del': function (n) {
