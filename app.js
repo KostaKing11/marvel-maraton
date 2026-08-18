@@ -15,7 +15,7 @@ window.MM = window.MM || {};
   var modalItemId = null;       // koji naslov je trenutno otvoren u modalu
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
-  var VERSION = '0.24.0';       // pise se u "Ja"; podize se uz svaki deploy
+  var VERSION = '0.24.1';       // pise se u "Ja"; podize se uz svaki deploy
   var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
   var countdownTimer = null;
   var PACE_AFTER_MS = 7 * 24 * 3600 * 1000;   // provera tempa jednom nedeljno
@@ -278,10 +278,7 @@ window.MM = window.MM || {};
     var idle = idleHours();
     if (idle >= 24 && deck.length) out += alarmHTML(idle);
 
-    if (deck.length) {
-      out += scheduleHTML(P.schedule(ITEMS, s, new Date()));
-      out += weekBarHTML(s);
-    }
+    if (deck.length) out += headStripHTML(s);
 
     if (!deck.length) {
       out += deckDoneHTML();
@@ -322,23 +319,37 @@ window.MM = window.MM || {};
    * Racuna se od preostalog, pa se sam popravlja kad odgledas ili
    * preskocis nesto - nema fiksnog plana koji zastareva.
    */
-  function scheduleHTML(sc) {
+  /**
+   * Jedna tanka traka umesto dve kartice - dnevna norma levo, nedelja
+   * desno. Dve odvojene kutije su gurale spil ispod tab bara.
+   */
+  function headStripHTML(s) {
+    var sc = P.schedule(ITEMS, s, new Date());
     var h = Math.floor(sc.perDay / 60);
     var m = Math.round(sc.perDay % 60);
-    var perDay = (h ? h + 'h ' : '') + m + 'min';
+    var perDay = (h ? h + 'h ' : '') + m + 'm';
     var tone = sc.perDay <= 90 ? 'ok' : (sc.perDay <= 180 ? 'warn' : 'hot');
 
-    return '<div class="sched sched-' + tone + '">' +
-      '<div class="sched-main">' +
-        '<span class="sched-lbl">Da stigneš sve</span>' +
-        '<span class="sched-num">' + perDay + '<i>dnevno</i></span>' +
+    var wb = weekBounds(new Date());
+    var dp = P.dailyPlan(ITEMS, s, new Date());
+    var need = 0;
+    dp.days.forEach(function (d) { if (d.iso >= wb.from && d.iso <= wb.to) need += d.minutes; });
+    var done = P.watchedMinutesBetween(ITEMS, s, wb.from, wb.to);
+    var total = need + done;
+    var pct = total ? Math.min(100, Math.round(done / total * 100)) : 0;
+
+    return '<div class="hstrip hs-' + tone + '">' +
+      '<div class="hs-cell">' +
+        '<span class="hs-lbl">Dnevno</span>' +
+        '<span class="hs-num">' + perDay + '</span>' +
+        '<span class="hs-fine">' + sc.titles + ' naslova · ' + sc.days + ' dana</span>' +
       '</div>' +
-      '<div class="sched-side">' +
-        '<span>' + sc.titles + ' naslova</span>' +
-        '<span>' + sc.days + ' dana</span>' +
-        '<span>' + sc.perWeek.toFixed(1) + 'h/ned</span>' +
+      '<div class="hs-cell right">' +
+        '<span class="hs-lbl">Ove nedelje</span>' +
+        '<span class="hs-num sm"><b>' + hStr(done) + '</b> / ' + hStr(total) + '</span>' +
+        '<div class="bar green"><i style="width:' + pct + '%"></i></div>' +
       '</div>' +
-      (sc.doable ? '' : '<div class="sched-warn">Ovo je preko 4h dnevno — preskoči nešto prevlačenjem nagore.</div>') +
+      (sc.doable ? '' : '<div class="hs-note">Preko 4h dnevno — preskoči nešto prevlačenjem nagore.</div>') +
       '</div>';
   }
 
@@ -348,31 +359,6 @@ window.MM = window.MM || {};
     var dow = (today.getDay() + 6) % 7;           // ponedeljak = 0
     var mon = P.addDays(today, -dow);
     return { from: P.iso(mon), to: P.iso(P.addDays(mon, 6)), mon: mon };
-  }
-
-  /**
-   * "Ove nedelje": koliko treba i koliko si odgledao.
-   * "Treba" je suma dnevnih normi za dane ove nedelje iz dnevnog
-   * rasporeda - dakle i ono sto je vec bilo, ne samo ostatak.
-   */
-  function weekBarHTML(s) {
-    var wb = weekBounds(new Date());
-    var dp = P.dailyPlan(ITEMS, s, new Date());
-    var need = 0;
-    dp.days.forEach(function (d) { if (d.iso >= wb.from && d.iso <= wb.to) need += d.minutes; });
-    var done = P.watchedMinutesBetween(ITEMS, s, wb.from, wb.to);
-    var total = need + done;
-    var pct = total ? Math.min(100, Math.round(done / total * 100)) : 0;
-
-    return '<div class="wbar">' +
-      '<div class="wbar-top">' +
-        '<span class="wbar-lbl">Ove nedelje</span>' +
-        '<span class="wbar-num"><b>' + hStr(done) + '</b> / ' + hStr(total) + '</span>' +
-      '</div>' +
-      '<div class="bar green"><i style="width:' + pct + '%"></i></div>' +
-      '<div class="wbar-sub">' + P.fmtRange(wb.mon, P.addDays(wb.mon, 6)) +
-        ' · još ' + hStr(need) + '</div>' +
-      '</div>';
   }
 
   /* ---- upozorenje da si stao ---- */
