@@ -177,6 +177,7 @@ window.MM = window.MM || {};
   }
 
   function render() {
+    if (!PLAN) return;          // podaci jos nisu ucitani
     var y = window.scrollY;
     var view = $('#view');
     view.innerHTML = ({
@@ -738,7 +739,7 @@ window.MM = window.MM || {};
    */
   var profileTimer = null;
   function publishProgress() {
-    if (!Store.uid()) return;
+    if (!Store.uid() || !PLAN) return;
     clearTimeout(profileTimer);
     profileTimer = setTimeout(function () {
       var st = P.stats(ITEMS, state(), PLAN, new Date());
@@ -1193,6 +1194,25 @@ window.MM = window.MM || {};
     },
     'ob-skip': function () { hideOnboarding(); }
   };
+
+  /**
+   * Povlacenje postera u pozadini. Radi tiho na startu (samo za one kojima
+   * poster fali), a preko dugmeta u "Ja" i za one koji ranije nisu nadjeni.
+   */
+  function startPosterFetch(includeFailed) {
+    if (MM.Posters.isRunning()) return;
+    if (!navigator.onLine) return;
+    if (!MM.Posters.missing(ITEMS, state(), includeFailed).length) {
+      if (includeFailed) toast('Svi posteri su već tu.');
+      return;
+    }
+    MM.Posters.fetchMissing(ITEMS, state(), Store, function (done, total, finished) {
+      posterJob = finished ? null : { done: done, total: total };
+      var el = $('#posterProgress');
+      if (el) el.textContent = finished ? 'gotovo' : (done + ' / ' + total);
+      if (finished) { render(); toast('Posteri povučeni.'); }
+    }, includeFailed);
+  }
 
   function bulkIds(ids, on) {
     var keys = [];
