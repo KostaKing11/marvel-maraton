@@ -15,7 +15,7 @@ window.MM = window.MM || {};
   var modalItemId = null;       // koji naslov je trenutno otvoren u modalu
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
-  var VERSION = '0.21.2';       // pise se u "Ja"; podize se uz svaki deploy
+  var VERSION = '0.22.0';       // pise se u "Ja"; podize se uz svaki deploy
   var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
   var countdownTimer = null;
   var PACE_AFTER_MS = 7 * 24 * 3600 * 1000;   // provera tempa jednom nedeljno
@@ -382,7 +382,7 @@ window.MM = window.MM || {};
     var opts = {
       body: body,
       icon: 'icons/icon-192.png',
-      badge: 'icons/icon-192.png',
+      badge: 'icons/badge-96.png',
       image: u ? posterUrl(u.item) : '',
       vibrate: [220, 90, 220, 90, 420],
       tag: 'mm-warn',
@@ -1533,7 +1533,7 @@ window.MM = window.MM || {};
     if (!body) return;                       // bez sadrzaja nema ni notifikacije
     localStorage.setItem('mm-last-notif', today);
 
-    var opts = { body: hStr(d.minutes) + ' danas', icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: 'mm-daily' };
+    var opts = { body: hStr(d.minutes) + ' danas', icon: 'icons/icon-192.png', badge: 'icons/badge-96.png', tag: 'mm-daily' };
     if (navigator.serviceWorker && navigator.serviceWorker.ready) {
       navigator.serviceWorker.ready.then(function (reg) {
         reg.showNotification('Danas: ' + body, opts);

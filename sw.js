@@ -4,7 +4,7 @@
    VAZNO: podigni CACHE verziju na svaki deploy, inace se
    korisnik zaglavi na staroj verziji app-a.
    ============================================================ */
-const CACHE = 'marvel-maraton-v23';
+const CACHE = 'marvel-maraton-v24';
 
 // App shell — cache-first
 const SHELL = [
@@ -20,6 +20,7 @@ const SHELL = [
   './firebase-config.js',
   './manifest.json',
   './icons/icon-192.png',
+  './icons/badge-96.png',
   './icons/icon-512.png',
   './icons/icon-maskable-192.png',
   './icons/icon-maskable-512.png'
@@ -121,7 +122,7 @@ async function maybeWarn() {
   await self.registration.showNotification(title, {
     body,
     icon: './icons/icon-192.png',
-    badge: './icons/icon-192.png',
+    badge: './icons/badge-96.png',
     image: m.poster || undefined,
     vibrate: [220, 90, 220, 90, 420],
     tag: 'mm-warn',
