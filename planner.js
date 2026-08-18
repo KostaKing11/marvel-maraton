@@ -471,6 +471,19 @@ window.MM = window.MM || {};
   function dailyPlan(items, state, today) {
     today = startOfDay(today || new Date());
     var units = buildUnits(items, state);
+
+    // "Spider-Man: Brand New Day" je izuzet iz pakovanja (PINNED), ali se
+    // GLEDA - i to poslednji, neposredno pre Doomsdaya. Zato ga rucno
+    // dodajemo na kraj. Sam Doomsday se ne rasporedjuje: on je bioskop
+    // 18.12. i u kalendaru stoji kao 🎬.
+    var bnd = items.filter(function (i) { return i.id === 'spider-man-brand-new-day'; })[0];
+    if (bnd && (state.plans || []).indexOf(bnd.priority) !== -1 &&
+        !(state.skipped || {})[bnd.id] && state.watched[bnd.id] !== true) {
+      units = units.concat([{
+        id: bnd.id, item: bnd, ep: null, minutes: bnd.runtime, key: unitKey(bnd.id, null)
+      }]);
+    }
+
     var total = units.reduce(function (a, u) { return a + u.minutes; }, 0);
     var daysLeft = Math.max(1, daysBetween(today, DOOMSDAY));
     var target = total / daysLeft;

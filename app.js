@@ -15,7 +15,7 @@ window.MM = window.MM || {};
   var modalItemId = null;       // koji naslov je trenutno otvoren u modalu
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
-  var VERSION = '0.24.1';       // pise se u "Ja"; podize se uz svaki deploy
+  var VERSION = '0.24.2';       // pise se u "Ja"; podize se uz svaki deploy
   var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
   var countdownTimer = null;
   var PACE_AFTER_MS = 7 * 24 * 3600 * 1000;   // provera tempa jednom nedeljno
@@ -1252,6 +1252,10 @@ window.MM = window.MM || {};
   // Android "nazad" ne sme da izbaci iz aplikacije dok je nesto otvoreno.
   // Otvaranje modala gura stanje u istoriju, popstate ga zatvara.
   var modalPushed = false;
+  // Kad MI pozovemo history.back() da zatvorimo modal, popstate ipak
+  // okine. Bez ove zastavice bi ga handler protumacio kao "nazad sa taba"
+  // i vratio te na Danas - a treba da ostanes gde si bio.
+  var selfBack = false;
 
   function showModal(html) {
     var m = $('#modal');
@@ -1271,7 +1275,7 @@ window.MM = window.MM || {};
     modalItemId = null;
     ratingFor = null;
     document.body.classList.remove('locked');
-    if (modalPushed && !fromBack) { modalPushed = false; history.back(); }
+    if (modalPushed && !fromBack) { modalPushed = false; selfBack = true; history.back(); }
     else if (fromBack) { modalPushed = false; }
   }
 
@@ -1642,6 +1646,7 @@ window.MM = window.MM || {};
     });
 
     window.addEventListener('popstate', function () {
+      if (selfBack) { selfBack = false; return; }   // sami smo zatvorili modal
       var m = $('#modal');
       if (m && !m.classList.contains('hidden')) { closeModal(true); return; }
       // Nije modal - ako nisi na pocetnom tabu, "nazad" te vraca tamo.
