@@ -402,10 +402,15 @@ window.MM = window.MM || {};
     init: function () {
       var local = loadLocal();
       if (local) state = local;
-      if (configLooksReal()) Store.initAuth();
-      var code = Store.code();
-      if (code) connect(code);
-      else setStatus('local', '');
+      if (configLooksReal()) {
+        // Google prijava je jedini put ka serveru. Stari sync kod se
+        // namerno vise ne koristi - njegov dokument nova pravila i ne
+        // dozvoljavaju, pa bi samo palio crveni indikator.
+        Store.initAuth();
+        setStatus('local', '');
+      } else {
+        setStatus('local', 'Firebase config nije popunjen - radi se samo lokalno.');
+      }
 
       window.addEventListener('online', function () {
         if (Store.code()) { setStatus('connecting'); connect(Store.code()); }

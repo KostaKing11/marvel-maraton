@@ -1408,6 +1408,15 @@ window.MM = window.MM || {};
   function start() {
     fetch('data.json', { cache: 'no-cache' })
       .then(function (r) { return r.json(); })
+      .catch(function (e) {
+        // Samo ovde je data.json stvarno kriv. Ranije je isti catch
+        // hvatao i greske iz pokretanja, pa je poruka umela da laze.
+        $('#view').innerHTML = '<section class="card warn"><h2>Ne mogu da učitam listu</h2>' +
+          '<p class="note">Proveri vezu i osveži. Ako radiš lokalno, pokreni preko servera ' +
+          '(<code>python -m http.server</code>), ne duplim klikom na fajl.</p></section>';
+        console.error('[data.json]', e);
+        throw e;
+      })
       .then(function (data) {
         ITEMS = data;
         ITEMS.forEach(function (i) { BY_ID[i.id] = i; });
@@ -1434,9 +1443,9 @@ window.MM = window.MM || {};
         registerSW();
       })
       .catch(function (e) {
-        $('#view').innerHTML = '<section class="card warn"><h2>Ne mogu da učitam data.json</h2>' +
-          '<p class="note">Pokreni sajt preko servera (npr. <code>python -m http.server</code>), ne otvaranjem fajla duplim klikom.</p></section>';
-        console.error(e);
+        // Greska u pokretanju posle ucitavanja - prijavi je, ali ne brisi
+        // ekran, jer je app najcesce upotrebljiv.
+        console.error('[start]', e);
       });
   }
 
