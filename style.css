@@ -83,7 +83,7 @@ img{display:block}
 /* ---------- layout ---------- */
 #view{max-width:900px;margin:0 auto;padding:0 14px 24px}
 #view[data-tab="danas"]{padding-top:0}
-#view[data-tab="kalendar"],#view[data-tab="biblioteka"],#view[data-tab="ja"]{padding-top:8px}
+#view[data-tab="ocene"],#view[data-tab="biblioteka"],#view[data-tab="ja"]{padding-top:8px}
 /* U "Ja" sekcije razdvaja tanka linija umesto kutija. */
 #view[data-tab="ja"] .card + .card{border-top:1px solid var(--line);padding-top:22px}
 #view[data-tab="ja"] .card.warn{border-top:1px solid rgba(242,193,78,.35)}
@@ -630,3 +630,57 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px}
 @media(prefers-reduced-motion:reduce){
   *{animation-duration:.01ms !important;transition-duration:.01ms !important}
 }
+
+/* ---------- ikona tipa na kartici ---------- */
+.tico{
+  position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;
+  background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.3);
+  backdrop-filter:blur(4px);display:grid;place-items:center;
+}
+.tico svg{width:14px;height:14px;fill:#fff;opacity:.9}
+.tico.t-serija svg{fill:#8ab6ff}
+.tico.t-special svg{fill:#ffd76a}
+
+/* ---------- zvezdice ---------- */
+.stars{display:inline-flex;gap:1px;font-size:13px;line-height:1}
+.stars i{font-style:normal;color:#3a3a45}
+.stars i.on{color:#f5c341}
+
+/* ---------- tab Ocene ---------- */
+.rev-list{display:flex;flex-direction:column;gap:14px}
+.rev{display:flex;gap:12px;align-items:flex-start}
+.rev .rart{width:56px;flex:none;border-radius:7px}
+.rev-main{flex:1;min-width:0}
+.rev-top{display:flex;align-items:center;gap:8px}
+.rev-who{font-size:12.5px;color:var(--muted)}
+.rev-title{font-size:14.5px;font-weight:700;margin-top:3px;line-height:1.25}
+.rev-text{font-size:13.5px;color:#c2c2ca;margin:4px 0 0;line-height:1.4}
+.rev.mine .rev-title{color:#fff}
+.rev.mine::before{content:"";width:2px;background:var(--accent);border-radius:2px;align-self:stretch}
+
+/* ---------- ocene u modalu ---------- */
+.rev-block{margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.rev-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.rev-head h3{margin:0;flex:none}
+.rev-head b{font-size:15px}
+.rev-head span{font-size:12.5px;color:var(--muted)}
+.rev-mini{margin-top:12px}
+.rev-mini .rev-who{margin-left:8px}
+
+/* ---------- biranje ocene ---------- */
+.rate-sheet{padding-top:24px}
+.star-pick{display:flex;gap:6px;justify-content:center;margin:18px 0 4px}
+.sp{
+  background:none;border:none;cursor:pointer;font-size:38px;line-height:1;
+  color:#33333d;padding:2px 4px;transition:transform .12s ease,color .15s ease;
+}
+.sp.on{color:#f5c341}
+.sp:active{transform:scale(.86)}
+.rate-sheet textarea{
+  width:100%;background:var(--card-2);border:1px solid var(--line);
+  border-radius:11px;padding:11px 13px;font-size:15px;resize:vertical;
+  font-family:inherit;color:inherit;
+}
+.check span b{display:block;font-weight:700}
+.check span em{display:block;font-style:normal;font-size:12.5px;color:var(--muted);margin-top:1px}
+.check i{font-style:normal;font-size:12.5px;color:var(--muted);flex:none}

@@ -12,20 +12,16 @@ window.MM = window.MM || {};
   var ITEMS = [], BY_ID = {}, PLAN = null;
   var tab = 'danas';
   var flashKey = null;          // za bounce animaciju posle cekiranja
-  var calendarScrolled = false;
   var modalItemId = null;       // koji naslov je trenutno otvoren u modalu
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
   var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
-  var PACE_EVERY = 5;           // posle koliko oznacenih ide provera tempa
+  var PACE_AFTER_MS = 7 * 24 * 3600 * 1000;   // provera tempa jednom nedeljno
 
   var lib = {
     type: 'sve',                // sve | film | serija
-    tiers: {},                  // must/good/skip/bonus -> true
     status: 'sve',              // sve | odgledano | neodgledano
-    sub: false,                 // "imam pretplatu"
-    q: '',
-    sort: 'release'             // release | chrono | phase
+    q: ''
   };
   var selectMode = false;
   var selected = {};
@@ -182,17 +178,11 @@ window.MM = window.MM || {};
     var y = window.scrollY;
     var view = $('#view');
     view.innerHTML = ({
-      danas: viewDanas, kalendar: viewKalendar, biblioteka: viewBiblioteka, ja: viewJa
+      danas: viewDanas, ocene: viewOcene, biblioteka: viewBiblioteka, ja: viewJa
     })[tab]();
     view.dataset.tab = tab;
 
-    if (tab === 'kalendar' && !calendarScrolled) {
-      var cur = $('.cell.today') || $('.month');
-      if (cur) cur.scrollIntoView({ block: 'center' });
-      calendarScrolled = true;
-    } else {
-      window.scrollTo(0, y);
-    }
+    window.scrollTo(0, y);
 
     if (tab === 'danas') bindDeck();
 
@@ -281,27 +271,14 @@ window.MM = window.MM || {};
 
     if (!deck.length) {
       out += deckDoneHTML();
-    } else if ((s.deckSince || 0) >= PACE_EVERY) {
-      // Posle svakih PACE_EVERY oznacenih ubaci provеru tempa u sam spil.
+    } else if (paceDue(s)) {
+      // Jednom nedeljno, i to tek kad ima sta da se meri.
       out += paceCardHTML(st, s);
     } else {
       out += deckCardHTML(deck, s);
     }
 
     out += '</section>';
-
-    /* --- tanka traka: dokle si ove nedelje --- */
-    var doneMin = week.doneMinutes, totalMin = week.doneMinutes + week.plannedMinutes;
-    out += '<section class="card weekstrip">' +
-      '<div class="card-head">' +
-        '<div><h2>Nedelja ' + week.n + '</h2><div class="sub">' + P.fmtRange(week.start, week.end) + '</div></div>' +
-        '<div class="hours"><b>' + hStr(doneMin) + '</b> / ' + hStr(totalMin) + '</div>' +
-      '</div>' +
-      progressBar(doneMin, totalMin, 'green') +
-      '<div class="tempo-line tempo-' + st.tempo + '">' +
-        '<span class="dot"></span>' + st.perWeekHours.toFixed(1) + 'h nedeljno do finala' +
-      '</div>' +
-      '</section>';
 
     return out;
   }
@@ -436,7 +413,11 @@ window.MM = window.MM || {};
   /** Levo: oznaci kao odgledano i pomeri spil. */
   function deckWatched(key) {
     markUnits([key], true, 'plan');            // kvacica u planu -> broji se u nedelju
-    Store.mutate(function (s) { s.deckSince = (s.deckSince || 0) + 1; });
+    Store.mutate(function (s) {
+      s.deckSince = (s.deckSince || 0) + 1;
+      if (!s.firstWatchAt) s.firstWatchAt = Date.now();
+    });
+    askRating(key);
   }
 
   /**
@@ -460,6 +441,20 @@ window.MM = window.MM || {};
   }
 
   /* ---- provera tempa ---- */
+
+  /**
+   * Provera tempa se javlja posle nedelju dana gledanja, ne na svakih N
+   * naslova. Meri se od prvog oznacenog naslova (ili od poslednje provere),
+   * i trazi bar jedan odgledan naslov u medjuvremenu - nema smisla javljati
+   * se nekom ko jos nije ni poceo.
+   */
+  function paceDue(s) {
+    if (!(s.deckSince > 0)) return false;
+    var since = s.lastPaceAt || s.firstWatchAt || 0;
+    if (!since) return false;
+    return (Date.now() - since) >= PACE_AFTER_MS;
+  }
+
 
   function paceCardHTML(st, s) {
     var verdict, tone;
@@ -501,132 +496,7 @@ window.MM = window.MM || {};
   }
 
   /* ============================================================
-     EKRAN 2: KALENDAR
-     ============================================================ */
-
-  var MONTH_NAMES = ['januar', 'februar', 'mart', 'april', 'maj', 'jun',
-    'jul', 'avgust', 'septembar', 'oktobar', 'novembar', 'decembar'];
-  var DOW = ['P', 'U', 'S', 'Č', 'P', 'S', 'N'];
-
-  /**
-   * Mapa: "2026-08-17" -> {entries, minutes, week}
-   * Nedeljni plan se deli na dane, pa se dani spljoste u jednu mapu
-   * da bi kalendar mogao da crta mesec po mesec.
-   */
-  function buildDayMap() {
-    var s = state(), map = {};
-    PLAN.weeks.forEach(function (w) {
-      P.splitWeekIntoDays(w, s, new Date()).forEach(function (d) {
-        map[d.iso] = {
-          week: w.n, minutes: d.minutes, units: d.units,
-          entries: d.entries || [], skipped: d.skipped
-        };
-      });
-    });
-    return map;
-  }
-
-  function viewKalendar() {
-    var s = state();
-    var map = buildDayMap();
-    var today = P.startOfDay(new Date());
-    var out = '';
-
-    out += '<div class="cal-top">' +
-      '<button class="btn small" data-act="export-ics">Izvezi .ics</button>' +
-      '<span class="cal-note">za podsetnike u Google / Samsung kalendaru</span>' +
-      '</div>';
-
-    if (PLAN.warning) {
-      out += '<section class="card warn"><p class="note">' + esc(PLAN.warning.text) + '</p></section>';
-    }
-
-    // Maraton ide od avgusta do decembra 2026.
-    for (var m = 7; m <= 11; m++) out += monthHTML(2026, m, map, today);
-
-    out += '<p class="foot">Tapni dan da vidiš šta pada na njega.</p>';
-    return out;
-  }
-
-  function monthHTML(year, month, map, today) {
-    var first = new Date(year, month, 1);
-    var startCol = (first.getDay() + 6) % 7;          // ponedeljak = 0
-    var days = new Date(year, month + 1, 0).getDate();
-
-    var out = '<section class="month">' +
-      '<h2 class="month-name">' + MONTH_NAMES[month] + ' <i>' + year + '</i></h2>' +
-      '<div class="dow">';
-    DOW.forEach(function (d) { out += '<span>' + d + '</span>'; });
-    out += '</div><div class="mgrid">';
-
-    for (var i = 0; i < startCol; i++) out += '<div class="cell blank"></div>';
-
-    for (var d = 1; d <= days; d++) {
-      var date = new Date(year, month, d);
-      var iso = P.iso(date);
-      var info = map[iso];
-      var isToday = P.daysBetween(date, today) === 0;
-      var isPast = date < today;
-      var isDoom = (month === 11 && d === 18);
-
-      var cls = 'cell';
-      if (isToday) cls += ' today';
-      if (isPast) cls += ' past';
-      if (isDoom) cls += ' doom';
-      if (info && info.minutes > 0) cls += ' has';
-      if (info && info.skipped) cls += ' skipped';
-
-      out += '<div class="' + cls + '" data-act="day" data-iso="' + iso + '">';
-
-      // Poster prve stavke tog dana kao pozadina celije.
-      if (info && info.units.length) {
-        var pu = posterUrl(info.units[0].item);
-        if (pu) out += '<img class="cell-bg" src="' + esc(pu) + '" alt="" loading="lazy">';
-      }
-      out += '<span class="cell-d">' + d + '</span>';
-      if (isDoom) out += '<span class="cell-doom">🎬</span>';
-      else if (info && info.units.length > 1) {
-        // Brojka samo kad ima vise od jedne stavke - inace je bedz na
-        // skoro svakom danu i mreza deluje bucno.
-        out += '<span class="cell-n">' + info.units.length + '</span>';
-      }
-      out += '</div>';
-    }
-
-    out += '</div></section>';
-    return out;
-  }
-
-  /** Sadržaj jednog dana u modalu. */
-  function openDay(iso) {
-    var map = buildDayMap();
-    var info = map[iso];
-    var parts = iso.split('-');
-    var date = new Date(+parts[0], +parts[1] - 1, +parts[2]);
-    var naslov = date.getDate() + '. ' + MONTH_NAMES[date.getMonth()];
-
-    var html = '<div class="sheet"><div class="sheet-body day-sheet">' +
-      '<button class="close" data-act="close" aria-label="Zatvori">✕</button>' +
-      '<h2>' + esc(naslov) + '</h2>' +
-      '<div class="sub">' + (info ? 'Nedelja ' + info.week + ' · ' + hStr(info.minutes) : 'van maratona') + '</div>';
-
-    if (!info || !info.entries.length) {
-      html += '<p class="empty">Ništa ne pada na ovaj dan.</p>';
-    } else {
-      html += '<div class="rows">';
-      info.entries.forEach(function (e) { html += rowEntry(e, false); });
-      html += '</div>';
-    }
-    if (info) {
-      html += '<button class="btn ghost" data-act="cap" data-week="' + info.week + '">' +
-        'Koliko imam vremena u nedelji ' + info.week + '?</button>';
-    }
-    html += '</div></div>';
-    showModal(html);
-  }
-
-  /* ============================================================
-     EKRAN 3: BIBLIOTEKA
+     EKRAN 2: BIBLIOTEKA
      ============================================================ */
 
   function libraryItems() {
@@ -638,19 +508,10 @@ window.MM = window.MM || {};
         return lib.type === 'film' ? (i.type === 'film' || i.type === 'special') : i.type === 'serija';
       });
     }
-    var tiers = Object.keys(lib.tiers).filter(function (k) { return lib.tiers[k]; });
-    if (tiers.length) arr = arr.filter(function (i) { return tiers.indexOf(i.priority) !== -1; });
-
     if (lib.status !== 'sve') {
       arr = arr.filter(function (i) {
         var f = P.isFullyWatched(i, s);
         return lib.status === 'odgledano' ? f : !f;
-      });
-    }
-    if (lib.sub) {
-      arr = arr.filter(function (i) {
-        var p = platformOf(i);
-        return p === 'netflix' || p === 'hbo';
       });
     }
     if (lib.q) {
@@ -658,11 +519,10 @@ window.MM = window.MM || {};
       arr = arr.filter(function (i) { return i.title.toLowerCase().indexOf(q) !== -1; });
     }
 
-    arr.sort(function (a, b) {
-      if (lib.sort === 'chrono') return a.chronoOrder - b.chronoOrder;
-      if (lib.sort === 'phase') return (a.phase - b.phase) || (a.releaseOrder - b.releaseOrder);
-      return a.releaseOrder - b.releaseOrder;
-    });
+    // Jedan jedini redosled: preporuceni redosled gledanja. Isti kljuc
+    // koji koristi planer, pa Fox filmovi stoje tamo gde im je mesto
+    // (pre "Deadpool & Wolverine"), a ne na kraju spiska.
+    arr.sort(function (a, b) { return (ORD[a.id] || 0) - (ORD[b.id] || 0); });
     return arr;
   }
 
@@ -675,8 +535,6 @@ window.MM = window.MM || {};
     var arr = libraryItems();
     var out = '';
 
-    // Cipovi u dve horizontalne trake koje se skroluju - na telefonu su
-    // ranije prelamali u 4 reda i pojeli pola ekrana.
     out += '<section class="filters">' +
       '<input id="q" class="search" type="search" placeholder="Pretraga po naslovu…" value="' + esc(lib.q) + '">' +
       '<div class="chips scroll">' +
@@ -684,21 +542,10 @@ window.MM = window.MM || {};
         chip('Filmovi', 'f-type', 'film', lib.type === 'film') +
         chip('Serije', 'f-type', 'serija', lib.type === 'serija') +
         '<span class="chip-sep"></span>' +
-        chip('Must', 'f-tier', 'must', !!lib.tiers.must) +
-        chip('Good', 'f-tier', 'good', !!lib.tiers.good) +
-        chip('Skip', 'f-tier', 'skip', !!lib.tiers.skip) +
-        chip('Bonus', 'f-tier', 'bonus', !!lib.tiers.bonus) +
-      '</div>' +
-      '<div class="chips scroll">' +
         chip('Neodgledano', 'f-status', 'neodgledano', lib.status === 'neodgledano') +
         chip('Odgledano', 'f-status', 'odgledano', lib.status === 'odgledano') +
-        chip('Imam pretplatu', 'f-sub', '1', lib.sub) +
-        '<span class="chip-sep"></span>' +
-        chip('Po izlasku', 'f-sort', 'release', lib.sort === 'release') +
-        chip('Hronološki', 'f-sort', 'chrono', lib.sort === 'chrono') +
-        chip('Po fazama', 'f-sort', 'phase', lib.sort === 'phase') +
       '</div>' +
-      '<div class="count">' + arr.length + ' naslova' + (lib.sub ? ' · po tvom izboru platforme' : '') + '</div>' +
+      '<div class="count">' + arr.length + ' naslova · preporučenim redosledom</div>' +
     '</section>';
 
     if (selectMode) {
@@ -719,6 +566,17 @@ window.MM = window.MM || {};
     return out;
   }
 
+  /** Ikona u gornjem desnom uglu kartice: film / serija / specijal. */
+  function typeIcon(type) {
+    var paths = {
+      film: '<path d="M4 3h16a1 1 0 011 1v16a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1zm2 2v2h2V5H6zm10 0v2h2V5h-2zM6 9v6h12V9H6zm0 8v2h2v-2H6zm10 0v2h2v-2h-2z"/>',
+      serija: '<path d="M3 5h18a1 1 0 011 1v10a1 1 0 01-1 1H3a1 1 0 01-1-1V6a1 1 0 011-1zm5 15h8v2H8v-2z"/>',
+      special: '<path d="M12 2l2.6 6.3L21 9l-4.9 4.3L17.5 20 12 16.6 6.5 20l1.4-6.7L3 9l6.4-.7L12 2z"/>'
+    };
+    return '<span class="tico t-' + type + '" title="' + TYPE_LABEL[type] + '">' +
+      '<svg viewBox="0 0 24 24" aria-hidden="true">' + (paths[type] || paths.film) + '</svg></span>';
+  }
+
   function cardHTML(i, s) {
     var full = P.isFullyWatched(i, s);
     var seen = i.type === 'serija' ? P.watchedEpisodes(i, s).length : 0;
@@ -732,10 +590,8 @@ window.MM = window.MM || {};
         '<div class="scrim"></div>' +
         '<div class="badges">' +
           '<span class="b num">#' + (ORD[i.id] || 0) + '</span>' +
-          '<span class="b tier ' + i.priority + '">' + TIER_LABEL[i.priority] + '</span>' +
-          (i.type !== 'film' ? '<span class="b type ' + i.type + '">' + TYPE_LABEL[i.type] + '</span>' : '') +
         '</div>' +
-        chk(full, 'item', 'data-id="' + esc(i.id) + '"', i.id) +
+        typeIcon(i.type) +
         '<div class="over">' +
           '<div class="over-title">' + esc(i.title) + '</div>' +
           '<div class="over-meta">' + i.year + ' · ' +
@@ -748,80 +604,159 @@ window.MM = window.MM || {};
   }
 
   /* ============================================================
-     EKRAN 4: JA
+     EKRAN: OCENE (zajednicko)
+     ============================================================ */
+
+  var reviewsLoading = false;
+
+  function stars(n, cls) {
+    var out = '<span class="stars ' + (cls || '') + '">';
+    for (var i = 1; i <= 5; i++) out += '<i class="' + (i <= n ? 'on' : '') + '">★</i>';
+    return out + '</span>';
+  }
+
+  function viewOcene() {
+    var s = state();
+    var list = MM.Reviews.cached();
+
+    var out = '<section class="card"><h2>Šta kažu drugi</h2>' +
+      '<p class="note small">Ocene svih koji koriste app. Kad označiš da si nešto odgledao, pita te da oceniš.</p></section>';
+
+    if (!Store.code()) {
+      out += '<p class="empty pad">Za ocene ti treba kod za sinhronizaciju — podesi ga u <b>Ja → Sinhronizacija</b>.</p>';
+      return out;
+    }
+    if (reviewsLoading && !list.length) {
+      out += '<p class="empty pad">Učitavam…</p>';
+      return out;
+    }
+    if (!list.length) {
+      out += '<p class="empty pad">Još nema nijedne ocene. Budi prvi — označi nešto kao odgledano.</p>';
+      return out;
+    }
+
+    out += '<div class="rev-list">';
+    list.forEach(function (r) {
+      var it = BY_ID[r.itemId];
+      if (!it) return;
+      var mine = r.code === Store.code();
+      out += '<article class="rev' + (mine ? ' mine' : '') + '">' +
+        '<div class="rart art" data-act="open" data-id="' + esc(it.id) + '">' + artHTML(it) + '</div>' +
+        '<div class="rev-main">' +
+          '<div class="rev-top">' + stars(r.stars) +
+            '<span class="rev-who">' + esc(r.name || 'Anonimno') + (mine ? ' · ti' : '') + '</span>' +
+          '</div>' +
+          '<div class="rev-title">#' + (ORD[it.id] || 0) + ' ' + esc(it.title) + '</div>' +
+          (r.text ? '<p class="rev-text">' + esc(r.text) + '</p>' : '') +
+        '</div></article>';
+    });
+    out += '</div>';
+    return out;
+  }
+
+  /** Ucitaj ocene sa servera pa prerenderuj. */
+  function loadReviews(force) {
+    if (reviewsLoading) return;
+    if (!force && !MM.Reviews.isStale()) return;
+    if (!Store.code()) return;
+    reviewsLoading = true;
+    MM.Reviews.load()
+      .then(function () { reviewsLoading = false; render(); })
+      .catch(function (e) {
+        reviewsLoading = false;
+        console.warn('[ocene]', e);
+        render();
+      });
+  }
+
+  /* ---- ocenjivanje posle gledanja ---- */
+
+  var ratingFor = null;
+
+  function askRating(key) {
+    var id = String(key).split('#')[0];
+    var it = BY_ID[id];
+    if (!it || !Store.code()) return;
+    // Serije se ocenjuju tek kad se zavrse, ne posle svake epizode.
+    if (it.type === 'serija' && !P.isFullyWatched(it, state())) return;
+    ratingFor = id;
+    openRating(id, 0, '');
+  }
+
+  function openRating(id, preset, text) {
+    var it = BY_ID[id];
+    var mine = MM.Reviews.mine(id);
+    var val = preset || (mine ? mine.stars : 0);
+    var txt = text || (mine ? mine.text : '');
+    showModal('<div class="sheet"><div class="sheet-body rate-sheet">' +
+      '<button class="close" data-act="close" aria-label="Zatvori">✕</button>' +
+      '<h2>Kako ti je bio?</h2>' +
+      '<div class="sub">#' + (ORD[id] || 0) + ' ' + esc(it.title) + '</div>' +
+      '<div class="star-pick" id="starPick">' +
+        [1, 2, 3, 4, 5].map(function (n) {
+          return '<button type="button" class="sp' + (n <= val ? ' on' : '') + '" data-act="star" data-n="' + n + '">★</button>';
+        }).join('') +
+      '</div>' +
+      '<label class="field"><span>Kratak utisak (opciono)</span>' +
+      '<textarea id="revText" maxlength="500" rows="3" placeholder="U jednoj rečenici…">' + esc(txt) + '</textarea></label>' +
+      '<div class="btn-row">' +
+        '<button class="btn" data-act="rate-save" data-id="' + esc(id) + '">Objavi</button>' +
+        '<button class="btn ghost" data-act="close">Preskoči</button>' +
+      '</div></div></div>');
+    $('#modal').dataset.stars = val;
+  }
+
+  /* ============================================================
+     EKRAN 3: JA
      ============================================================ */
 
   var PHASE_NAME = { 0: 'Fox / Bonus', 1: 'Faza 1', 2: 'Faza 2', 3: 'Faza 3', 4: 'Faza 4', 5: 'Faza 5', 6: 'Faza 6' };
 
   function viewJa() {
     var s = state();
-    var st = P.stats(ITEMS, s, PLAN, new Date());
     var out = '';
 
-    /* --- tempo --- */
-    out += '<section class="card">' +
-      '<h2>Tempo</h2>' +
-      '<label class="slider-row"><span>Podrazumevano sati nedeljno</span><b id="capVal">' + s.defaultCapacity + 'h</b></label>' +
-      '<input id="capSlider" type="range" min="2" max="25" step="1" value="' + s.defaultCapacity + '">' +
-      '<p class="note small">Pojedinačnu nedelju podešavaš olovkom u Kalendaru.</p>' +
-      '</section>';
-
-    /* --- tierovi --- */
-    out += '<section class="card"><h2>Šta gledam</h2><div class="checks">';
-    [['must', 'Must — kičma priče'], ['good', 'Good — vredi'], ['skip', 'Skip — može se preskočiti'], ['bonus', 'Bonus — Fox X-Men/Deadpool']].forEach(function (t) {
+    /* --- sta gledam --- */
+    out += '<section class="card"><h2>Šta gledam</h2>' +
+      '<p class="note small">Ovo odlučuje šta ulazi u tvoj spisak i redosled.</p><div class="checks">';
+    [['must', 'Obavezno', 'kičma priče, bez ovoga ne razumeš Doomsday'],
+     ['good', 'Vredi', 'nije obavezno, ali je dobro'],
+     ['skip', 'Može da se preskoči', 'slabiji naslovi, priča ne zavisi od njih'],
+     ['bonus', 'Fox bonus', 'X-Men, Logan, Deadpool — pre „Deadpool & Wolverine"']].forEach(function (t) {
       var on = s.plans.indexOf(t[0]) !== -1;
       var mins = P.tierMinutes(ITEMS, s, t[0]);
       out += '<label class="check' + (on ? ' on' : '') + '">' +
         '<input type="checkbox" data-act="plan" data-val="' + t[0] + '"' + (on ? ' checked' : '') + '>' +
-        '<span>' + esc(t[1]) + '</span><em>' + hStr(mins) + ' preostalo</em></label>';
+        '<span><b>' + esc(t[1]) + '</b><em>' + esc(t[2]) + '</em></span>' +
+        '<i>' + hStr(mins) + '</i></label>';
     });
     out += '</div></section>';
-
-    /* --- statistika --- */
-    out += '<section class="card">' +
-      '<h2>Statistika</h2>' +
-      '<div class="stat-big"><b>' + hStr(st.watchedMinutes) + '</b> / ' + hStr(st.totalMinutes) + ' <span>· ' + st.percent + '%</span></div>' +
-      progressBar(st.watchedMinutes, st.totalMinutes, 'green') +
-      '<div class="stat-grid">' +
-        '<div><b>' + st.watchedTitles + '/' + st.titles + '</b><span>naslova</span></div>' +
-        '<div><b>' + st.films + '</b><span>filmova/specijala</span></div>' +
-        '<div><b>' + st.series + '</b><span>serija</span></div>' +
-      '</div>' +
-      '<h3>Po fazama</h3>';
-    st.phases.forEach(function (p) {
-      out += '<div class="phase"><div class="phase-head"><span>' + (PHASE_NAME[p.phase] || ('Faza ' + p.phase)) + '</span>' +
-        '<em>' + p.done + '/' + p.count + '</em></div>' + progressBar(p.watched, p.total, 'red') + '</div>';
-    });
-    out += '</section>';
 
     /* --- posteri --- */
     var miss = MM.Posters.missing(ITEMS, s, false).length;
     var have = ITEMS.filter(function (i) { return !!MM.Posters.urlFor(i, s); }).length;
     out += '<section class="card"><h2>Posteri</h2>' +
-      '<div class="stat-big"><b>' + have + '</b> / ' + ITEMS.length + ' <span>naslova ima poster</span></div>' +
+      '<div class="stat-big"><b>' + have + '</b> / ' + ITEMS.length + ' <span>ima poster</span></div>' +
       progressBar(have, ITEMS.length, 'red') +
-      '<p class="note small">Povlače se automatski: serije sa TVMaze, filmovi sa Wikipedije. Bez ključa i bez naloga. Jednom nađen poster se pamti i sinhronizuje, pa telefon ne traži ponovo.</p>' +
       '<button class="btn ghost" data-act="fetch-posters">' +
-        (MM.Posters.isRunning() ? 'Radi… <span id="posterProgress"></span>' : 'Povuci postere' + (miss ? ' (' + miss + ' fali)' : ' — probaj i one koje nije našao')) +
+        (MM.Posters.isRunning() ? 'Radi… <span id="posterProgress"></span>' : 'Povuci postere' + (miss ? ' (' + miss + ' fali)' : ' ponovo')) +
       '</button></section>';
 
-    /* --- brze oznake --- */
-    out += '<section class="card"><h2>Brzo označavanje</h2>' +
-      '<p class="note small">Ako si dosta toga već video, ovde skratiš posao. U Biblioteci: dugi pritisak na karticu → višestruki izbor. Ovo <b>ne dira nedeljni plan</b> — samo skida naslove sa spiska.</p>' +
-      '<div class="btn-row">' +
-        '<button class="btn ghost" data-act="bulk-spidey">Svi Spider-Man filmovi</button>' +
-        '<button class="btn ghost" data-act="bulk-phase" data-val="1">Cela Faza 1</button>' +
-        '<button class="btn ghost" data-act="bulk-phase" data-val="2">Cela Faza 2</button>' +
-        '<button class="btn ghost" data-act="bulk-phase" data-val="3">Cela Faza 3</button>' +
-      '</div></section>';
+    /* --- podesavanja --- */
+    out += '<section class="card"><h2>Podešavanja</h2>' +
+      '<label class="slider-row"><span>Sati nedeljno</span><b id="capVal">' + s.defaultCapacity + 'h</b></label>' +
+      '<input id="capSlider" type="range" min="2" max="25" step="1" value="' + s.defaultCapacity + '">' +
+      '<label class="field"><span>Ime uz tvoje ocene</span>' +
+      '<input id="dispName" type="text" maxlength="24" placeholder="npr. Kosta" value="' + esc(s.displayName || '') + '"></label>' +
+      '</section>';
 
     /* --- notifikacije --- */
     var perm = ('Notification' in window) ? Notification.permission : 'unsupported';
     out += '<section class="card"><h2>Notifikacije</h2>' +
-      '<p class="note">Zakazane notifikacije kad je app zatvoren traže server (push), pa ih zamenjuje kalendar — uvezi .ics jednom i Google te podseća.</p>' +
-      '<p class="note small">U samoj aplikaciji: kad je otvoriš, jednom dnevno ti prikaže „Danas: …". Ništa više od toga ne obećavamo.</p>' +
+      '<p class="note">Zakazane notifikacije kad je app zatvoren traže server (push), pa ih zamenjuje kalendar — uvezi .ics jednom i Google/Samsung te podseća.</p>' +
+      '<button class="btn ghost" data-act="export-ics">Izvezi .ics za kalendar</button>' +
       (perm === 'granted'
-        ? '<div class="ok-line">✓ dozvola data</div>'
+        ? '<div class="ok-line">✓ notifikacije u aplikaciji dozvoljene</div>'
         : (perm === 'unsupported'
           ? '<div class="note small">Ovaj browser ne podržava notifikacije.</div>'
           : '<button class="btn ghost" data-act="ask-notif">Dozvoli notifikacije u aplikaciji</button>')) +
@@ -830,25 +765,21 @@ window.MM = window.MM || {};
     /* --- sync --- */
     var code = Store.code();
     out += '<section class="card"><h2>Sinhronizacija</h2>' +
-      '<label class="field"><span>Kod za sinhronizaciju</span>' +
+      '<label class="field"><span>Kod</span>' +
       '<input id="syncCode" type="text" placeholder="npr. kosta-marvel-7f3a" value="' + esc(code) + '"></label>' +
-      '<p class="note small">Isti kod unesi i na telefonu i na laptopu — to je sve. Status: <b id="syncStatusTxt">' + esc(statusText()) + '</b></p>' +
+      '<p class="note small">Isti kod na telefonu i laptopu. Status: <b id="syncStatusTxt">' + esc(statusText()) + '</b></p>' +
       '<div class="btn-row">' +
-        '<button class="btn" data-act="save-code">Sačuvaj kod i poveži</button>' +
-        '<button class="btn ghost" data-act="sync-now">Sinhronizuj sada</button>' +
+        '<button class="btn" data-act="save-code">Sačuvaj i poveži</button>' +
+        '<button class="btn ghost" data-act="sync-now">Sinhronizuj</button>' +
       '</div>' +
       '<div class="btn-row">' +
         '<button class="btn ghost" data-act="export-json">Export JSON</button>' +
         '<button class="btn ghost" data-act="import-json">Import JSON</button>' +
-      '</div>' +
-      '<p class="note small">Bez Firebase-a sve radi normalno, samo lokalno — Export/Import je ručni prenos.</p>' +
-      '</section>';
+      '</div></section>';
 
     /* --- reset --- */
     out += '<section class="card"><h2>Opasna zona</h2>' +
       '<button class="btn danger" data-act="reset">Resetuj napredak</button></section>';
-
-    out += '<p class="foot">Marvel Maraton · bez reklama, bez trackera. Podaci o platformama u data.json su samo pretpostavka — tvoj izbor u modalu je merodavan.</p>';
 
     return out;
   }
@@ -913,6 +844,22 @@ window.MM = window.MM || {};
     });
     html += '</select></label>';
 
+    // Ocene zajednice
+    var av = MM.Reviews.avg(id);
+    var revs = MM.Reviews.forItem(id);
+    html += '<div class="rev-block"><div class="rev-head">' +
+      '<h3>Ocene</h3>' +
+      (av ? stars(Math.round(av)) + '<b>' + av.toFixed(1) + '</b><span>(' + revs.length + ')</span>' : '<span class="note small">još nema</span>') +
+      '</div>' +
+      '<button class="btn small ghost" data-act="rate-open" data-id="' + esc(id) + '">' +
+      (MM.Reviews.mine(id) ? 'Izmeni svoju ocenu' : 'Oceni') + '</button>';
+    revs.slice(0, 5).forEach(function (r) {
+      html += '<div class="rev-mini">' + stars(r.stars) +
+        '<span class="rev-who">' + esc(r.name || 'Anonimno') + '</span>' +
+        (r.text ? '<p class="rev-text">' + esc(r.text) + '</p>' : '') + '</div>';
+    });
+    html += '</div>';
+
     html += '<button class="btn ghost" data-act="justwatch" data-id="' + esc(id) + '">Gde gledati u Srbiji?</button>' +
       '<p class="note small">Otvara JustWatch pretragu. Ako ti ta adresa ne radi, <a href="https://www.justwatch.com/rs/search?q=' +
       encodeURIComponent(i.title) + '" target="_blank" rel="noopener">probaj ovu</a>.</p>';
@@ -929,17 +876,30 @@ window.MM = window.MM || {};
     modalSource = source || 'library';
   }
 
+  // Android "nazad" ne sme da izbaci iz aplikacije dok je nesto otvoreno.
+  // Otvaranje modala gura stanje u istoriju, popstate ga zatvara.
+  var modalPushed = false;
+
   function showModal(html) {
     var m = $('#modal');
     m.innerHTML = html;
     m.classList.remove('hidden');
     document.body.classList.add('locked');
+    if (!modalPushed) {
+      history.pushState({ mm: 'modal' }, '');
+      modalPushed = true;
+    }
   }
-  function closeModal() {
-    $('#modal').classList.add('hidden');
-    $('#modal').innerHTML = '';
+  function closeModal(fromBack) {
+    var m = $('#modal');
+    if (m.classList.contains('hidden')) return;
+    m.classList.add('hidden');
+    m.innerHTML = '';
     modalItemId = null;
+    ratingFor = null;
     document.body.classList.remove('locked');
+    if (modalPushed && !fromBack) { modalPushed = false; history.back(); }
+    else if (fromBack) { modalPushed = false; }
   }
 
   /** Osvezava kvacice u otvorenom modalu bez ponovnog crtanja (link ostaje). */
@@ -1047,17 +1007,16 @@ window.MM = window.MM || {};
     'drop-skip': function () {
       Store.mutate(function (s) {
         s.plans = s.plans.filter(function (p) { return p !== 'skip'; });
-        s.deckSince = 0;
+        s.deckSince = 0; s.lastPaceAt = Date.now();
       });
       toast('Skip tier izbačen iz plana.');
     },
     'raise-tempo': function (n) {
       var v = Math.min(25, parseInt(n.dataset.val, 10));
-      Store.mutate(function (s) { s.defaultCapacity = v; s.deckSince = 0; });
+      Store.mutate(function (s) { s.defaultCapacity = v; s.deckSince = 0; s.lastPaceAt = Date.now(); });
       toast('Tempo: ' + v + 'h nedeljno.');
     },
 
-    'cap': function (n) { openCapacity(parseInt(n.dataset.week, 10)); },
     'cap-save': function (n) {
       var v = parseInt($('#capRange').value, 10);
       var wk = n.dataset.week;
@@ -1076,28 +1035,12 @@ window.MM = window.MM || {};
     },
 
     'f-type': function (n) { lib.type = n.dataset.val; render(); },
-    'f-tier': function (n) { lib.tiers[n.dataset.val] = !lib.tiers[n.dataset.val]; render(); },
     'f-status': function (n) { lib.status = (lib.status === n.dataset.val) ? 'sve' : n.dataset.val; render(); },
-    'f-sub': function () { lib.sub = !lib.sub; render(); },
-    'f-sort': function (n) { lib.sort = n.dataset.val; render(); },
 
     'sel-watched': function () { bulkSelected(true); },
     'sel-unwatched': function () { bulkSelected(false); },
     'sel-cancel': function () { selectMode = false; selected = {}; render(); },
 
-    'bulk-spidey': function () {
-      var ids = ITEMS.filter(function (i) {
-        return i.type === 'film' && /spider-man/i.test(i.title);
-      }).map(function (i) { return i.id; });
-      bulkIds(ids, true);
-      toast(ids.length + ' Spider-Man filmova označeno.');
-    },
-    'bulk-phase': function (n) {
-      var ph = parseInt(n.dataset.val, 10);
-      var ids = ITEMS.filter(function (i) { return i.phase === ph; }).map(function (i) { return i.id; });
-      bulkIds(ids, true);
-      toast('Faza ' + ph + ' označena (' + ids.length + ' naslova).');
-    },
 
     'ask-notif': function () {
       if (!('Notification' in window)) return;
@@ -1148,10 +1091,28 @@ window.MM = window.MM || {};
       if (v) window.open(v, '_blank', 'noopener');
       else toast('Nalepi link pa probaj ponovo.');
     },
-    'day': function (n) { openDay(n.dataset.iso); },
+    'star': function (n) {
+      var v = parseInt(n.dataset.n, 10);
+      $('#modal').dataset.stars = v;
+      $$('#starPick .sp').forEach(function (b, i) { b.classList.toggle('on', i < v); });
+    },
+    'rate-save': function (n) {
+      var v = parseInt($('#modal').dataset.stars || '0', 10);
+      if (!v) { toast('Izaberi bar jednu zvezdicu.'); return; }
+      var txt = ($('#revText') && $('#revText').value || '').trim();
+      var id = n.dataset.id;
+      n.textContent = 'Šaljem…';
+      MM.Reviews.save(id, v, txt)
+        .then(function () { closeModal(); toast('Objavljeno.'); render(); })
+        .catch(function (e) {
+          n.textContent = 'Objavi';
+          toast(String(e && e.message) === 'offline' ? 'Nema veze sa serverom.' : 'Nije uspelo — proveri Firestore pravila.');
+        });
+    },
+    'rate-open': function (n) { openRating(n.dataset.id, 0, ''); },
 
     'pace-ok': function () {
-      Store.mutate(function (s) { s.deckSince = 0; });
+      Store.mutate(function (s) { s.deckSince = 0; s.lastPaceAt = Date.now(); });
     },
 
     'play': function (n) {
@@ -1275,8 +1236,9 @@ window.MM = window.MM || {};
       var b = ev.target.closest('.tab');
       if (!b) return;
       if (tab !== b.dataset.tab) {
+        if (tab === 'danas') history.pushState({ mm: 'tab' }, '');
         tab = b.dataset.tab;
-        if (tab === 'kalendar') calendarScrolled = false;
+        if (tab === 'ocene') loadReviews(false);
         window.scrollTo(0, 0);
         render();
       }
@@ -1306,6 +1268,10 @@ window.MM = window.MM || {};
           if (on && s.plans.indexOf(t) === -1) s.plans.push(t);
           if (!on) s.plans = s.plans.filter(function (p) { return p !== t; });
         });
+      }
+      if (ev.target.id === 'dispName') {
+        var nm = ev.target.value.trim().slice(0, 24);
+        Store.mutate(function (st) { st.displayName = nm; });
       }
       if (ev.target.id === 'pfSel') {
         var id = ev.target.dataset.id, val = ev.target.value;
@@ -1354,6 +1320,18 @@ window.MM = window.MM || {};
 
     document.addEventListener('keydown', function (ev) {
       if (ev.key === 'Escape') closeModal();
+    });
+
+    window.addEventListener('popstate', function () {
+      var m = $('#modal');
+      if (m && !m.classList.contains('hidden')) { closeModal(true); return; }
+      // Nije modal - ako nisi na pocetnom tabu, "nazad" te vraca tamo.
+      if (tab !== 'danas') {
+        tab = 'danas';
+        history.pushState({ mm: 'tab' }, '');
+        window.scrollTo(0, 0);
+        render();
+      }
     });
 
     // Topbar je providan preko heroja, a postaje pun cim se skroluje.
@@ -1467,6 +1445,7 @@ window.MM = window.MM || {};
         // Posteri se povlace tiho u pozadini, malo posle starta da ne
         // uspore prvo crtanje.
         setTimeout(function () { startPosterFetch(false); }, 1200);
+        setTimeout(function () { loadReviews(true); }, 2000);
 
         registerSW();
       })

@@ -31,6 +31,9 @@ window.MM = window.MM || {};
       log: {},              // "iron-man" | "loki-s1#3"  ->  {w: nedelja, d: "2026-08-17"}
       skipDays: {},         // "2026-08-17": true  ("nemam vremena danas")
       deckSince: 0,         // koliko je oznaceno od poslednje provere tempa
+      firstWatchAt: 0,      // kad je oznacen prvi naslov (za nedeljnu proveru tempa)
+      lastPaceAt: 0,        // kad je poslednji put pokazana provera tempa
+      displayName: '',      // ime uz tvoje ocene
       updatedAt: 0
     };
   }
@@ -106,7 +109,12 @@ window.MM = window.MM || {};
     var fsMod  = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
     var app = appMod.initializeApp(window.FIREBASE_CONFIG);
     var db = fsMod.getFirestore(app);
-    fb = { app: app, db: db, doc: fsMod.doc, setDoc: fsMod.setDoc, getDoc: fsMod.getDoc, onSnapshot: fsMod.onSnapshot };
+    fb = {
+      app: app, db: db,
+      doc: fsMod.doc, setDoc: fsMod.setDoc, getDoc: fsMod.getDoc, onSnapshot: fsMod.onSnapshot,
+      collection: fsMod.collection, query: fsMod.query, orderBy: fsMod.orderBy,
+      limit: fsMod.limit, getDocs: fsMod.getDocs
+    };
     return fb;
   }
 
@@ -217,6 +225,22 @@ window.MM = window.MM || {};
 
   var Store = {
     get: function () { return state; },
+
+    /**
+     * Firestore handle za module kojima treba (ocene). Vraca null ako
+     * config nije popunjen ili nema mreze - pozivalac to tretira kao
+     * "ovaj deo je iskljucen", ne kao gresku.
+     */
+    firestore: async function () {
+      if (!configLooksReal() || !navigator.onLine) return null;
+      try {
+        var f = await loadFirebase();
+        return f;
+      } catch (e) {
+        console.warn('[sync] firestore nedostupan:', e);
+        return null;
+      }
+    },
 
     /** Jedina dozvoljena izmena stanja. fn(state) menja objekat na licu mesta. */
     mutate: function (fn) {

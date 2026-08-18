@@ -74,6 +74,22 @@ service cloud.firestore {
       allow read, write: if syncCode.matches('^[a-z0-9][a-z0-9-]{7,63}$');
     }
 
+    // Zajednicke ocene: svi citaju, svako pise samo pod svojim kodom.
+    // Doc id mora biti "<itemId>__<syncCode>" - to sprecava da neko
+    // prepise tudju ocenu a da ne zna njegov kod.
+    match /reviews/{rid} {
+      allow read: if true;
+      allow create, update: if
+        request.resource.data.code is string &&
+        request.resource.data.itemId is string &&
+        rid == request.resource.data.itemId + '__' + request.resource.data.code &&
+        request.resource.data.stars is int &&
+        request.resource.data.stars >= 1 && request.resource.data.stars <= 5 &&
+        request.resource.data.text.size() <= 500 &&
+        request.resource.data.name.size() <= 24;
+      allow delete: if false;
+    }
+
     // Sve ostalo je zatvoreno.
     match /{document=**} {
       allow read, write: if false;
