@@ -15,7 +15,7 @@ window.MM = window.MM || {};
   var modalItemId = null;       // koji naslov je trenutno otvoren u modalu
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
-  var VERSION = '0.24.2';       // pise se u "Ja"; podize se uz svaki deploy
+  var VERSION = '0.25.0';       // pise se u "Ja"; podize se uz svaki deploy
   var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
   var countdownTimer = null;
   var PACE_AFTER_MS = 7 * 24 * 3600 * 1000;   // provera tempa jednom nedeljno
@@ -272,7 +272,7 @@ window.MM = window.MM || {};
 
     out += '<div class="deck-top">' +
       '<div class="cdown" id="cdown">' + countdownHTML() + '</div>' +
-      '<span class="dcount">' + watchedTitles + '<i>/' + ITEMS.length + '</i></span>' +
+      streakHTML(s) +
       '</div>';
 
     var idle = idleHours();
@@ -359,6 +359,62 @@ window.MM = window.MM || {};
     var dow = (today.getDay() + 6) % 7;           // ponedeljak = 0
     var mon = P.addDays(today, -dow);
     return { from: P.iso(mon), to: P.iso(P.addDays(mon, 6)), mon: mon };
+  }
+
+  /* ---- streak ---- */
+
+  /**
+   * Niz uzastopnih dana u kojima si nesto odgledao.
+   * Racuna se IZ LOGA (svaki upis nosi datum), ne iz zasebnog brojaca -
+   * tako ne moze da se raskorači ako se stanje sinhronizuje sa dva
+   * uredjaja ili ako nesto odcekiras.
+   *
+   * Danas jos nisi gledao, a juce jesi? Niz je i dalje ziv - samo
+   * "na cekanju". Ako ni juce nema nista, niz je pukao.
+   */
+  function computeStreak(s) {
+    var days = {};
+    Object.keys(s.log || {}).forEach(function (k) {
+      var d = s.log[k] && s.log[k].d;
+      if (d) days[d] = 1;
+    });
+
+    var today = P.startOfDay(new Date());
+    var todayIso = P.iso(today);
+    var yIso = P.iso(P.addDays(today, -1));
+
+    var start;
+    if (days[todayIso]) start = today;
+    else if (days[yIso]) start = P.addDays(today, -1);
+    else return { n: 0, today: false, alive: false };
+
+    var n = 0, cur = start;
+    while (days[P.iso(cur)]) { n++; cur = P.addDays(cur, -1); }
+    return { n: n, today: !!days[todayIso], alive: true };
+  }
+
+  /** Nivo odredjuje boju aure - sto duze traje, to jace gori. */
+  function streakTier(n) {
+    if (n >= 30) return 'legend';
+    if (n >= 14) return 'violet';
+    if (n >= 7) return 'blue';
+    if (n >= 3) return 'fire';
+    return 'ember';
+  }
+
+  function streakHTML(s) {
+    var st = computeStreak(s);
+    if (!st.n) {
+      return '<div class="streak dead" title="Odgledaj nešto danas i kreće niz">' +
+        '<span class="st-in"><b>0</b></span></div>';
+    }
+    return '<div class="streak s-' + streakTier(st.n) + (st.today ? '' : ' pending') +
+      '" title="' + st.n + ' dana zaredom' + (st.today ? '' : ' — danas još nisi gledao') + '">' +
+      '<span class="st-ring"></span>' +
+      '<span class="st-ring two"></span>' +
+      '<span class="st-in"><b>' + st.n + '</b></span>' +
+      '<span class="st-flame">🔥</span>' +
+      '</div>';
   }
 
   /* ---- upozorenje da si stao ---- */

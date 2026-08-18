@@ -828,3 +828,93 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px}
   position:absolute;left:6px;bottom:26px;font-size:10px;font-weight:800;letter-spacing:.5px;
   background:rgba(0,0,0,.75);color:#9bb0ff;padding:2px 6px;border-radius:5px;
 }
+
+/* ============================================================
+   STREAK — aura koja gori sve jače što niz duže traje
+   ============================================================ */
+.streak{
+  position:relative;width:58px;height:58px;flex:none;
+  display:grid;place-items:center;
+  --c1:#ff8a00; --c2:#ff3d00; --c3:#ffd000;
+  animation:stBreathe 2.8s ease-in-out infinite;
+}
+/* dva prstena se vrte u suprotnim smerovima -> "aura" */
+.st-ring{
+  position:absolute;inset:-4px;border-radius:50%;
+  background:conic-gradient(from 0deg,var(--c2),var(--c3),var(--c1),var(--c2));
+  animation:stSpin 3.2s linear infinite;
+  filter:blur(3px);opacity:.9;
+}
+.st-ring.two{
+  inset:-9px;opacity:.4;filter:blur(9px);
+  animation:stSpin 5.4s linear infinite reverse;
+}
+.st-in{
+  position:relative;z-index:2;
+  width:46px;height:46px;border-radius:50%;
+  background:radial-gradient(circle at 50% 35%,#26262e,#111114 70%);
+  border:1px solid rgba(255,255,255,.10);
+  display:grid;place-items:center;
+  box-shadow:inset 0 1px 6px rgba(0,0,0,.7);
+}
+.st-in b{
+  font-size:21px;font-weight:900;letter-spacing:-1px;
+  background:linear-gradient(180deg,#fff,var(--c3));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.st-flame{
+  position:absolute;z-index:3;top:-9px;right:-4px;font-size:16px;
+  animation:stFlicker 1.5s ease-in-out infinite;
+  filter:drop-shadow(0 0 6px var(--c2));
+}
+
+@keyframes stSpin{to{transform:rotate(360deg)}}
+@keyframes stBreathe{
+  0%,100%{filter:drop-shadow(0 0 6px rgba(255,61,0,.45))}
+  50%{filter:drop-shadow(0 0 18px rgba(255,61,0,.85))}
+}
+@keyframes stFlicker{
+  0%,100%{transform:translateY(0) scale(1);opacity:1}
+  40%{transform:translateY(-2px) scale(1.14);opacity:.85}
+  70%{transform:translateY(1px) scale(.96);opacity:1}
+}
+
+/* nivoi */
+.streak.s-ember{--c1:#ff9d3c;--c2:#ff6a00;--c3:#ffd08a}
+.streak.s-fire{--c1:#ff8a00;--c2:#ff2d00;--c3:#ffd000}
+.streak.s-blue{
+  --c1:#38bdf8;--c2:#0066ff;--c3:#a5f3ff;
+  animation:stBreatheBlue 2.6s ease-in-out infinite;
+}
+.streak.s-violet{
+  --c1:#c084fc;--c2:#7c3aed;--c3:#f0abfc;
+  animation:stBreatheViolet 2.4s ease-in-out infinite;
+}
+.streak.s-legend{
+  --c1:#ffd700;--c2:#ff0059;--c3:#7cf9ff;
+  animation:stBreatheLegend 1.9s ease-in-out infinite;
+}
+.streak.s-legend .st-ring{animation-duration:1.9s}
+.streak.s-legend .st-ring.two{animation-duration:3.4s}
+@keyframes stBreatheBlue{
+  0%,100%{filter:drop-shadow(0 0 6px rgba(0,102,255,.5))}
+  50%{filter:drop-shadow(0 0 20px rgba(56,189,248,.95))}
+}
+@keyframes stBreatheViolet{
+  0%,100%{filter:drop-shadow(0 0 7px rgba(124,58,237,.55))}
+  50%{filter:drop-shadow(0 0 22px rgba(192,132,252,.95))}
+}
+@keyframes stBreatheLegend{
+  0%,100%{filter:drop-shadow(0 0 8px rgba(255,215,0,.6))}
+  50%{filter:drop-shadow(0 0 26px rgba(255,0,89,.9))}
+}
+
+/* danas jos nisi gledao - aura tinja, ali ne gori */
+.streak.pending{animation:none;filter:saturate(.55) brightness(.85)}
+.streak.pending .st-ring{animation-duration:9s;opacity:.5}
+.streak.pending .st-flame{animation:none;opacity:.5}
+
+/* niz je pukao */
+.streak.dead{animation:none}
+.streak.dead .st-in{background:var(--card-2);border-color:var(--line)}
+.streak.dead .st-in b{background:none;color:#3f3f4a;-webkit-text-fill-color:#3f3f4a}
