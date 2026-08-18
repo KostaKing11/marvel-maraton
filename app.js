@@ -15,7 +15,7 @@ window.MM = window.MM || {};
   var modalItemId = null;       // koji naslov je trenutno otvoren u modalu
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
-  var VERSION = '0.21.0';       // pise se u "Ja"; podize se uz svaki deploy
+  var VERSION = '0.21.1';       // pise se u "Ja"; podize se uz svaki deploy
   var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
   var countdownTimer = null;
   var PACE_AFTER_MS = 7 * 24 * 3600 * 1000;   // provera tempa jednom nedeljno
@@ -325,12 +325,16 @@ window.MM = window.MM || {};
     if (!window.caches || !PLAN) return;
     var deck = P.deck(ITEMS, state());
     var u = deck[0];
+    // "left" mora da broji NASLOVE, ne epizode - inace notifikacija
+    // kaze "jos 202 naslova" za 69 naslova.
+    var ids = {};
+    deck.forEach(function (x) { ids[x.id] = 1; });
     var meta = {
       lastWatchAt: state().lastWatchAt || state().firstWatchAt || 0,
       title: u ? unitTitle(u) : '',
       num: u ? (ORD[u.id] || 0) : 0,
       poster: u ? posterUrl(u.item) : '',
-      left: deck.length
+      left: Object.keys(ids).length
     };
     caches.open('mm-meta').then(function (c) {
       c.put('/mm-meta.json', new Response(JSON.stringify(meta), {
@@ -350,8 +354,10 @@ window.MM = window.MM || {};
     var u = deck[0];
     var days = Math.floor(hours / 24);
     var title = days >= 2 ? ('🚨 ' + days + ' DANA BEZ MARVELA') : '🚨 24 SATA BEZ MARVELA';
+    var ids = {}; deck.forEach(function (x) { ids[x.id] = 1; });
     var body = (u ? 'Na redu je #' + (ORD[u.id] || 0) + ' ' + unitTitle(u) + '.' + String.fromCharCode(10) : '') +
-      'Doomsday ne čeka. Ostalo je ' + P.daysToDoomsday(new Date()) + ' dana.';
+      'Još ' + Object.keys(ids).length + ' naslova, a Doomsday je za ' +
+      P.daysToDoomsday(new Date()) + ' dana.';
 
     var opts = {
       body: body,
