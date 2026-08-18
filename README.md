@@ -59,7 +59,16 @@ window.FIREBASE_CONFIG = {
 
 Ako ostaviš `REPLACE_ME`, app to prepozna i tiho preskoči Firebase.
 
-### 2.3 Firestore rules
+### 2.3 Uključi Google prijavu
+
+Firebase konzola → **Build → Authentication → Get started** → tab
+**Sign-in method** → **Google** → uključi → **Save**.
+
+Zatim **Authentication → Settings → Authorized domains** → **Add domain** →
+`kostaking11.github.io` (i `localhost` ako testiraš lokalno). Bez ovoga prijava
+puca sa `auth/unauthorized-domain`.
+
+### 2.4 Firestore rules
 
 Firestore → **Rules** → nalepi ovo → **Publish**:
 
@@ -68,44 +77,40 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Jedan dokument po korisniku: users/{syncCode}
-    // syncCode je string koji sam unosiš u app-u (isti na svim uređajima).
-    match /users/{syncCode} {
-      allow read, write: if syncCode.matches('^[a-z0-9][a-z0-9-]{7,63}$');
+    // Tvoja lista — samo ti, i to tek kad si prijavljen.
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
-    // Zajednicke ocene: svi citaju, svako pise samo pod svojim kodom.
-    // Doc id mora biti "<itemId>__<syncCode>" - to sprecava da neko
-    // prepise tudju ocenu a da ne zna njegov kod.
+    // Profil koji ekipa vidi: ime, slika, dokle si stigao.
+    match /profiles/{uid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Ocene: svi prijavljeni čitaju, svako piše samo svoje.
     match /reviews/{rid} {
-      allow read: if true;
-      allow create, update: if
-        request.resource.data.code is string &&
-        request.resource.data.itemId is string &&
-        rid == request.resource.data.itemId + '__' + request.resource.data.code &&
-        request.resource.data.stars is int &&
-        request.resource.data.stars >= 1 && request.resource.data.stars <= 5 &&
-        request.resource.data.text.size() <= 500 &&
-        request.resource.data.name.size() <= 24;
-      allow delete: if false;
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+        && request.auth.uid == request.resource.data.uid
+        && rid == request.resource.data.itemId + '__' + request.auth.uid
+        && request.resource.data.stars is int
+        && request.resource.data.stars >= 1 && request.resource.data.stars <= 5
+        && request.resource.data.text.size() <= 500;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.uid;
     }
 
-    // Sve ostalo je zatvoreno.
-    match /{document=**} {
-      allow read, write: if false;
-    }
+    match /{document=**} { allow read, write: if false; }
   }
 }
 ```
 
-**Iskreno o zaštiti:** ovo je slaba zaštita. Nema naloga ni lozinke — ko sazna
-tvoj kod, može da vidi i menja tvoju listu. Zaštita je praktično samo to što je
-kod teško pogoditi. Za listu odgledanih filmova to nije problem: nema lozinki,
-nema ličnih podataka, nema ničega što bi nekome vredelo. Zato izaberi kod koji
-se ne pogađa (npr. `kosta-marvel-7f3a`), a ne `test` ili `marvel`.
+Ovo je **prava zaštita**, za razliku od ranije verzije sa kodom: tvoju listu
+ne može da otvori niko osim tebe, i niko ne može da objavi ocenu u tuđe ime.
 
-Pravilo iznad traži 8–64 karaktera, mala slova/cifre/crtice, i ne dozvoljava da
-neko lista sve dokumente — mora tačno da pogodi ceo kod.
+> **Prelaz sa starog koda:** nova pravila zatvaraju stare dokumente pisane pod
+> sync kodom. Ništa se ne gubi — prijavi se prvi put **na uređaju na kome već
+> imaš svoju listu** (telefon ili laptop), i app će je upisati pod tvoj nalog.
 
 ### 2.4 Korišćenje
 

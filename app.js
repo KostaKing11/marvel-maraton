@@ -173,6 +173,7 @@ window.MM = window.MM || {};
   function refresh() {
     PLAN = P.buildPlan(ITEMS, state(), new Date());
     render();
+    publishProgress();
   }
 
   function render() {
@@ -655,35 +656,58 @@ window.MM = window.MM || {};
   }
 
   function viewOcene() {
-    var s = state();
     var list = MM.Reviews.cached();
+    var ppl = MM.Reviews.people();
+    var me = Store.uid();
+    var out = '';
 
-    var out = '<section class="card"><h2>Šta kažu drugi</h2>' +
-      '<p class="note small">Ocene svih koji koriste app. Kad označiš da si nešto odgledao, pita te da oceniš.</p></section>';
-
-    if (!Store.code()) {
-      out += '<p class="empty pad">Za ocene ti treba kod za sinhronizaciju — podesi ga u <b>Ja → Sinhronizacija</b>.</p>';
+    if (!me) {
+      out += '<section class="card"><h2>Ekipa</h2>' +
+        '<p class="note">Prijavi se Google nalogom da vidiš dokle su drugi stigli i šta kažu o filmovima.</p>' +
+        '<button class="btn" data-act="go-login">Prijavi se</button></section>';
       return out;
     }
-    if (reviewsLoading && !list.length) {
-      out += '<p class="empty pad">Učitavam…</p>';
-      return out;
+
+    /* --- ko dokle je stigao --- */
+    out += '<section class="card"><h2>Dokle su stigli</h2>';
+    if (!ppl.length) {
+      out += '<p class="empty">' + (reviewsLoading ? 'Učitavam…' : 'Još niko osim tebe nije ovde.') + '</p>';
+    } else {
+      out += '<div class="people">';
+      ppl.forEach(function (pr, idx) {
+        var mine = pr.uid === me;
+        out += '<div class="person' + (mine ? ' me' : '') + '">' +
+          '<span class="rank">' + (idx + 1) + '</span>' +
+          (pr.photo
+            ? '<img class="pav" src="' + esc(pr.photo) + '" alt="" referrerpolicy="no-referrer">'
+            : '<span class="pav txt">' + esc((pr.name || '?').slice(0, 1).toUpperCase()) + '</span>') +
+          '<div class="pmain">' +
+            '<div class="pname">' + esc(pr.name || 'Bez imena') + (mine ? ' <em>· ti</em>' : '') + '</div>' +
+            '<div class="pbar"><i style="width:' + Math.min(100, pr.percent || 0) + '%"></i></div>' +
+          '</div>' +
+          '<div class="pnum"><b>' + (pr.watched || 0) + '</b><span>/' + (pr.total || 0) + '</span></div>' +
+          '</div>';
+      });
+      out += '</div>';
     }
+    out += '</section>';
+
+    /* --- utisci --- */
+    out += '<section class="card"><h2>Šta kažu</h2>';
     if (!list.length) {
-      out += '<p class="empty pad">Još nema nijedne ocene. Budi prvi — označi nešto kao odgledano.</p>';
+      out += '<p class="empty">' + (reviewsLoading ? 'Učitavam…' : 'Još nema nijedne ocene. Označi nešto kao odgledano pa te pita.') + '</p></section>';
       return out;
     }
-
-    out += '<div class="rev-list">';
+    out += '</section><div class="rev-list">';
     list.forEach(function (r) {
       var it = BY_ID[r.itemId];
       if (!it) return;
-      var mine = r.code === Store.code();
+      var mine = r.uid === me;
       out += '<article class="rev' + (mine ? ' mine' : '') + '">' +
         '<div class="rart art" data-act="open" data-id="' + esc(it.id) + '">' + artHTML(it) + '</div>' +
         '<div class="rev-main">' +
           '<div class="rev-top">' + stars(r.stars) +
-            '<span class="rev-who">' + esc(r.name || 'Anonimno') + (mine ? ' · ti' : '') + '</span>' +
+            '<span class="rev-who">' + esc(r.name || 'Bez imena') + (mine ? ' · ti' : '') + '</span>' +
           '</div>' +
           '<div class="rev-title">#' + (ORD[it.id] || 0) + ' ' + esc(it.title) + '</div>' +
           (r.text ? '<p class="rev-text">' + esc(r.text) + '</p>' : '') +
@@ -697,15 +721,32 @@ window.MM = window.MM || {};
   function loadReviews(force) {
     if (reviewsLoading) return;
     if (!force && !MM.Reviews.isStale()) return;
-    if (!Store.code()) return;
+    if (!Store.uid()) return;
     reviewsLoading = true;
-    MM.Reviews.load()
+    Promise.all([MM.Reviews.load(), MM.Reviews.loadPeople()])
       .then(function () { reviewsLoading = false; render(); })
       .catch(function (e) {
         reviewsLoading = false;
-        console.warn('[ocene]', e);
+        console.warn('[ekipa]', e);
         render();
       });
+  }
+
+  /**
+   * Objavi svoj napredak da ga ekipa vidi. Debounce, jer se stanje
+   * menja na svako cekiranje a profil ne mora da prati svaki klik.
+   */
+  var profileTimer = null;
+  function publishProgress() {
+    if (!Store.uid()) return;
+    clearTimeout(profileTimer);
+    profileTimer = setTimeout(function () {
+      var st = P.stats(ITEMS, state(), PLAN, new Date());
+      Store.publishProfile({
+        watched: st.watchedTitles, total: st.titles,
+        minutes: st.watchedMinutes, percent: st.percent
+      });
+    }, 3000);
   }
 
   /* ---- ocenjivanje posle gledanja ---- */
@@ -794,17 +835,21 @@ window.MM = window.MM || {};
       '</section>';
 
     /* --- nalog --- */
-    var uname = Store.username();
+    var u = Store.user();
     out += '<section class="card"><h2>Nalog</h2>' +
-      (uname
-        ? '<div class="acct"><span class="acct-av">' + esc(uname.slice(0, 1).toUpperCase()) + '</span>' +
-          '<div><b>' + esc(uname) + '</b><em id="syncStatusTxt">' + esc(statusText()) + '</em></div></div>' +
+      (u
+        ? '<div class="acct">' +
+            (u.photo ? '<img class="acct-av" src="' + esc(u.photo) + '" alt="" referrerpolicy="no-referrer">'
+                     : '<span class="acct-av">' + esc((u.name || '?').slice(0, 1).toUpperCase()) + '</span>') +
+            '<div><b>' + esc(u.name || 'Bez imena') + '</b>' +
+            '<em>' + esc(u.email || '') + '</em>' +
+            '<em id="syncStatusTxt">' + esc(statusText()) + '</em></div></div>' +
           '<div class="btn-row">' +
             '<button class="btn ghost" data-act="sync-now">Sinhronizuj</button>' +
             '<button class="btn ghost" data-act="sign-out">Odjavi se</button>' +
           '</div>'
-        : '<p class="note">Nisi prijavljen — lista postoji samo na ovom uređaju.</p>' +
-          '<button class="btn" data-act="go-login">Prijavi se</button>') +
+        : '<p class="note">Nisi prijavljen — lista postoji samo na ovom uređaju, i ne vidiš ekipu.</p>' +
+          '<button class="btn" data-act="go-login">Prijavi se Google nalogom</button>') +
       '<div class="btn-row">' +
         '<button class="btn ghost" data-act="export-json">Export JSON</button>' +
         '<button class="btn ghost" data-act="import-json">Import JSON</button>' +
@@ -967,15 +1012,18 @@ window.MM = window.MM || {};
     var o = $('#onboarding');
     o.innerHTML = '<div class="sheet login">' +
       '<div class="login-logo"><span class="mlogo">MARVEL</span><span class="brand-sub">MARATON</span></div>' +
-      '<h2>Napravi nalog</h2>' +
-      '<p class="note small">Isto ime i lozinka na svakom uređaju = ista lista. Ako nalog ne postoji, napraviće se sam.</p>' +
-      '<label class="field"><span>Korisničko ime</span>' +
-      '<input id="obUser" type="text" autocomplete="username" maxlength="24" placeholder="kosta"></label>' +
-      '<label class="field"><span>Lozinka</span>' +
-      '<input id="obPass" type="password" autocomplete="current-password" maxlength="40" placeholder="min. 4 znaka"></label>' +
-      '<p class="note small">Ime stoji uz tvoje ocene, pa ga vide drugi. Lozinka se nigde ne prikazuje.</p>' +
-      '<div class="btn-row"><button class="btn" data-act="ob-login">Uđi</button>' +
-      '<button class="btn ghost" data-act="ob-skip">Samo na ovom telefonu</button></div></div>';
+      '<h2>Prijavi se</h2>' +
+      '<p class="note small">Google nalogom. Lista ti se sama prenosi na sve uređaje, a ekipa vidi dokle si stigao.</p>' +
+      '<button class="btn gbtn" data-act="google-login">' +
+        '<svg viewBox="0 0 48 48" aria-hidden="true">' +
+        '<path fill="#4285F4" d="M45 24c0-1.6-.1-2.7-.4-3.9H24v7.1h12c-.2 1.8-1.5 4.6-4.4 6.4l6.7 5.2c4-3.7 6.7-9.1 6.7-14.8z"/>' +
+        '<path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-6.9-5.3c-1.9 1.3-4.4 2.2-7.6 2.2-5.8 0-10.7-3.8-12.500-9.1l-7.1 5.5C7.9 41 15.4 46 24 46z"/>' +
+        '<path fill="#FBBC05" d="M11.5 28.5c-.5-1.4-.8-2.9-.8-4.5s.3-3.1.7-4.5l-7.1-5.5C2.8 17 2 20.4 2 24s.8 7 2.3 10z"/>' +
+        '<path fill="#EA4335" d="M24 10.6c4.1 0 6.9 1.8 8.5 3.3l6.2-6C34.9 4.4 29.9 2 24 2 15.4 2 7.9 7 4.3 14l7.1 5.5c1.8-5.3 6.7-8.9 12.6-8.9z"/>' +
+        '</svg>Nastavi sa Google nalogom</button>' +
+      '<button class="btn ghost" data-act="ob-skip">Samo na ovom uređaju</button>' +
+      '<p class="note small">Bez prijave app radi normalno, ali nema sinhronizacije ni ocena.</p>' +
+      '</div>';
     o.classList.remove('hidden');
     document.body.classList.add('locked');
   }
@@ -1064,7 +1112,9 @@ window.MM = window.MM || {};
     'sign-out': function () {
       confirmDialog('Odjava', 'Lista ostaje na ovom uređaju, ali se više ne sinhronizuje dok se ponovo ne prijaviš.', 'sign-out-yes', 'Odjavi me');
     },
-    'sign-out-yes': function () { Store.signOut(); closeModal(); render(); toast('Odjavljen.'); },
+    'sign-out-yes': function () {
+      Store.signOutGoogle().then(function () { closeModal(); render(); toast('Odjavljen.'); });
+    },
     'go-login': function () { showOnboarding(); },
 
     'sync-now': function () { Store.syncNow().then(function () { render(); toast('Sinhronizovano.'); }); },
@@ -1127,13 +1177,19 @@ window.MM = window.MM || {};
       startPosterFetch(true);
     },
 
-    'ob-login': function () {
-      var u = $('#obUser').value, p = $('#obPass').value;
-      var key = Store.signIn(u, p);
-      if (!key) { toast('Ime bar 3 znaka, lozinka bar 4.'); return; }
-      hideOnboarding();
-      Store.connect(key).then(render);
-      toast('Zdravo, ' + u.trim() + '.');
+    'google-login': function (n) {
+      n.disabled = true;
+      n.textContent = 'Otvaram Google…';
+      Store.signInGoogle()
+        .then(function () { hideOnboarding(); })
+        .catch(function (e) {
+          n.disabled = false;
+          n.textContent = 'Nastavi sa Google nalogom';
+          console.warn(e);
+          toast(String(e && e.code) === 'auth/unauthorized-domain'
+            ? 'Dodaj domen u Firebase → Authentication → Settings.'
+            : 'Prijava nije uspela — je li Google provajder uključen?');
+        });
     },
     'ob-skip': function () { hideOnboarding(); }
   };
@@ -1339,11 +1395,15 @@ window.MM = window.MM || {};
 
         Store.init();
         Store.onChange(function () { refresh(); });
+        Store.onAuth(function (u) {
+          if (u) { hideOnboarding(); loadReviews(true); }
+          render();
+        });
         bindStatus();
         bindEvents();
         refresh();
 
-        if (!Store.hasSeenOnboarding()) showOnboarding();
+        if (!Store.hasSeenOnboarding() && !Store.uid()) showOnboarding();
         maybeDailyNotification();
 
         // Posteri se povlace tiho u pozadini, malo posle starta da ne

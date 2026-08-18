@@ -714,3 +714,30 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px}
 .sheet-num{font-size:13px;font-weight:900;color:var(--accent);letter-spacing:1px;margin-bottom:2px}
 .sheet-meta .av{color:#f5c341}
 .sheet-desc{font-size:14.5px;color:#c2c2ca;line-height:1.5;margin:18px 0 0}
+
+/* ---------- Google dugme ---------- */
+.gbtn{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  background:#fff;color:#1f1f1f;font-weight:700;
+}
+.gbtn svg{width:20px;height:20px;flex:none}
+.gbtn:disabled{opacity:.6}
+
+/* ---------- ekipa ---------- */
+.people{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+.person{display:flex;align-items:center;gap:11px;padding:10px 0}
+.person + .person{border-top:1px solid var(--line)}
+.rank{width:16px;text-align:center;font-size:13px;font-weight:800;color:var(--muted);flex:none}
+.person.me .rank{color:var(--accent)}
+.pav{width:38px;height:38px;border-radius:50%;flex:none;object-fit:cover;background:var(--card-2)}
+.pav.txt{display:grid;place-items:center;font-weight:800;font-size:15px;background:#33333d}
+.pmain{flex:1;min-width:0}
+.pname{font-size:14.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pname em{font-style:normal;color:var(--muted);font-weight:400}
+.pbar{height:5px;border-radius:5px;background:var(--card-2);overflow:hidden;margin-top:5px}
+.pbar i{display:block;height:100%;background:var(--accent);border-radius:5px;transition:width .4s ease}
+.person.me .pbar i{background:var(--green)}
+.pnum{font-size:13px;color:var(--muted);flex:none;font-variant-numeric:tabular-nums}
+.pnum b{color:var(--text);font-size:16px}
+.acct-av{object-fit:cover}
+.acct em{display:block}

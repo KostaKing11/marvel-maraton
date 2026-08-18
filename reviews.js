@@ -39,28 +39,47 @@ window.MM = window.MM || {};
   async function save(itemId, stars, text) {
     var f = await MM.Store.firestore();
     if (!f) throw new Error('offline');
-    var code = MM.Store.code();
-    if (!code) throw new Error('nema koda');
+    var uid = MM.Store.uid();
+    if (!uid) throw new Error('nije prijavljen');
+    var u = MM.Store.user() || {};
     var rec = {
       itemId: String(itemId),
-      code: code,
-      name: (MM.Store.get().displayName || 'Anonimno').slice(0, 24),
+      uid: uid,
+      name: (MM.Store.get().displayName || u.name || 'Bez imena').slice(0, 40),
+      photo: u.photo || '',
       stars: Math.max(1, Math.min(5, parseInt(stars, 10) || 0)),
       text: String(text || '').slice(0, 500),
       at: Date.now()
     };
-    await f.setDoc(f.doc(f.db, 'reviews', rec.itemId + '__' + rec.code), rec);
+    await f.setDoc(f.doc(f.db, 'reviews', rec.itemId + '__' + uid), rec);
     // ubaci lokalno da se odmah vidi, bez ponovnog citanja
-    cache = cache.filter(function (r) { return !(r.itemId === rec.itemId && r.code === rec.code); });
+    cache = cache.filter(function (r) { return !(r.itemId === rec.itemId && r.uid === uid); });
     cache.unshift(rec);
     return rec;
   }
 
+  /* ---------------- ekipa ---------------- */
+
+  var people = [];
+
+  /** Svi koji su se prijavili, sortirani po tome dokle su stigli. */
+  async function loadPeople() {
+    var f = await MM.Store.firestore();
+    if (!f || !MM.Store.uid()) return [];
+    var snap = await f.getDocs(f.query(
+      f.collection(f.db, 'profiles'), f.orderBy('percent', 'desc'), f.limit(50)
+    ));
+    people = [];
+    snap.forEach(function (d) { people.push(d.data()); });
+    return people;
+  }
+  function cachedPeople() { return people; }
+
   function cached() { return cache; }
   function forItem(id) { return cache.filter(function (r) { return r.itemId === id; }); }
   function mine(id) {
-    var code = MM.Store.code();
-    return cache.filter(function (r) { return r.itemId === id && r.code === code; })[0] || null;
+    var uid = MM.Store.uid();
+    return cache.filter(function (r) { return r.itemId === id && r.uid === uid; })[0] || null;
   }
   function avg(id) {
     var rs = forItem(id);
@@ -72,6 +91,7 @@ window.MM = window.MM || {};
 
   MM.Reviews = {
     load: load, save: save, cached: cached,
-    forItem: forItem, mine: mine, avg: avg, isStale: isStale
+    forItem: forItem, mine: mine, avg: avg, isStale: isStale,
+    loadPeople: loadPeople, people: cachedPeople
   };
 })();

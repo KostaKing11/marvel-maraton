@@ -119,6 +119,70 @@ window.MM = window.MM || {};
     return fb;
   }
 
+  /* ---------------- Google prijava ---------------- */
+
+  var auth = null;      // Firebase Auth instanca
+  var authMod = null;   // modul (GoogleAuthProvider, signInWithPopup, ...)
+  var user = null;      // {uid, name, photo, email}
+  var authListeners = [];
+
+  async function loadAuth() {
+    if (auth) return authMod;
+    var f = await loadFirebase();
+    authMod = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
+    auth = authMod.getAuth(f.app);
+    authMod.onAuthStateChanged(auth, function (u) {
+      user = u ? { uid: u.uid, name: u.displayName || '', photo: u.photoURL || '', email: u.email || '' } : null;
+      if (user) {
+        state.displayName = user.name || state.displayName;
+        connect(user.uid);
+      }
+      authListeners.forEach(function (fn) { try { fn(user); } catch (e) { console.error(e); } });
+    });
+    // Vrati se sa redirect prijave ako je popup bio blokiran.
+    try { await authMod.getRedirectResult(auth); } catch (e) { /* nema redirect rezultata */ }
+    return authMod;
+  }
+
+  /**
+   * Popup je brzi, ali ga instalirani PWA ume da blokira - tada
+   * padamo na redirect, koji uvek radi.
+   */
+  async function signInGoogle() {
+    var m = await loadAuth();
+    var provider = new m.GoogleAuthProvider();
+    try {
+      await m.signInWithPopup(auth, provider);
+    } catch (e) {
+      var code = (e && e.code) || '';
+      if (code === 'auth/popup-blocked' || code === 'auth/popup-closed-by-user' ||
+          code === 'auth/cancelled-popup-request' || code === 'auth/operation-not-supported-in-this-environment') {
+        await m.signInWithRedirect(auth, provider);
+        return;
+      }
+      throw e;
+    }
+  }
+
+  /** Profil koji drugi vide: ime, slika i dokle si stigao. */
+  async function publishProfile(data) {
+    if (!user || !fb) return;
+    try {
+      await withTimeout(fb.setDoc(fb.doc(fb.db, 'profiles', user.uid), {
+        uid: user.uid,
+        name: (state.displayName || user.name || 'Bez imena').slice(0, 40),
+        photo: user.photo || '',
+        watched: data.watched | 0,
+        total: data.total | 0,
+        minutes: data.minutes | 0,
+        percent: data.percent | 0,
+        at: Date.now()
+      }), 12000);
+    } catch (e) {
+      console.warn('[profil]', e);
+    }
+  }
+
   /**
    * Firestore SDK ne baca gresku ako baza NIJE napravljena u projektu -
    * samo tiho pokusava iznova i zahtev visi. Bez ovoga app zauvek stoji
@@ -266,7 +330,22 @@ window.MM = window.MM || {};
     statusNote: function () { return statusNote; },
 
     code: function () { return localStorage.getItem(LS_CODE) || ''; },
-    username: function () { return localStorage.getItem(LS_USER) || ''; },
+    username: function () { return (user && (state.displayName || user.name)) || localStorage.getItem(LS_USER) || ''; },
+    user: function () { return user; },
+    uid: function () { return user ? user.uid : ''; },
+    onAuth: function (fn) { authListeners.push(fn); fn(user); },
+    signInGoogle: signInGoogle,
+    publishProfile: publishProfile,
+    initAuth: function () { loadAuth().catch(function (e) { console.warn('[auth]', e); }); },
+    signOutGoogle: async function () {
+      try {
+        var m = await loadAuth();
+        await m.signOut(auth);
+      } catch (e) { console.warn('[auth]', e); }
+      user = null;
+      Store.disconnect();
+      authListeners.forEach(function (fn) { try { fn(null); } catch (e) {} });
+    },
 
     /**
      * Nalog = korisnicko ime + lozinka spojeni u jedan kljuc, koji je
@@ -323,6 +402,7 @@ window.MM = window.MM || {};
     init: function () {
       var local = loadLocal();
       if (local) state = local;
+      if (configLooksReal()) Store.initAuth();
       var code = Store.code();
       if (code) connect(code);
       else setStatus('local', '');
