@@ -15,7 +15,7 @@ window.MM = window.MM || {};
   var modalItemId = null;       // koji naslov je trenutno otvoren u modalu
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
-  var VERSION = '0.20.0';       // pise se u "Ja"; podize se uz svaki deploy
+  var VERSION = '0.21.0';       // pise se u "Ja"; podize se uz svaki deploy
   var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
   var countdownTimer = null;
   var PACE_AFTER_MS = 7 * 24 * 3600 * 1000;   // provera tempa jednom nedeljno
@@ -136,6 +136,7 @@ window.MM = window.MM || {};
 
         if (on && countToWeek) s.log[k] = { w: week, d: day };
         else delete s.log[k];
+        if (on) { s.lastWatchAt = Date.now(); if (!s.firstWatchAt) s.firstWatchAt = Date.now(); }
       });
     });
   }
@@ -175,6 +176,7 @@ window.MM = window.MM || {};
     PLAN = P.buildPlan(ITEMS, state(), new Date());
     render();
     publishProgress();
+    writeWarnMeta();
   }
 
   function render() {
@@ -273,6 +275,9 @@ window.MM = window.MM || {};
       '<span class="dcount">' + watchedTitles + '<i>/' + ITEMS.length + '</i></span>' +
       '</div>';
 
+    var idle = idleHours();
+    if (idle >= 24 && deck.length) out += alarmHTML(idle);
+
     if (!deck.length) {
       out += deckDoneHTML();
     } else if (paceDue(s)) {
@@ -285,6 +290,99 @@ window.MM = window.MM || {};
     out += '</section>';
 
     return out;
+  }
+
+  /* ---- upozorenje da si stao ---- */
+
+  /** Crvena traka na vrhu kad si stao. Ozbiljna, ali ne ruzna. */
+  function alarmHTML(hours) {
+    var days = Math.floor(hours / 24);
+    var big = days >= 2 ? (days + ' DANA') : '24 SATA';
+    return '<div class="alarm' + (days >= 3 ? ' hard' : '') + '">' +
+      '<div class="alarm-glow"></div>' +
+      '<div class="alarm-in">' +
+        '<div class="alarm-top">⚠ BEZ MARVELA</div>' +
+        '<div class="alarm-big">' + big + '</div>' +
+        '<div class="alarm-sub">Doomsday je za ' + P.daysToDoomsday(new Date()) + ' dana. Prevuci levo i nastavi.</div>' +
+      '</div></div>';
+  }
+
+
+
+  /** Koliko je punih sati proslo od poslednjeg oznacenog naslova. */
+  function idleHours() {
+    var t = state().lastWatchAt || state().firstWatchAt || 0;
+    if (!t) return 0;
+    return Math.floor((Date.now() - t) / 3600000);
+  }
+
+  /**
+   * Podatak koji i aplikacija i service worker citaju. SW ne moze do
+   * localStorage-a, pa mu ostavljamo malu JSON datoteku u kesu - tako
+   * upozorenje moze da stigne i kad je app zatvoren.
+   */
+  function writeWarnMeta() {
+    if (!window.caches || !PLAN) return;
+    var deck = P.deck(ITEMS, state());
+    var u = deck[0];
+    var meta = {
+      lastWatchAt: state().lastWatchAt || state().firstWatchAt || 0,
+      title: u ? unitTitle(u) : '',
+      num: u ? (ORD[u.id] || 0) : 0,
+      poster: u ? posterUrl(u.item) : '',
+      left: deck.length
+    };
+    caches.open('mm-meta').then(function (c) {
+      c.put('/mm-meta.json', new Response(JSON.stringify(meta), {
+        headers: { 'Content-Type': 'application/json' }
+      }));
+    }).catch(function () {});
+  }
+
+  /** Lepa, ali opasna notifikacija - sa posterom kao velikom slikom. */
+  function fireWarning(hours) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    var today = todayISO();
+    if (state().lastWarnDay === today) return;      // najvise jednom dnevno
+    Store.mutate(function (s) { s.lastWarnDay = today; });
+
+    var deck = P.deck(ITEMS, state());
+    var u = deck[0];
+    var days = Math.floor(hours / 24);
+    var title = days >= 2 ? ('🚨 ' + days + ' DANA BEZ MARVELA') : '🚨 24 SATA BEZ MARVELA';
+    var body = (u ? 'Na redu je #' + (ORD[u.id] || 0) + ' ' + unitTitle(u) + '.' + String.fromCharCode(10) : '') +
+      'Doomsday ne čeka. Ostalo je ' + P.daysToDoomsday(new Date()) + ' dana.';
+
+    var opts = {
+      body: body,
+      icon: 'icons/icon-192.png',
+      badge: 'icons/icon-192.png',
+      image: u ? posterUrl(u.item) : '',
+      vibrate: [220, 90, 220, 90, 420],
+      tag: 'mm-warn',
+      renotify: true,
+      requireInteraction: true,
+      actions: [{ action: 'open', title: 'Gledam sad' }, { action: 'later', title: 'Sutra' }]
+    };
+    if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+      navigator.serviceWorker.ready.then(function (reg) { reg.showNotification(title, opts); })
+        .catch(function () {});
+    }
+  }
+
+  /** Registruj periodicnu proveru - Chrome je budi i kad je app zatvoren. */
+  function registerPeriodicCheck() {
+    if (!navigator.serviceWorker) return;
+    navigator.serviceWorker.ready.then(function (reg) {
+      if (!reg.periodicSync) return;              // nema podrske - nema veze
+      navigator.permissions.query({ name: 'periodic-background-sync' })
+        .then(function (st) {
+          if (st.state !== 'granted') return;
+          reg.periodicSync.register('mm-warn', { minInterval: 12 * 3600 * 1000 })
+            .catch(function (e) { console.warn('[periodicSync]', e); });
+        })
+        .catch(function () {});
+    }).catch(function () {});
   }
 
   /* ---- odbrojavanje ---- */
@@ -457,6 +555,7 @@ window.MM = window.MM || {};
     markUnits([key], true, 'plan');            // kvacica u planu -> broji se u nedelju
     Store.mutate(function (s) {
       s.deckSince = (s.deckSince || 0) + 1;
+      s.lastWatchAt = Date.now();
       if (!s.firstWatchAt) s.firstWatchAt = Date.now();
     });
     askRating(key);
@@ -1489,6 +1588,12 @@ window.MM = window.MM || {};
         // uspore prvo crtanje.
         setTimeout(function () { startPosterFetch(false); }, 1200);
         setTimeout(function () { loadReviews(true); }, 2000);
+        setTimeout(function () {
+          var h = idleHours();
+          if (h >= 24) fireWarning(h);
+          writeWarnMeta();
+          registerPeriodicCheck();
+        }, 2500);
 
         registerSW();
       })

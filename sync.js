@@ -33,6 +33,8 @@ window.MM = window.MM || {};
       skipDays: {},         // "2026-08-17": true  ("nemam vremena danas")
       deckSince: 0,         // koliko je oznaceno od poslednje provere tempa
       firstWatchAt: 0,      // kad je oznacen prvi naslov (za nedeljnu proveru tempa)
+      lastWatchAt: 0,       // poslednji put kad si nesto oznacio (za upozorenje)
+      lastWarnDay: '',      // "2026-08-18" - da upozorenje ne ide dvaput isti dan
       lastPaceAt: 0,        // kad je poslednji put pokazana provera tempa
       displayName: '',      // ime uz tvoje ocene (ti ga biras, ne Google)
       avatar: '',           // URL slike profila (prazno = slovo u krugu)
