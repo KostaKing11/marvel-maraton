@@ -460,6 +460,76 @@ window.MM = window.MM || {};
   }
 
   /**
+   * DNEVNI RASPORED - srce novog modela.
+   *
+   * Nema kapaciteta koji korisnik podesava. Dnevna norma se IZVODI:
+   *     norma = preostalo_minuta / dana_do_Doomsdaya
+   * i onda se jedinice redom razbacuju po danima, svakog dana bar jedna
+   * (zato se gleda svaki dan). Norma se preracunava na svaku promenu, pa
+   * ako preskocis dan sutra je malo vise, a ako preskocis naslov manje.
+   */
+  function dailyPlan(items, state, today) {
+    today = startOfDay(today || new Date());
+    var units = buildUnits(items, state);
+    var total = units.reduce(function (a, u) { return a + u.minutes; }, 0);
+    var daysLeft = Math.max(1, daysBetween(today, DOOMSDAY));
+    var target = total / daysLeft;
+
+    var days = [];
+    var idx = 0;
+    for (var d = 0; d < daysLeft; d++) {
+      var date = addDays(today, d);
+      var day = { date: date, iso: iso(date), units: [], minutes: 0, entries: [] };
+      while (idx < units.length) {
+        var u = units[idx];
+        // Svaki dan dobija najmanje jednu jedinicu - tako se gleda svaki
+        // dan, i onda kad je norma manja od trajanja jedne epizode.
+        if (!day.units.length) { day.units.push(u); day.minutes += u.minutes; idx++; continue; }
+        if (day.minutes + u.minutes <= target + TOLERANCE) {
+          day.units.push(u); day.minutes += u.minutes; idx++;
+        } else break;
+      }
+      day.entries = groupUnits(day.units);
+      days.push(day);
+      if (idx >= units.length) break;
+    }
+
+    return {
+      days: days, target: target, daysLeft: daysLeft,
+      totalMinutes: total, leftover: units.slice(idx),
+      byIso: days.reduce(function (m, x) { m[x.iso] = x; return m; }, {})
+    };
+  }
+
+  /** Grupisi dane u nedelje maratona (ponedeljak-nedelja). */
+  function weeksFromDays(days) {
+    var map = {};
+    days.forEach(function (d) {
+      var n = currentWeek(d.date);
+      map[n] = map[n] || { n: n, start: weekStart(n), end: weekEnd(n), days: [], minutes: 0 };
+      map[n].days.push(d);
+      map[n].minutes += d.minutes;
+    });
+    return Object.keys(map).map(function (k) { return map[k]; })
+      .sort(function (a, b) { return a.n - b.n; });
+  }
+
+  /** Koliko si minuta odgledao izmedju dva datuma (po logu). */
+  function watchedMinutesBetween(items, state, fromIso, toIso) {
+    var log = state.log || {}, total = 0;
+    Object.keys(log).forEach(function (k) {
+      var rec = log[k];
+      var d = rec && rec.d;
+      if (!d || d < fromIso || d > toIso) return;
+      var parts = k.split('#');
+      var item = items.filter(function (i) { return i.id === parts[0]; })[0];
+      if (!item) return;
+      total += parts[1] ? episodeMinutes(item) : item.runtime;
+    });
+    return total;
+  }
+
+  /**
    * Raspored do Doomsdaya: koliko moras DNEVNO da bi stigao sve
    * neodgledano (bez preskocenog) do 18.12.2026.
    */
@@ -491,6 +561,9 @@ window.MM = window.MM || {};
     DAY_NAMES: DAY_NAMES,
     buildPlan: buildPlan,
     schedule: schedule,
+    dailyPlan: dailyPlan,
+    weeksFromDays: weeksFromDays,
+    watchedMinutesBetween: watchedMinutesBetween,
     buildUnits: buildUnits,
     ordinals: ordinals,
     deck: deck,

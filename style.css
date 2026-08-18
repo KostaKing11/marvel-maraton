@@ -83,7 +83,23 @@ img{display:block}
 /* ---------- layout ---------- */
 #view{max-width:900px;margin:0 auto;padding:0 14px 24px}
 #view[data-tab="danas"]{padding-top:0}
-#view[data-tab="ocene"],#view[data-tab="biblioteka"],#view[data-tab="ja"]{padding-top:8px}
+#view[data-tab="ocene"],#view[data-tab="biblioteka"],#view[data-tab="ja"],
+#view[data-tab="kalendar"]{padding-top:8px}
+
+/* ---------- "Ove nedelje" na pocetnom ekranu ---------- */
+.wbar{
+  background:var(--card-2);border:1px solid var(--line);
+  border-radius:13px;padding:12px 14px;margin:0 0 14px;
+}
+.wbar-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.wbar-lbl{font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);font-weight:700}
+.wbar-num{font-size:14px;color:var(--muted);white-space:nowrap}
+.wbar-num b{color:var(--text);font-size:18px;font-weight:800}
+.wbar-sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+.wbar .bar{margin:9px 0 0}
+
+/* pet tabova - malo uzi tekst */
+#tabbar .tab{font-size:10.5px}
 /* U "Ja" sekcije razdvaja tanka linija umesto kutija. */
 #view[data-tab="ja"] .card + .card{border-top:1px solid var(--line);padding-top:22px}
 #view[data-tab="ja"] .card.warn{border-top:1px solid rgba(242,193,78,.35)}
@@ -603,7 +619,7 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px}
   position:fixed;left:50%;transform:translateX(-50%);
   bottom:calc(12px + env(safe-area-inset-bottom,0px));
   z-index:50;width:calc(100% - 28px);max-width:420px;
-  display:grid;grid-template-columns:repeat(4,1fr);
+  display:grid;grid-template-columns:repeat(5,1fr);
   background:rgba(24,24,29,.82);backdrop-filter:blur(20px) saturate(1.4);
   border:1px solid rgba(255,255,255,.09);
   border-radius:20px;padding:6px;gap:4px;

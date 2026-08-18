@@ -15,7 +15,7 @@ window.MM = window.MM || {};
   var modalItemId = null;       // koji naslov je trenutno otvoren u modalu
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
-  var VERSION = '0.23.0';       // pise se u "Ja"; podize se uz svaki deploy
+  var VERSION = '0.24.0';       // pise se u "Ja"; podize se uz svaki deploy
   var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
   var countdownTimer = null;
   var PACE_AFTER_MS = 7 * 24 * 3600 * 1000;   // provera tempa jednom nedeljno
@@ -184,7 +184,8 @@ window.MM = window.MM || {};
     var y = window.scrollY;
     var view = $('#view');
     view.innerHTML = ({
-      danas: viewDanas, ocene: viewOcene, biblioteka: viewBiblioteka, ja: viewJa
+      danas: viewDanas, kalendar: viewKalendar, ocene: viewOcene,
+      biblioteka: viewBiblioteka, ja: viewJa
     })[tab]();
     view.dataset.tab = tab;
 
@@ -262,7 +263,6 @@ window.MM = window.MM || {};
 
   function viewDanas() {
     var s = state();
-    var week = PLAN.weeks[PLAN.currentWeek - 1];
     var st = P.stats(ITEMS, s, PLAN, new Date());
     var dd = P.daysToDoomsday(new Date());
     var deck = P.deck(ITEMS, s);
@@ -278,7 +278,10 @@ window.MM = window.MM || {};
     var idle = idleHours();
     if (idle >= 24 && deck.length) out += alarmHTML(idle);
 
-    if (deck.length) out += scheduleHTML(P.schedule(ITEMS, s, new Date()));
+    if (deck.length) {
+      out += scheduleHTML(P.schedule(ITEMS, s, new Date()));
+      out += weekBarHTML(s);
+    }
 
     if (!deck.length) {
       out += deckDoneHTML();
@@ -336,6 +339,39 @@ window.MM = window.MM || {};
         '<span>' + sc.perWeek.toFixed(1) + 'h/ned</span>' +
       '</div>' +
       (sc.doable ? '' : '<div class="sched-warn">Ovo je preko 4h dnevno — preskoči nešto prevlačenjem nagore.</div>') +
+      '</div>';
+  }
+
+  /** Granice tekuce nedelje (ponedeljak-nedelja) kao ISO datumi. */
+  function weekBounds(today) {
+    today = P.startOfDay(today || new Date());
+    var dow = (today.getDay() + 6) % 7;           // ponedeljak = 0
+    var mon = P.addDays(today, -dow);
+    return { from: P.iso(mon), to: P.iso(P.addDays(mon, 6)), mon: mon };
+  }
+
+  /**
+   * "Ove nedelje": koliko treba i koliko si odgledao.
+   * "Treba" je suma dnevnih normi za dane ove nedelje iz dnevnog
+   * rasporeda - dakle i ono sto je vec bilo, ne samo ostatak.
+   */
+  function weekBarHTML(s) {
+    var wb = weekBounds(new Date());
+    var dp = P.dailyPlan(ITEMS, s, new Date());
+    var need = 0;
+    dp.days.forEach(function (d) { if (d.iso >= wb.from && d.iso <= wb.to) need += d.minutes; });
+    var done = P.watchedMinutesBetween(ITEMS, s, wb.from, wb.to);
+    var total = need + done;
+    var pct = total ? Math.min(100, Math.round(done / total * 100)) : 0;
+
+    return '<div class="wbar">' +
+      '<div class="wbar-top">' +
+        '<span class="wbar-lbl">Ove nedelje</span>' +
+        '<span class="wbar-num"><b>' + hStr(done) + '</b> / ' + hStr(total) + '</span>' +
+      '</div>' +
+      '<div class="bar green"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="wbar-sub">' + P.fmtRange(wb.mon, P.addDays(wb.mon, 6)) +
+        ' · još ' + hStr(need) + '</div>' +
       '</div>';
   }
 
@@ -817,6 +853,97 @@ window.MM = window.MM || {};
         (s.skipped && s.skipped[i.id] ? '<div class="skipmark">PRESKOČENO</div>' : '') +
         (selectMode ? '<div class="selmark' + (selected[i.id] ? ' on' : '') + '">' + (selected[i.id] ? '✓' : '') + '</div>' : '') +
       '</div></article>';
+  }
+
+  /* ============================================================
+     EKRAN: KALENDAR (pravi mesecni kalendar, dan po dan)
+     ============================================================ */
+
+  var MONTH_NAMES = ['januar', 'februar', 'mart', 'april', 'maj', 'jun',
+    'jul', 'avgust', 'septembar', 'oktobar', 'novembar', 'decembar'];
+  var DOW = ['P', 'U', 'S', 'Č', 'P', 'S', 'N'];
+
+  function viewKalendar() {
+    var s = state();
+    var dp = P.dailyPlan(ITEMS, s, new Date());
+    var today = P.startOfDay(new Date());
+    var out = '';
+
+    var mins = Math.round(dp.target);
+    out += '<div class="cal-top">' +
+      '<button class="btn small" data-act="export-ics">Izvezi .ics</button>' +
+      '<span class="cal-note">Norma je <b>' + Math.floor(mins / 60) + 'h ' + (mins % 60) +
+      'min</b> dnevno — svaki dan, da sve stigne do 18.12.</span>' +
+      '</div>';
+
+    for (var m = 7; m <= 11; m++) out += monthHTML(2026, m, dp.byIso, today, s);
+
+    out += '<p class="foot">Tapni dan da vidiš šta pada na njega.</p>';
+    return out;
+  }
+
+  function monthHTML(year, month, byIso, today, s) {
+    var first = new Date(year, month, 1);
+    var startCol = (first.getDay() + 6) % 7;          // ponedeljak = 0
+    var dim = new Date(year, month + 1, 0).getDate();
+
+    var out = '<section class="month">' +
+      '<h2 class="month-name">' + MONTH_NAMES[month] + ' <i>' + year + '</i></h2>' +
+      '<div class="dow">';
+    DOW.forEach(function (d) { out += '<span>' + d + '</span>'; });
+    out += '</div><div class="mgrid">';
+
+    for (var i = 0; i < startCol; i++) out += '<div class="cell blank"></div>';
+
+    for (var d = 1; d <= dim; d++) {
+      var date = new Date(year, month, d);
+      var iso = P.iso(date);
+      var info = byIso[iso];
+      var isToday = P.daysBetween(date, today) === 0;
+      var isPast = date < today;
+      var isDoom = (month === 11 && d === 18);
+
+      var cls = 'cell';
+      if (isToday) cls += ' today';
+      if (isPast) cls += ' past';
+      if (isDoom) cls += ' doom';
+      if (info && info.minutes > 0) cls += ' has';
+
+      out += '<div class="' + cls + '" data-act="day" data-iso="' + iso + '">';
+      if (info && info.units.length) {
+        var pu = posterUrl(info.units[0].item);
+        if (pu) out += '<img class="cell-bg" src="' + esc(pu) + '" alt="" loading="lazy">';
+      }
+      out += '<span class="cell-d">' + d + '</span>';
+      if (isDoom) out += '<span class="cell-doom">🎬</span>';
+      else if (info && info.units.length > 1) out += '<span class="cell-n">' + info.units.length + '</span>';
+      out += '</div>';
+    }
+    out += '</div></section>';
+    return out;
+  }
+
+  /** Šta pada na jedan dan. */
+  function openDay(iso) {
+    var s = state();
+    var dp = P.dailyPlan(ITEMS, s, new Date());
+    var info = dp.byIso[iso];
+    var parts = iso.split('-');
+    var date = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+    var naslov = date.getDate() + '. ' + MONTH_NAMES[date.getMonth()];
+
+    var html = '<div class="sheet"><div class="sheet-body day-sheet">' +
+      '<button class="close" data-act="close" aria-label="Zatvori">✕</button>' +
+      '<h2>' + esc(naslov) + '</h2>' +
+      '<div class="sub">' + (info && info.minutes ? hStr(info.minutes) : 'ništa ne pada na ovaj dan') + '</div>';
+
+    if (info && info.entries.length) {
+      html += '<div class="rows">';
+      info.entries.forEach(function (e) { html += rowEntry(e, false); });
+      html += '</div>';
+    }
+    html += '</div></div>';
+    showModal(html);
   }
 
   /* ============================================================
@@ -1388,6 +1515,8 @@ window.MM = window.MM || {};
         .then(function () { closeModal(); toast('Ocena obrisana.'); render(); })
         .catch(function (e) { console.warn(e); toast('Brisanje nije uspelo.'); });
     },
+
+    'day': function (n) { openDay(n.dataset.iso); },
 
     'pace-ok': function () {
       Store.mutate(function (s) { s.deckSince = 0; s.lastPaceAt = Date.now(); });
