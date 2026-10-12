@@ -15,7 +15,8 @@ window.MM = window.MM || {};
   var modalItemId = null;       // koji naslov je trenutno otvoren u modalu
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
-  var VERSION = '0.27.0';       // pise se u "Ja"; podize se uz svaki deploy
+  var VERSION = '0.28.0';       // pise se u "Ja"; podize se uz svaki deploy
+  var calendarScrolled = false; // da skok na danas bude samo pri prvom otvaranju
   var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
   var countdownTimer = null;
   var PACE_AFTER_MS = 7 * 24 * 3600 * 1000;   // provera tempa jednom nedeljno
@@ -189,7 +190,15 @@ window.MM = window.MM || {};
     })[tab]();
     view.dataset.tab = tab;
 
-    window.scrollTo(0, y);
+    if (tab === 'kalendar' && !calendarScrolled) {
+      // Prvi put skoci na danasnji dan umesto na vrh spiska meseci.
+      var cur = $('.cell.today');
+      if (cur) cur.scrollIntoView({ block: 'center' });
+      else window.scrollTo(0, 0);
+      calendarScrolled = true;
+    } else {
+      window.scrollTo(0, y);
+    }
 
     if (tab === 'danas') { bindDeck(); if ($('#cdown')) startCountdown(); }
 
@@ -915,12 +924,15 @@ window.MM = window.MM || {};
 
     var mins = Math.round(dp.target);
     out += '<div class="cal-top">' +
-      '<button class="btn small" data-act="export-ics">Izvezi .ics</button>' +
-      '<span class="cal-note">Norma je <b>' + Math.floor(mins / 60) + 'h ' + (mins % 60) +
-      'min</b> dnevno — svaki dan, da sve stigne do 18.12.</span>' +
+      '<div class="cal-note">Norma je <b>' + Math.floor(mins / 60) + 'h ' + (mins % 60) +
+      'min</b> dnevno — svaki dan, da sve stigne do 18.12.</div>' +
+      '<button class="btn ghost small" data-act="export-ics">Izvezi u kalendar (.ics)</button>' +
       '</div>';
 
-    for (var m = 7; m <= 11; m++) out += monthHTML(2026, m, dp.byIso, today, s);
+    // Prosli meseci su prazni (plan ide od danas), pa ih ne crtamo -
+    // ranije si otvarao kalendar na dva meseca praznih kvadrata.
+    var firstMonth = (today.getFullYear() === 2026) ? Math.max(7, today.getMonth()) : 7;
+    for (var m = firstMonth; m <= 11; m++) out += monthHTML(2026, m, dp.byIso, today, s);
 
     out += '<p class="foot">Tapni dan da vidiš šta pada na njega.</p>';
     return out;
@@ -1720,6 +1732,7 @@ window.MM = window.MM || {};
       if (tab !== b.dataset.tab) {
         if (tab === 'danas') history.pushState({ mm: 'tab' }, '');
         tab = b.dataset.tab;
+        if (tab === 'kalendar') calendarScrolled = false;
         if (tab === 'ocene') loadReviews(false);
         window.scrollTo(0, 0);
         render();

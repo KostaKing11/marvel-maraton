@@ -405,7 +405,8 @@ img{display:block}
 .card.warn{border-color:rgba(242,193,78,.35);background:linear-gradient(180deg,#211d13,var(--card))}
 
 /* ---------- kalendar (pravi mesecni kalendar) ---------- */
-.cal-top{display:flex;align-items:center;gap:12px;margin:2px 0 22px}
+.cal-top{display:flex;flex-direction:column;align-items:flex-start;gap:9px;margin:2px 0 22px}
+.cal-top .btn{width:auto}
 .cal-note{font-size:12.5px;color:var(--muted);line-height:1.3}
 .month{margin-bottom:30px}
 .month-name{
