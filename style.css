@@ -33,11 +33,12 @@ body{
      zakacen za dno ekrana preko `bottom:` - jer window.innerHeight na
      telefonu osciluje za par piksela (izmereno 782/785/788), pa je
      fiksirani element vidno poskakivao. Skroluje samo #view. */
-  height:100vh;
+  /* --appH postavlja JS iz stvarne vidljive visine. CSS jedinice ovde
+     lazu: na ovom telefonu 100dvh je 838.8px, a vidljivo je 782.6 -
+     razlika nije sigurna zona (ona je 0), pa je nema cime nadoknaditi.
+     100dvh ostaje samo kao zaliha dok JS ne izmeri. */
   height:100dvh;
-  /* Uz viewport-fit=cover, 100dvh obuhvata i zonu ispod sistemske trake
-     (izmereno: 838.8 naspram 782.6 vidljivih). Bez ovog odstojanja tab
-     bar zavrsi ispod ivice ekrana. */
+  height:var(--appH,100dvh);
   padding-bottom:env(safe-area-inset-bottom,0px);
   display:flex;
   flex-direction:column;

@@ -15,7 +15,7 @@ window.MM = window.MM || {};
   var modalItemId = null;       // koji naslov je trenutno otvoren u modalu
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
-  var VERSION = '0.30.2';       // pise se u "Ja"; podize se uz svaki deploy
+  var VERSION = '0.30.3';       // pise se u "Ja"; podize se uz svaki deploy
   var calendarScrolled = false; // da skok na danas bude samo pri prvom otvaranju
   var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
   var countdownTimer = null;
@@ -1935,6 +1935,20 @@ window.MM = window.MM || {};
       .catch(function (e) { console.warn('SW:', e); });
   }
 
+  /**
+   * Visina ljuske iz stvarne vidljive visine prikaza.
+   * window.innerHeight na telefonu titra za par piksela (782/785/788),
+   * pa se menja tek kad razlika predje 8px - inace bi tab bar poskakivao
+   * kao i ranije, samo iz drugog razloga.
+   */
+  var shellH = 0;
+  function fitShell() {
+    var h = Math.round(window.visualViewport ? window.visualViewport.height : window.innerHeight);
+    if (!h || Math.abs(h - shellH) < 8) return;
+    shellH = h;
+    document.documentElement.style.setProperty('--appH', h + 'px');
+  }
+
   /* ============================================================
      START
      ============================================================ */
@@ -1987,6 +2001,12 @@ window.MM = window.MM || {};
           writeWarnMeta();
           registerPeriodicCheck();
         }, 2500);
+
+        fitShell();
+        window.addEventListener('resize', fitShell, { passive: true });
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', fitShell, { passive: true });
+        }
 
         registerSW();
       })
