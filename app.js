@@ -15,7 +15,7 @@ window.MM = window.MM || {};
   var modalItemId = null;       // koji naslov je trenutno otvoren u modalu
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
-  var VERSION = '0.25.0';       // pise se u "Ja"; podize se uz svaki deploy
+  var VERSION = '0.26.0';       // pise se u "Ja"; podize se uz svaki deploy
   var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
   var countdownTimer = null;
   var PACE_AFTER_MS = 7 * 24 * 3600 * 1000;   // provera tempa jednom nedeljno
@@ -419,17 +419,18 @@ window.MM = window.MM || {};
 
   /* ---- upozorenje da si stao ---- */
 
-  /** Crvena traka na vrhu kad si stao. Ozbiljna, ali ne ruzna. */
+  /**
+   * Upozorenje da si stao - jedan red, ne blok preko pola ekrana.
+   * Ranije je gutao prostor i gurao naslov kartice ispod tab bara.
+   */
   function alarmHTML(hours) {
     var days = Math.floor(hours / 24);
-    var big = days >= 2 ? (days + ' DANA') : '24 SATA';
+    var big = days >= 2 ? (days + ' dana') : '24 sata';
     return '<div class="alarm' + (days >= 3 ? ' hard' : '') + '">' +
-      '<div class="alarm-glow"></div>' +
-      '<div class="alarm-in">' +
-        '<div class="alarm-top">⚠ BEZ MARVELA</div>' +
-        '<div class="alarm-big">' + big + '</div>' +
-        '<div class="alarm-sub">Doomsday je za ' + P.daysToDoomsday(new Date()) + ' dana. Prevuci levo i nastavi.</div>' +
-      '</div></div>';
+      '<span class="alarm-dot"></span>' +
+      '<span class="alarm-txt"><b>' + big + '</b> bez Marvela</span>' +
+      '<span class="alarm-cta">prevuci desno →</span>' +
+      '</div>';
   }
 
 
@@ -606,8 +607,9 @@ window.MM = window.MM || {};
 
   /**
    * Prevlacenje kartice:
-   *   LEVO  = odgledano, ide na sledeci
-   *   DESNO = nazad (skida oznaku sa prethodnog i vraca ga)
+   *   DESNO = odgledano, ide na sledeci
+   *   LEVO  = nazad (skida oznaku sa prethodnog i vraca ga)
+   *   GORE  = preskoci (naslov izlazi iz spiska i rasporeda)
    * Tap na karticu otvara detalje.
    *
    * Vertikalni pokret se prepusta stranici da skrol i dalje radi
@@ -645,8 +647,8 @@ window.MM = window.MM || {};
       dx = mx;
       moved = Math.abs(mx) > 8;
       card.style.transform = 'translateX(' + dx + 'px) rotate(' + (dx / 24) + 'deg)';
-      card.classList.toggle('to-yes', dx < -40);
-      card.classList.toggle('to-back', dx > 40);
+      card.classList.toggle('to-yes', dx > 40);
+      card.classList.toggle('to-back', dx < -40);
       // Namerno bez odluke u toku prevlacenja: dokle god drzis prst,
       // mozes da vratis karticu nazad i nista se nije desilo.
     });
@@ -655,8 +657,8 @@ window.MM = window.MM || {};
       if (!drag) return;
       drag = false;
       card.style.transition = '';
-      if (locked === 'x' && dx < -THRESHOLD) return flyOut('watched');
-      if (locked === 'x' && dx > THRESHOLD) return flyOut('back');
+      if (locked === 'x' && dx > THRESHOLD) return flyOut('watched');
+      if (locked === 'x' && dx < -THRESHOLD) return flyOut('back');
       if (locked === 'y' && dy < -THRESHOLD) return flyOut('skip');
       card.style.transform = '';
       card.classList.remove('to-yes', 'to-back', 'to-skip');
@@ -679,7 +681,7 @@ window.MM = window.MM || {};
         card.style.transform = 'translateY(-' + (window.innerHeight + 200) + 'px) scale(.85)';
         card.classList.add('to-skip');
       } else {
-        var to = dir === 'watched' ? -(window.innerWidth + 200) : (window.innerWidth + 200);
+        var to = dir === 'watched' ? (window.innerWidth + 200) : -(window.innerWidth + 200);
         card.style.transform = 'translateX(' + to + 'px) rotate(' + (to / 24) + 'deg)';
         card.classList.toggle('to-yes', dir === 'watched');
         card.classList.toggle('to-back', dir === 'back');
@@ -1027,7 +1029,9 @@ window.MM = window.MM || {};
             ? '<img class="pav" src="' + esc(pr.photo) + '" alt="" referrerpolicy="no-referrer">'
             : '<span class="pav txt">' + esc((pr.name || '?').slice(0, 1).toUpperCase()) + '</span>') +
           '<div class="pmain">' +
-            '<div class="pname">' + esc(pr.name || 'Bez imena') + (mine ? ' <em>· ti</em>' : '') + '</div>' +
+            '<div class="pname">' + esc(pr.name || 'Bez imena') + (mine ? ' <em>· ti</em>' : '') +
+              (pr.streak ? '<span class="pstreak">🔥' + pr.streak + '</span>' : '') +
+            '</div>' +
             '<div class="pbar"><i style="width:' + Math.min(100, pr.percent || 0) + '%"></i></div>' +
           '</div>' +
           '<div class="pnum"><b>' + (pr.watched || 0) + '</b><span>/' + (pr.total || 0) + '</span></div>' +
@@ -1089,7 +1093,8 @@ window.MM = window.MM || {};
       var st = P.stats(ITEMS, state(), PLAN, new Date());
       Store.publishProfile({
         watched: st.watchedTitles, total: st.titles,
-        minutes: st.watchedMinutes, percent: st.percent
+        minutes: st.watchedMinutes, percent: st.percent,
+        streak: computeStreak(state()).n
       });
     }, 3000);
   }

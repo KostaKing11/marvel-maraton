@@ -177,6 +177,7 @@ window.MM = window.MM || {};
         total: data.total | 0,
         minutes: data.minutes | 0,
         percent: data.percent | 0,
+        streak: data.streak | 0,
         at: Date.now()
       }), 12000);
     } catch (e) {

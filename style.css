@@ -83,7 +83,15 @@ img{display:block}
 /* ---------- layout ---------- */
 #view{max-width:900px;margin:0 auto;padding:0 14px 24px}
 /* Pocetni ekran treba da stane bez skrolovanja. */
-#view[data-tab="danas"]{padding-top:0;padding-bottom:4px}
+/* Pocetni ekran je fleks kolona: sve iznad zauzme koliko mu treba, a
+   kartica dobije TACNO ostatak. Tako naslov nikad ne zavrsi ispod tab
+   bara, bez obzira da li je upozorenje na ekranu ili nije. */
+#view[data-tab="danas"]{
+  padding-top:0;padding-bottom:4px;
+  display:flex;flex-direction:column;
+  min-height:calc(100vh - 58px - var(--tabh) - env(safe-area-inset-bottom,0px));
+}
+#view[data-tab="danas"] .deck{display:flex;flex-direction:column;flex:1;min-height:0}
 #view[data-tab="ocene"],#view[data-tab="biblioteka"],#view[data-tab="ja"],
 #view[data-tab="kalendar"]{padding-top:8px}
 
@@ -187,18 +195,15 @@ img{display:block}
 
 /* ---------- ŠPIL (Danas) ---------- */
 .deck{margin:2px 0 8px}
-.deck-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 8px}
+.deck-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 8px;padding-right:2px}
 .dpill{color:var(--muted);font-size:13.5px;letter-spacing:.2px}
 .dpill b{color:var(--accent);font-size:19px;font-weight:900;letter-spacing:-.5px}
 .dcount{color:var(--text);font-size:17px;font-weight:800;font-variant-numeric:tabular-nums}
 .dcount i{color:var(--muted);font-style:normal;font-size:13.5px;font-weight:500}
 
-.swipe-area{position:relative}
+.swipe-area{position:relative;flex:1;min-height:210px}
 .dcard{
-  position:relative;width:100%;aspect-ratio:2/3;
-  /* Kartica mora cela da stane iznad tab bara: odbijamo topbar,
-     odbrojavanje, traku sa normom i sam tab bar. */
-  max-height:calc(100vh - 300px);
+  position:absolute;inset:0;
   border-radius:18px;overflow:hidden;background:var(--card-2);
   box-shadow:0 14px 40px rgba(0,0,0,.6);
 }
@@ -240,8 +245,8 @@ img{display:block}
   font-size:17px;font-weight:900;letter-spacing:1.5px;
   border:3px solid;opacity:0;transition:opacity .12s ease;pointer-events:none;z-index:2;
 }
-.dstamp.yes{right:18px;transform:rotate(13deg);color:var(--green);border-color:var(--green)}
-.dstamp.back{left:18px;transform:rotate(-13deg);color:var(--muted);border-color:var(--muted)}
+.dstamp.yes{left:18px;transform:rotate(-13deg);color:var(--green);border-color:var(--green)}
+.dstamp.back{right:18px;transform:rotate(13deg);color:var(--muted);border-color:var(--muted)}
 .dcard.to-yes .dstamp.yes{opacity:1}
 .dcard.to-back .dstamp.back{opacity:1}
 
@@ -254,11 +259,11 @@ img{display:block}
 .deck-hint .hl{color:#9fe0bb}
 .deck-hint .hr{color:#a9a9b4}
 
-.done-card{aspect-ratio:auto;min-height:320px;background:linear-gradient(160deg,#1d1216,var(--card-2))}
+.done-card{position:static;aspect-ratio:auto;min-height:320px;background:linear-gradient(160deg,#1d1216,var(--card-2))}
 .done-card .dnum{font-size:44px;color:var(--green)}
 
 /* provera tempa */
-.dcard.pace{aspect-ratio:auto;min-height:340px;background:linear-gradient(160deg,#1a1a20,var(--card-2));border:1px solid var(--line)}
+.dcard.pace{position:static;aspect-ratio:auto;min-height:340px;background:linear-gradient(160deg,#1a1a20,var(--card-2));border:1px solid var(--line)}
 .pace-ok{border-color:rgba(61,220,132,.4)}
 .pace-warn{border-color:rgba(242,193,78,.4)}
 .pace-hot{border-color:rgba(230,36,41,.45)}
@@ -775,32 +780,29 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px}
 .verline{text-align:center;color:var(--muted);font-size:12.5px;padding:4px 0 22px}
 .verline b{color:#6d6d78;font-weight:700}
 
-/* ---------- upozorenje da si stao ---------- */
+/* ---------- upozorenje da si stao (jedan red) ---------- */
 .alarm{
-  position:relative;overflow:hidden;
-  border-radius:16px;margin:0 0 16px;
-  background:linear-gradient(135deg,#2b0b0d 0%,#1a0708 60%,#140506 100%);
-  border:1px solid rgba(230,36,41,.45);
-  box-shadow:0 0 0 1px rgba(230,36,41,.12),0 10px 30px rgba(230,36,41,.14);
+  display:flex;align-items:center;gap:9px;
+  padding:8px 12px;margin:0 0 8px;border-radius:11px;
+  background:linear-gradient(90deg,rgba(230,36,41,.20),rgba(230,36,41,.07));
+  border:1px solid rgba(230,36,41,.42);
+  font-size:13.5px;
 }
-.alarm-glow{
-  position:absolute;inset:-40% -20% auto -20%;height:180%;
-  background:radial-gradient(60% 50% at 50% 0%,rgba(230,36,41,.35),transparent 70%);
-  animation:alarmPulse 2.6s ease-in-out infinite;pointer-events:none;
+.alarm-dot{
+  width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none;
+  box-shadow:0 0 0 0 rgba(230,36,41,.6);
+  animation:alarmPing 1.8s ease-out infinite;
 }
-@keyframes alarmPulse{0%,100%{opacity:.55}50%{opacity:1}}
-.alarm-in{position:relative;padding:18px 18px 16px;text-align:center}
-.alarm-top{
-  font-size:11.5px;font-weight:900;letter-spacing:3px;color:#ff7a7d;
+@keyframes alarmPing{
+  0%{box-shadow:0 0 0 0 rgba(230,36,41,.6)}
+  70%{box-shadow:0 0 0 9px rgba(230,36,41,0)}
+  100%{box-shadow:0 0 0 0 rgba(230,36,41,0)}
 }
-.alarm-big{
-  font-size:38px;font-weight:900;letter-spacing:-1.5px;line-height:1.05;
-  margin:4px 0 6px;color:#fff;text-shadow:0 2px 20px rgba(230,36,41,.6);
-}
-.alarm-sub{font-size:13.5px;color:#d8b3b4;line-height:1.4}
-.alarm.hard{border-color:rgba(230,36,41,.75)}
-.alarm.hard .alarm-big{color:var(--accent)}
-.alarm.hard .alarm-glow{animation-duration:1.4s}
+.alarm-txt{flex:1;min-width:0;color:#ffb3b5}
+.alarm-txt b{color:#fff;font-weight:900}
+.alarm-cta{font-size:12.5px;color:var(--muted);white-space:nowrap}
+.alarm.hard{border-color:rgba(230,36,41,.8);background:linear-gradient(90deg,rgba(230,36,41,.32),rgba(230,36,41,.10))}
+.alarm.hard .alarm-dot{animation-duration:1s}
 
 /* ---------- raspored do Doomsdaya ---------- */
 .sched{
@@ -833,7 +835,7 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px}
    STREAK — aura koja gori sve jače što niz duže traje
    ============================================================ */
 .streak{
-  position:relative;width:58px;height:58px;flex:none;
+  position:relative;width:58px;height:58px;flex:none;margin:2px 6px 2px 0;
   display:grid;place-items:center;
   --c1:#ff8a00; --c2:#ff3d00; --c3:#ffd000;
   animation:stBreathe 2.8s ease-in-out infinite;
@@ -918,3 +920,10 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px}
 .streak.dead{animation:none}
 .streak.dead .st-in{background:var(--card-2);border-color:var(--line)}
 .streak.dead .st-in b{background:none;color:#3f3f4a;-webkit-text-fill-color:#3f3f4a}
+
+/* niz dana uz ime u listi ekipe */
+.pstreak{
+  margin-left:7px;font-size:12px;font-weight:800;color:#ffb067;
+  background:rgba(255,106,0,.14);border:1px solid rgba(255,106,0,.3);
+  padding:1px 6px;border-radius:999px;white-space:nowrap;
+}
