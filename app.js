@@ -15,7 +15,7 @@ window.MM = window.MM || {};
   var modalItemId = null;       // koji naslov je trenutno otvoren u modalu
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
-  var VERSION = '0.29.0';       // pise se u "Ja"; podize se uz svaki deploy
+  var VERSION = '0.30.0';       // pise se u "Ja"; podize se uz svaki deploy
   var calendarScrolled = false; // da skok na danas bude samo pri prvom otvaranju
   var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
   var countdownTimer = null;
@@ -182,7 +182,8 @@ window.MM = window.MM || {};
 
   function render() {
     if (!PLAN) return;          // podaci jos nisu ucitani
-    var y = window.scrollY;
+    var viewEl = $('#view');
+    var y = viewEl.scrollTop;   // skroluje #view, telo je fiksne visine
     var view = $('#view');
     view.innerHTML = ({
       danas: viewDanas, kalendar: viewKalendar, ocene: viewOcene,
@@ -194,10 +195,10 @@ window.MM = window.MM || {};
       // Prvi put skoci na danasnji dan umesto na vrh spiska meseci.
       var cur = $('.cell.today');
       if (cur) cur.scrollIntoView({ block: 'center' });
-      else window.scrollTo(0, 0);
+      else viewEl.scrollTop = 0;
       calendarScrolled = true;
     } else {
-      window.scrollTo(0, y);
+      viewEl.scrollTop = y;
     }
 
     if (tab === 'danas') { bindDeck(); if ($('#cdown')) startCountdown(); }
@@ -1616,7 +1617,7 @@ window.MM = window.MM || {};
     },
     'reset-yes': function () { Store.reset(); closeModal(); toast('Obrisano.'); },
 
-    'go-sync': function () { tab = 'ja'; render(); window.scrollTo(0, document.body.scrollHeight); },
+    'go-sync': function () { tab = 'ja'; render(); $('#view').scrollTop = $('#view').scrollHeight; },
 
     'star': function (n) {
       var v = parseInt(n.dataset.n, 10);
@@ -1792,7 +1793,7 @@ window.MM = window.MM || {};
         tab = b.dataset.tab;
         if (tab === 'kalendar') calendarScrolled = false;
         if (tab === 'ocene') loadReviews(false);
-        window.scrollTo(0, 0);
+        $('#view').scrollTop = 0;
         render();
       }
     });
@@ -1850,29 +1851,18 @@ window.MM = window.MM || {};
       if (tab !== 'danas') {
         tab = 'danas';
         history.pushState({ mm: 'tab' }, '');
-        window.scrollTo(0, 0);
+        $('#view').scrollTop = 0;
         render();
       }
     });
 
-    // Topbar je providan preko heroja, a postaje pun cim se skroluje.
-    // IntersectionObserver umesto scroll listenera: ne okida na svaki piksel
-    // i ne zavisi od toga koji element je scroll kontejner.
+    // Topbar potamni cim se sadrzaj skroluje. Posto sada skroluje #view
+    // (a ne telo), slusamo njega - sentinel u telu vise nema smisla.
     var bar = $('#topbar');
-    var sentinel = document.createElement('div');
-    sentinel.id = 'scroll-sentinel';
-    sentinel.style.cssText = 'position:absolute;top:0;left:0;width:1px;height:24px;pointer-events:none';
-    document.body.appendChild(sentinel);
-
-    if ('IntersectionObserver' in window) {
-      new IntersectionObserver(function (entries) {
-        bar.classList.toggle('scrolled', !entries[0].isIntersecting);
-      }, { threshold: 0 }).observe(sentinel);
-    } else {
-      window.addEventListener('scroll', function () {
-        bar.classList.toggle('scrolled', window.scrollY > 24);
-      }, { passive: true });
-    }
+    var viewEl2 = $('#view');
+    viewEl2.addEventListener('scroll', function () {
+      bar.classList.toggle('scrolled', viewEl2.scrollTop > 16);
+    }, { passive: true });
   }
 
   /* ---------------- sync indikator ---------------- */
