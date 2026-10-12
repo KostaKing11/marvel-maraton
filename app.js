@@ -15,7 +15,7 @@ window.MM = window.MM || {};
   var modalItemId = null;       // koji naslov je trenutno otvoren u modalu
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
-  var VERSION = '0.26.0';       // pise se u "Ja"; podize se uz svaki deploy
+  var VERSION = '0.27.0';       // pise se u "Ja"; podize se uz svaki deploy
   var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
   var countdownTimer = null;
   var PACE_AFTER_MS = 7 * 24 * 3600 * 1000;   // provera tempa jednom nedeljno
@@ -1116,14 +1116,56 @@ window.MM = window.MM || {};
 
   var ratingFor = null;
 
+  /**
+   * Posle odgledanog naslova NE otvaramo modal - on je padao preko spila
+   * i gutao sledece prevlacenje, pa je delovalo da app ne reaguje.
+   * Umesto toga, tanka traka iznad tab bara sa pet zvezdica: tapnes i
+   * gotovo, ili je ignorises i sama nestane.
+   */
   function askRating(key) {
     var id = String(key).split('#')[0];
     var it = BY_ID[id];
-    if (!it || !Store.code()) return;
+    if (!it || !Store.uid()) return;
     // Serije se ocenjuju tek kad se zavrse, ne posle svake epizode.
     if (it.type === 'serija' && !P.isFullyWatched(it, state())) return;
-    ratingFor = id;
-    openRating(id, 0, '');
+    showRateBar(id);
+  }
+
+  var rateBarTimer = null;
+
+  function showRateBar(id) {
+    var it = BY_ID[id];
+    var el = $('#ratebar');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'ratebar';
+      document.body.appendChild(el);
+    }
+    var src = posterUrl(it);
+    el.className = 'ratebar in';
+    el.innerHTML =
+      '<div class="rb-art">' + (src ? '<img src="' + esc(src) + '" alt="">' : '') + '</div>' +
+      '<div class="rb-main"><b>Oceni</b><span>' + esc(it.title) + '</span></div>' +
+      '<div class="rb-stars">' +
+        [1, 2, 3, 4, 5].map(function (n) {
+          return '<button type="button" data-act="rb-star" data-id="' + esc(id) + '" data-n="' + n + '">★</button>';
+        }).join('') +
+      '</div>' +
+      '<button class="rb-x" data-act="rb-close" aria-label="Zatvori">✕</button>';
+
+    // Dok je traka gore, kartica se skrati da joj ne pokrije naslov.
+    document.body.classList.add('rating');
+    clearTimeout(rateBarTimer);
+    rateBarTimer = setTimeout(hideRateBar, 7000);
+  }
+
+  function hideRateBar() {
+    clearTimeout(rateBarTimer);
+    document.body.classList.remove('rating');
+    var el = $('#ratebar');
+    if (!el) return;
+    el.classList.remove('in');
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 220);
   }
 
   function openRating(id, preset, text) {
@@ -1559,7 +1601,30 @@ window.MM = window.MM || {};
       Store.mutate(function (st) { delete st.skipped[id]; });
       closeModal(); toast('Vraćeno u spisak.');
     },
-    'rate-open': function (n) { openRating(n.dataset.id, 0, ''); },
+    'rb-close': function () { hideRateBar(); },
+    'rb-star': function (n) {
+      var id = n.dataset.id, v = parseInt(n.dataset.n, 10);
+      var bar = $('#ratebar');
+      if (bar) bar.innerHTML = '<div class="rb-main wide"><b>Šaljem…</b></div>';
+      MM.Reviews.save(id, v, '')
+        .then(function () {
+          if (!bar) return;
+          bar.innerHTML = '<div class="rb-main wide"><b>★ ' + v + ' objavljeno</b>' +
+            '<span>možeš dodati i utisak</span></div>' +
+            '<button class="rb-more" data-act="rate-open" data-id="' + esc(id) + '">Napiši</button>' +
+            '<button class="rb-x" data-act="rb-close" aria-label="Zatvori">✕</button>';
+          clearTimeout(rateBarTimer);
+          rateBarTimer = setTimeout(hideRateBar, 5000);
+          render();
+        })
+        .catch(function (e) {
+          console.warn('[ocena]', e);
+          if (bar) bar.innerHTML = '<div class="rb-main wide"><b>Nije uspelo</b><span>proveri vezu</span></div>';
+          clearTimeout(rateBarTimer);
+          rateBarTimer = setTimeout(hideRateBar, 3000);
+        });
+    },
+    'rate-open': function (n) { hideRateBar(); openRating(n.dataset.id, 0, ''); },
     'rate-del': function (n) {
       var id = n.dataset.id;
       MM.Reviews.remove(id)

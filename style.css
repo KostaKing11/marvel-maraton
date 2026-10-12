@@ -927,3 +927,47 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px}
   background:rgba(255,106,0,.14);border:1px solid rgba(255,106,0,.3);
   padding:1px 6px;border-radius:999px;white-space:nowrap;
 }
+
+/* ---------- traka za ocenjivanje (ne blokira špil) ---------- */
+#ratebar{
+  position:fixed;left:14px;right:14px;z-index:45;
+  bottom:calc(var(--tabh) + 16px + env(safe-area-inset-bottom,0px));
+  display:flex;align-items:center;gap:11px;
+  background:rgba(28,28,34,.96);backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.1);border-radius:14px;
+  padding:9px 11px;box-shadow:0 10px 30px rgba(0,0,0,.55);
+  transform:translateY(16px);opacity:0;
+  transition:transform .22s cubic-bezier(.2,.8,.3,1),opacity .22s ease;
+}
+#ratebar.in{transform:none;opacity:1}
+.rb-art{width:34px;height:50px;border-radius:6px;overflow:hidden;background:var(--card-2);flex:none}
+.rb-art img{width:100%;height:100%;object-fit:cover}
+.rb-main{display:flex;flex-direction:column;min-width:0;flex:1}
+.rb-main b{font-size:13px;font-weight:800}
+.rb-main span{
+  font-size:12px;color:var(--muted);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.rb-main.wide{padding-left:2px}
+.rb-stars{display:flex;gap:1px;flex:none}
+.rb-stars button{
+  background:none;border:none;cursor:pointer;color:#3f3f4a;
+  font-size:23px;line-height:1;padding:2px 2px;
+  transition:color .12s ease,transform .12s ease;
+}
+.rb-stars button:active{transform:scale(.85)}
+/* hover na mis, a na dodir se boji sve do pritisnute zvezdice */
+.rb-stars:hover button{color:#f5c341}
+.rb-stars button:hover~button{color:#3f3f4a}
+.rb-more{
+  flex:none;background:rgba(255,255,255,.1);border:1px solid var(--line);
+  border-radius:9px;padding:7px 11px;font-size:12.5px;font-weight:700;cursor:pointer;
+}
+.rb-x{
+  flex:none;width:26px;height:26px;border-radius:50%;
+  background:rgba(255,255,255,.07);border:1px solid var(--line);
+  color:var(--muted);font-size:12px;cursor:pointer;
+}
+
+/* dok je traka za ocenu gore, špil se skrati da joj ne smeta */
+body.rating #view[data-tab="danas"] .swipe-area{margin-bottom:84px}
