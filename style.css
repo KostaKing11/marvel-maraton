@@ -35,6 +35,10 @@ body{
      fiksirani element vidno poskakivao. Skroluje samo #view. */
   height:100vh;
   height:100dvh;
+  /* Uz viewport-fit=cover, 100dvh obuhvata i zonu ispod sistemske trake
+     (izmereno: 838.8 naspram 782.6 vidljivih). Bez ovog odstojanja tab
+     bar zavrsi ispod ivice ekrana. */
+  padding-bottom:env(safe-area-inset-bottom,0px);
   display:flex;
   flex-direction:column;
   overflow:hidden;
@@ -638,7 +642,7 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px}
 /* ---------- toast ---------- */
 .toast{
   position:fixed;left:50%;transform:translateX(-50%);
-  bottom:calc(var(--tabh) + 14px + env(safe-area-inset-bottom,0px));
+  bottom:calc(var(--tabh) + 14px);
   background:#2a2a33;border:1px solid var(--line);color:var(--text);
   padding:11px 16px;border-radius:999px;font-size:14px;z-index:80;
   box-shadow:var(--shadow);max-width:88vw;text-align:center;
@@ -651,7 +655,7 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px}
 #tabbar{
   flex:none;z-index:50;
   width:calc(100% - 28px);max-width:420px;
-  margin:0 auto calc(12px + env(safe-area-inset-bottom,0px));
+  margin:0 auto 12px;
   display:grid;grid-template-columns:repeat(5,1fr);
   background:rgba(24,24,29,.82);backdrop-filter:blur(20px) saturate(1.4);
   border:1px solid rgba(255,255,255,.09);
@@ -945,7 +949,7 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px}
 /* ---------- traka za ocenjivanje (ne blokira špil) ---------- */
 #ratebar{
   position:fixed;left:14px;right:14px;z-index:45;
-  bottom:calc(var(--tabh) + 10px + env(safe-area-inset-bottom,0px));
+  bottom:calc(var(--tabh) + 10px);
   display:flex;align-items:center;gap:11px;
   background:rgba(28,28,34,.96);backdrop-filter:blur(14px);
   border:1px solid rgba(255,255,255,.1);border-radius:14px;

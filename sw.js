@@ -4,20 +4,20 @@
    VAZNO: podigni CACHE verziju na svaki deploy, inace se
    korisnik zaglavi na staroj verziji app-a.
    ============================================================ */
-const CACHE = 'marvel-maraton-v35';
+const CACHE = 'marvel-maraton-v36';
 
 // App shell — cache-first
 const SHELL = [
   './',
   './index.html',
-  './style.css?v=30',
-  './app.js?v=30',
-  './planner.js?v=30',
-  './sync.js?v=30',
-  './posters.js?v=30',
-  './reviews.js?v=30',
-  './ics.js?v=30',
-  './firebase-config.js?v=30',
+  './style.css?v=31',
+  './app.js?v=31',
+  './planner.js?v=31',
+  './sync.js?v=31',
+  './posters.js?v=31',
+  './reviews.js?v=31',
+  './ics.js?v=31',
+  './firebase-config.js?v=31',
   './manifest.json',
   './icons/icon-192.png',
   './icons/badge-96.png',
