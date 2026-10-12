@@ -37,6 +37,7 @@ window.MM = window.MM || {};
       lastWarnDay: '',      // "2026-08-18" - da upozorenje ne ide dvaput isti dan
       skipped: {},          // "iron-man": true - necu da gledam, van spiska i rasporeda
       lastPaceAt: 0,        // kad je poslednji put pokazana provera tempa
+      lastNoticeAt: 0,      // vreme poslednje procitane poruke ekipi
       displayName: '',      // ime uz tvoje ocene (ti ga biras, ne Google)
       avatar: '',           // URL slike profila (prazno = slovo u krugu)
       updatedAt: 0

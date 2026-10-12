@@ -15,7 +15,7 @@ window.MM = window.MM || {};
   var modalItemId = null;       // koji naslov je trenutno otvoren u modalu
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
-  var VERSION = '0.28.0';       // pise se u "Ja"; podize se uz svaki deploy
+  var VERSION = '0.29.0';       // pise se u "Ja"; podize se uz svaki deploy
   var calendarScrolled = false; // da skok na danas bude samo pri prvom otvaranju
   var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
   var countdownTimer = null;
@@ -368,6 +368,29 @@ window.MM = window.MM || {};
     var dow = (today.getDay() + 6) % 7;           // ponedeljak = 0
     var mon = P.addDays(today, -dow);
     return { from: P.iso(mon), to: P.iso(P.addDays(mon, 6)), mon: mon };
+  }
+
+  /* ---- poruke ekipi ---- */
+
+  /**
+   * Pri otvaranju proveri ima li nove poruke od ekipe i prikazi je
+   * jednom. Pamti se vreme poslednje procitane, pa se ista ne ponavlja.
+   */
+  function checkNotice() {
+    if (!Store.uid()) return;
+    MM.Reviews.latestNotice().then(function (n) {
+      if (!n || !n.text) return;
+      if ((state().lastNoticeAt || 0) >= n.at) return;     // vec si je video
+      if (n.uid === Store.uid()) {                          // svoju ne prikazuj
+        Store.mutate(function (st) { st.lastNoticeAt = n.at; });
+        return;
+      }
+      showModal('<div class="sheet"><div class="sheet-body notice-sheet">' +
+        '<div class="nt-from">Poruka od ' + esc(n.from || 'ekipe') + '</div>' +
+        '<p class="nt-text">' + esc(n.text) + '</p>' +
+        '<button class="btn" data-act="notice-ok" data-at="' + n.at + '">U redu</button>' +
+        '</div></div>');
+    }).catch(function (e) { console.warn('[poruka]', e); });
   }
 
   /* ---- streak ---- */
@@ -1282,6 +1305,17 @@ window.MM = window.MM || {};
         '<button class="btn ghost" data-act="import-json">Import JSON</button>' +
       '</div></section>';
 
+    /* --- poruka ekipi --- */
+    if (u) {
+      out += '<section class="card"><h2>Poruka ekipi</h2>' +
+        '<p class="note small">Svi iz ekipe je vide kad sledeći put otvore aplikaciju. ' +
+        'Nije push — stiže tek kad neko otvori app.</p>' +
+        '<label class="field"><span>Tekst</span>' +
+        '<textarea id="noticeText" maxlength="300" rows="3" placeholder="npr. Streak ti ne mogu vratiti, moraš ispočetka 😄"></textarea></label>' +
+        '<button class="btn" data-act="send-notice">Pošalji ekipi</button>' +
+        '</section>';
+    }
+
     /* --- reset --- */
     out += '<section class="card"><h2>Opasna zona</h2>' +
       '<button class="btn danger" data-act="reset">Resetuj napredak</button></section>';
@@ -1613,6 +1647,30 @@ window.MM = window.MM || {};
       Store.mutate(function (st) { delete st.skipped[id]; });
       closeModal(); toast('Vraćeno u spisak.');
     },
+    'notice-ok': function (n) {
+      var at = parseInt(n.dataset.at, 10) || Date.now();
+      Store.mutate(function (st) { st.lastNoticeAt = at; });
+      closeModal();
+    },
+    'send-notice': function () {
+      var inp = $('#noticeText');
+      var t = (inp && inp.value || '').trim();
+      if (t.length < 2) { toast('Napiši poruku.'); return; }
+      var btn = $('[data-act="send-notice"]');
+      if (btn) btn.textContent = 'Šaljem…';
+      MM.Reviews.postNotice(t)
+        .then(function (rec) {
+          Store.mutate(function (st) { st.lastNoticeAt = rec.at; });
+          if (inp) inp.value = '';
+          if (btn) btn.textContent = 'Pošalji ekipi';
+          toast('Poslato — videće je kad otvori app.');
+        })
+        .catch(function (e) {
+          console.warn(e);
+          if (btn) btn.textContent = 'Pošalji ekipi';
+          toast('Nije uspelo — dodaj pravila za notices.');
+        });
+    },
     'rb-close': function () { hideRateBar(); },
     'rb-star': function (n) {
       var id = n.dataset.id, v = parseInt(n.dataset.n, 10);
@@ -1931,6 +1989,7 @@ window.MM = window.MM || {};
         // uspore prvo crtanje.
         setTimeout(function () { startPosterFetch(false); }, 1200);
         setTimeout(function () { loadReviews(true); }, 2000);
+        setTimeout(checkNotice, 3200);
         setTimeout(function () {
           cleanupNotifications();
           var h = idleHours();

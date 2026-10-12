@@ -100,6 +100,16 @@ service cloud.firestore {
       allow delete: if request.auth != null && request.auth.uid == resource.data.uid;
     }
 
+    // Poruke ekipi: svi prijavljeni citaju, svako pise samo u svoje ime.
+    match /notices/{nid} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.uid
+        && request.resource.data.text.size() <= 300;
+      allow update: if false;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.uid;
+    }
+
     match /{document=**} { allow read, write: if false; }
   }
 }

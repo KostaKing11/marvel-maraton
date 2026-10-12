@@ -75,6 +75,39 @@ window.MM = window.MM || {};
   }
   function cachedPeople() { return people; }
 
+  /* ---------------- poruke ekipi ---------------- */
+
+  /**
+   * Jedna zajednicka kolekcija "notices". Svako prijavljen moze da
+   * objavi poruku, svi je vide pri sledecem otvaranju aplikacije.
+   * Ovo NIJE push - stize tek kad covek otvori app, jer bez servera
+   * telefon ne moze da primi poruku dok je app zatvoren.
+   */
+  async function latestNotice() {
+    var f = await MM.Store.firestore();
+    if (!f || !MM.Store.uid()) return null;
+    var snap = await f.getDocs(f.query(
+      f.collection(f.db, 'notices'), f.orderBy('at', 'desc'), f.limit(1)
+    ));
+    var out = null;
+    snap.forEach(function (d) { out = d.data(); });
+    return out;
+  }
+
+  async function postNotice(text) {
+    var f = await MM.Store.firestore();
+    var uid = MM.Store.uid();
+    if (!f || !uid) throw new Error('nije prijavljen');
+    var rec = {
+      uid: uid,
+      from: (MM.Store.get().displayName || 'Bez imena').slice(0, 40),
+      text: String(text || '').slice(0, 300),
+      at: Date.now()
+    };
+    await f.setDoc(f.doc(f.db, 'notices', String(rec.at) + '__' + uid), rec);
+    return rec;
+  }
+
   /** Obrisi svoju ocenu. Pravila dozvoljavaju brisanje samo svoje. */
   async function remove(itemId) {
     var f = await MM.Store.firestore();
@@ -101,6 +134,7 @@ window.MM = window.MM || {};
   MM.Reviews = {
     load: load, save: save, cached: cached,
     forItem: forItem, mine: mine, avg: avg, isStale: isStale,
-    loadPeople: loadPeople, people: cachedPeople, remove: remove
+    loadPeople: loadPeople, people: cachedPeople, remove: remove,
+    latestNotice: latestNotice, postNotice: postNotice
   };
 })();

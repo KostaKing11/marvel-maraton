@@ -89,7 +89,12 @@ img{display:block}
 #view[data-tab="danas"]{
   padding-top:0;padding-bottom:4px;
   display:flex;flex-direction:column;
-  min-height:calc(100vh - 58px - var(--tabh) - env(safe-area-inset-bottom,0px));
+  /* Mora da oduzme CELO donje odstojanje tela (tabh + 12px + safe),
+     inace je stranica par piksela visa od ekrana; tih par piksela su
+     dovoljni da Chrome pomera fiksirani tab bar gore-dole.
+     100dvh umesto 100vh: na telefonu prati stvarnu visinu prikaza. */
+  min-height:calc(100vh - 58px - var(--tabh) - 12px - env(safe-area-inset-bottom,0px));
+  min-height:calc(100dvh - 58px - var(--tabh) - 12px - env(safe-area-inset-bottom,0px));
 }
 #view[data-tab="danas"] .deck{display:flex;flex-direction:column;flex:1;min-height:0}
 #view[data-tab="ocene"],#view[data-tab="biblioteka"],#view[data-tab="ja"],
@@ -972,3 +977,16 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px}
 
 /* dok je traka za ocenu gore, špil se skrati da joj ne smeta */
 body.rating #view[data-tab="danas"] .swipe-area{margin-bottom:84px}
+
+/* ---------- poruka ekipi ---------- */
+.notice-sheet{padding-top:26px;text-align:center}
+.nt-from{
+  font-size:11.5px;letter-spacing:1.8px;text-transform:uppercase;
+  color:var(--accent);font-weight:800;margin-bottom:10px;
+}
+.nt-text{font-size:17px;line-height:1.45;margin:0 0 4px;white-space:pre-wrap}
+#noticeText{
+  width:100%;background:var(--card-2);border:1px solid var(--line);
+  border-radius:11px;padding:11px 13px;font-size:15px;resize:vertical;
+  font-family:inherit;color:inherit;
+}
