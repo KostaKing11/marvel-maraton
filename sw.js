@@ -4,20 +4,20 @@
    VAZNO: podigni CACHE verziju na svaki deploy, inace se
    korisnik zaglavi na staroj verziji app-a.
    ============================================================ */
-const CACHE = 'marvel-maraton-v34';
+const CACHE = 'marvel-maraton-v35';
 
 // App shell — cache-first
 const SHELL = [
   './',
   './index.html',
-  './style.css',
-  './app.js',
-  './planner.js',
-  './sync.js',
-  './posters.js',
-  './reviews.js',
-  './ics.js',
-  './firebase-config.js',
+  './style.css?v=30',
+  './app.js?v=30',
+  './planner.js?v=30',
+  './sync.js?v=30',
+  './posters.js?v=30',
+  './reviews.js?v=30',
+  './ics.js?v=30',
+  './firebase-config.js?v=30',
   './manifest.json',
   './icons/icon-192.png',
   './icons/badge-96.png',
@@ -57,8 +57,13 @@ self.addEventListener('fetch', (e) => {
   // Firebase / gstatic / sve sa drugog origina — pusti kroz, ne kesiramo.
   if (url.origin !== self.location.origin) return;
 
-  // data.json — network-first (da nove naslove vidis odmah), fallback na kes.
-  if (url.pathname.endsWith('data.json')) {
+  // index.html i data.json — network-first. index.html mora jer nosi
+  // ?v= adrese ostalih fajlova: da se cita iz kesa, nova verzija se
+  // nikad ne bi ni zatrazila.
+  if (url.pathname.endsWith('data.json') ||
+      url.pathname.endsWith('index.html') ||
+      url.pathname.endsWith('/marvel-maraton/') ||
+      req.mode === 'navigate') {
     e.respondWith(
       fetch(req)
         .then((res) => {
