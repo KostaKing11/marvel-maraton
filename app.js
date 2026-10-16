@@ -15,7 +15,7 @@ window.MM = window.MM || {};
   var modalItemId = null;       // koji naslov je trenutno otvoren u modalu
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
-  var VERSION = '0.30.3';       // pise se u "Ja"; podize se uz svaki deploy
+  var VERSION = '0.31.0';       // pise se u "Ja"; podize se uz svaki deploy
   var calendarScrolled = false; // da skok na danas bude samo pri prvom otvaranju
   var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
   var countdownTimer = null;
@@ -59,7 +59,7 @@ window.MM = window.MM || {};
   }
 
   var TYPE_LABEL = { film: 'FILM', serija: 'SERIJA', special: 'SPECIAL' };
-  var TIER_LABEL = { must: 'MUST', good: 'GOOD', skip: 'SKIP', bonus: 'BONUS' };
+  var TIER_LABEL = { must: 'MUST', good: 'GOOD', skip: 'SKIP', bonus: 'BONUS', netflix: 'NETFLIX' };
   var PLATFORM_LABEL = {
     disney: 'Disney+ (pretpostavka)', check: 'proveri', bioskop: 'bioskop',
     netflix: 'Netflix', hbo: 'HBO Max', other: 'Ostalo', link: 'Imam link'
@@ -1232,7 +1232,7 @@ window.MM = window.MM || {};
      EKRAN 3: JA
      ============================================================ */
 
-  var PHASE_NAME = { 0: 'Fox / Bonus', 1: 'Faza 1', 2: 'Faza 2', 3: 'Faza 3', 4: 'Faza 4', 5: 'Faza 5', 6: 'Faza 6' };
+  var PHASE_NAME = { 0: 'Fox / Netflix / Bonus', 1: 'Faza 1', 2: 'Faza 2', 3: 'Faza 3', 4: 'Faza 4', 5: 'Faza 5', 6: 'Faza 6' };
 
   function viewJa() {
     var s = state();
@@ -1244,7 +1244,8 @@ window.MM = window.MM || {};
     [['must', 'Obavezno', 'kičma priče, bez ovoga ne razumeš Doomsday'],
      ['good', 'Vredi', 'nije obavezno, ali je dobro'],
      ['skip', 'Može da se preskoči', 'slabiji naslovi, priča ne zavisi od njih'],
-     ['bonus', 'Fox bonus', 'X-Men, Logan, Deadpool — pre „Deadpool & Wolverine"']].forEach(function (t) {
+     ['bonus', 'Fox bonus', 'X-Men, Logan, Deadpool — pre „Deadpool & Wolverine"'],
+     ['netflix', 'Netflix Defenders', 'Daredevil, Jessica Jones, Luke Cage, Iron Fist, Punisher — pre „Hawkeye"']].forEach(function (t) {
       var on = s.plans.indexOf(t[0]) !== -1;
       var mins = P.tierMinutes(ITEMS, s, t[0]);
       out += '<label class="check' + (on ? ' on' : '') + '">' +

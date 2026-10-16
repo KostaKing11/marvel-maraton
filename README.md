@@ -226,8 +226,12 @@ predlog i app ih ignoriše. Plan se preračunava od nule na svaku promenu
 (čekiranje, kapacitet, izbačen tier):
 
 1. Uzmu se naslovi čiji je tier uključen u **Ja → Šta gledam**, po redosledu
-   izlaska. Fox filmovi (X-Men, Logan, Deadpool) se ubacuju **neposredno pre**
-   *Deadpool & Wolverine*, ne na kraj.
+   izlaska. Fox filmovi (svih 13, od *X-Men* do *The New Mutants*) se ubacuju
+   **neposredno pre** *Deadpool & Wolverine*, ne na kraj. Netflix serije
+   (Daredevil, Jessica Jones, Luke Cage, Iron Fist, Defenders, Punisher) idu
+   **neposredno pre** *Hawkeye*, pa posle njih redom dolaze Hawkeye, She-Hulk,
+   Echo i Daredevil: Born Again. Netflix tier je ~138h, pa je po defaultu
+   isključen — uključuje se u **Ja → Šta gledam**.
 2. Serije se razlažu na epizode (`runtime / episodes` po epizodi).
 3. Odgledano ispada iz plana.
 4. Nedelje se pune redom do kapaciteta (`Ja → Tempo`, ili olovka na konkretnoj
@@ -276,7 +280,7 @@ Dugme „Gde gledati u Srbiji?" otvara JustWatch pretragu za taj naslov.
 | `posters.js` | automatsko povlačenje postera (TVMaze + Wikipedia) |
 | `ics.js` | izvoz u `.ics` |
 | `firebase-config.js` | tvoj Firebase config (placeholder) |
-| `data.json` | 69 naslova (63 MCU + 6 Fox bonus) |
+| `data.json` | 89 naslova (63 MCU + 13 Fox bonus + 13 Netflix) |
 | `manifest.json`, `sw.js`, `icons/` | PWA |
 | `.claude/launch.json` | pomoćni fajl za lokalni server, može da se obriše |
 

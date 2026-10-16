@@ -707,7 +707,7 @@
   "platform": "disney",
   "link": "",
   "poster": "",
-  "note": "Zabavno ali nevazno; ima Daredevila u jednoj epizodi.",
+  "note": "Zabavno ali nevazno; Daredevil je u ep 8 i 9 (za Daredevil pricu dovoljne te dve).",
   "week": 7,
   "weeks": [
    7,
@@ -1261,13 +1261,89 @@
   ]
  },
  {
+  "id": "x-men-last-stand",
+  "title": "X-Men: The Last Stand",
+  "type": "film",
+  "year": 2006,
+  "phase": 0,
+  "releaseOrder": 103,
+  "chronoOrder": 103,
+  "runtime": 104,
+  "priority": "bonus",
+  "platform": "check",
+  "link": "",
+  "poster": "",
+  "note": "Fox era - kraj prve X-Men trilogije.",
+  "week": 11,
+  "weeks": [
+   11
+  ]
+ },
+ {
+  "id": "x-men-origins-wolverine",
+  "title": "X-Men Origins: Wolverine",
+  "type": "film",
+  "year": 2009,
+  "phase": 0,
+  "releaseOrder": 104,
+  "chronoOrder": 104,
+  "runtime": 107,
+  "priority": "bonus",
+  "platform": "check",
+  "link": "",
+  "poster": "",
+  "note": "Fox era - Loganovo poreklo; slab, ali Deadpool & Wolverine ga zeza.",
+  "week": 11,
+  "weeks": [
+   11
+  ]
+ },
+ {
+  "id": "x-men-first-class",
+  "title": "X-Men: First Class",
+  "type": "film",
+  "year": 2011,
+  "phase": 0,
+  "releaseOrder": 105,
+  "chronoOrder": 105,
+  "runtime": 132,
+  "priority": "bonus",
+  "platform": "check",
+  "link": "",
+  "poster": "",
+  "note": "Fox era - mladi Xavier i Magneto.",
+  "week": 11,
+  "weeks": [
+   11
+  ]
+ },
+ {
+  "id": "the-wolverine",
+  "title": "The Wolverine",
+  "type": "film",
+  "year": 2013,
+  "phase": 0,
+  "releaseOrder": 106,
+  "chronoOrder": 106,
+  "runtime": 126,
+  "priority": "bonus",
+  "platform": "check",
+  "link": "",
+  "poster": "",
+  "note": "Fox era - Logan u Japanu; scena posle spice vodi u Days of Future Past.",
+  "week": 11,
+  "weeks": [
+   11
+  ]
+ },
+ {
   "id": "days-of-future-past",
   "title": "X-Men: Days of Future Past",
   "type": "film",
   "year": 2014,
   "phase": 0,
-  "releaseOrder": 103,
-  "chronoOrder": 103,
+  "releaseOrder": 107,
+  "chronoOrder": 107,
   "runtime": 132,
   "priority": "bonus",
   "platform": "check",
@@ -1280,32 +1356,13 @@
   ]
  },
  {
-  "id": "logan",
-  "title": "Logan",
-  "type": "film",
-  "year": 2017,
-  "phase": 0,
-  "releaseOrder": 104,
-  "chronoOrder": 104,
-  "runtime": 137,
-  "priority": "bonus",
-  "platform": "check",
-  "link": "",
-  "poster": "",
-  "note": "Vazno za Deadpool & Wolverine.",
-  "week": 12,
-  "weeks": [
-   12
-  ]
- },
- {
   "id": "deadpool",
   "title": "Deadpool",
   "type": "film",
   "year": 2016,
   "phase": 0,
-  "releaseOrder": 105,
-  "chronoOrder": 105,
+  "releaseOrder": 108,
+  "chronoOrder": 108,
   "runtime": 108,
   "priority": "bonus",
   "platform": "check",
@@ -1318,13 +1375,51 @@
   ]
  },
  {
+  "id": "x-men-apocalypse",
+  "title": "X-Men: Apocalypse",
+  "type": "film",
+  "year": 2016,
+  "phase": 0,
+  "releaseOrder": 109,
+  "chronoOrder": 109,
+  "runtime": 144,
+  "priority": "bonus",
+  "platform": "check",
+  "link": "",
+  "poster": "",
+  "note": "Fox era - nastavak Days of Future Past.",
+  "week": 12,
+  "weeks": [
+   12
+  ]
+ },
+ {
+  "id": "logan",
+  "title": "Logan",
+  "type": "film",
+  "year": 2017,
+  "phase": 0,
+  "releaseOrder": 110,
+  "chronoOrder": 110,
+  "runtime": 137,
+  "priority": "bonus",
+  "platform": "check",
+  "link": "",
+  "poster": "",
+  "note": "Vazno za Deadpool & Wolverine.",
+  "week": 12,
+  "weeks": [
+   12
+  ]
+ },
+ {
   "id": "deadpool-2",
   "title": "Deadpool 2",
   "type": "film",
   "year": 2018,
   "phase": 0,
-  "releaseOrder": 106,
-  "chronoOrder": 106,
+  "releaseOrder": 111,
+  "chronoOrder": 111,
   "runtime": 119,
   "priority": "bonus",
   "platform": "check",
@@ -1334,6 +1429,304 @@
   "week": 12,
   "weeks": [
    12
+  ]
+ },
+ {
+  "id": "dark-phoenix",
+  "title": "Dark Phoenix",
+  "type": "film",
+  "year": 2019,
+  "phase": 0,
+  "releaseOrder": 112,
+  "chronoOrder": 112,
+  "runtime": 114,
+  "priority": "bonus",
+  "platform": "check",
+  "link": "",
+  "poster": "",
+  "note": "Fox era - poslednji film glavne X-Men linije.",
+  "week": 12,
+  "weeks": [
+   12
+  ]
+ },
+ {
+  "id": "new-mutants",
+  "title": "The New Mutants",
+  "type": "film",
+  "year": 2020,
+  "phase": 0,
+  "releaseOrder": 113,
+  "chronoOrder": 113,
+  "runtime": 94,
+  "priority": "bonus",
+  "platform": "check",
+  "link": "",
+  "poster": "",
+  "note": "Fox era - horor sporedna prica, nevazno za Doomsday.",
+  "week": 12,
+  "weeks": [
+   12
+  ]
+ },
+ {
+  "id": "daredevil-s1",
+  "title": "Daredevil (Sezona 1)",
+  "type": "serija",
+  "year": 2015,
+  "phase": 0,
+  "releaseOrder": 201,
+  "chronoOrder": 201,
+  "runtime": 690,
+  "episodes": 13,
+  "priority": "netflix",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Netflix era - Charlie Cox kao Daredevil, D'Onofrio kao Kingpin. Pocetak price za Born Again.",
+  "week": 5,
+  "weeks": [
+   5
+  ]
+ },
+ {
+  "id": "jessica-jones-s1",
+  "title": "Jessica Jones (Sezona 1)",
+  "type": "serija",
+  "year": 2015,
+  "phase": 0,
+  "releaseOrder": 202,
+  "chronoOrder": 202,
+  "runtime": 675,
+  "episodes": 13,
+  "priority": "netflix",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Netflix era - uvodi Jessicu i Lukea Cagea.",
+  "week": 5,
+  "weeks": [
+   5
+  ]
+ },
+ {
+  "id": "daredevil-s2",
+  "title": "Daredevil (Sezona 2)",
+  "type": "serija",
+  "year": 2016,
+  "phase": 0,
+  "releaseOrder": 203,
+  "chronoOrder": 203,
+  "runtime": 700,
+  "episodes": 13,
+  "priority": "netflix",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Netflix era - uvodi Punishera i Elektru.",
+  "week": 5,
+  "weeks": [
+   5
+  ]
+ },
+ {
+  "id": "luke-cage-s1",
+  "title": "Luke Cage (Sezona 1)",
+  "type": "serija",
+  "year": 2016,
+  "phase": 0,
+  "releaseOrder": 204,
+  "chronoOrder": 204,
+  "runtime": 715,
+  "episodes": 13,
+  "priority": "netflix",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Netflix era - Harlem, Luke Cage solo.",
+  "week": 5,
+  "weeks": [
+   5
+  ]
+ },
+ {
+  "id": "iron-fist-s1",
+  "title": "Iron Fist (Sezona 1)",
+  "type": "serija",
+  "year": 2017,
+  "phase": 0,
+  "releaseOrder": 205,
+  "chronoOrder": 205,
+  "runtime": 715,
+  "episodes": 13,
+  "priority": "netflix",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Netflix era - najslabija sezona, ali vodi direktno u The Defenders.",
+  "week": 5,
+  "weeks": [
+   5
+  ]
+ },
+ {
+  "id": "defenders",
+  "title": "The Defenders",
+  "type": "serija",
+  "year": 2017,
+  "phase": 0,
+  "releaseOrder": 206,
+  "chronoOrder": 206,
+  "runtime": 400,
+  "episodes": 8,
+  "priority": "netflix",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Netflix era - mini serija, sva cetvorica zajedno.",
+  "week": 5,
+  "weeks": [
+   5
+  ]
+ },
+ {
+  "id": "punisher-s1",
+  "title": "The Punisher (Sezona 1)",
+  "type": "serija",
+  "year": 2017,
+  "phase": 0,
+  "releaseOrder": 207,
+  "chronoOrder": 207,
+  "runtime": 690,
+  "episodes": 13,
+  "priority": "netflix",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Netflix era - Frank Castle solo.",
+  "week": 5,
+  "weeks": [
+   5
+  ]
+ },
+ {
+  "id": "jessica-jones-s2",
+  "title": "Jessica Jones (Sezona 2)",
+  "type": "serija",
+  "year": 2018,
+  "phase": 0,
+  "releaseOrder": 208,
+  "chronoOrder": 208,
+  "runtime": 690,
+  "episodes": 13,
+  "priority": "netflix",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Netflix era.",
+  "week": 5,
+  "weeks": [
+   5
+  ]
+ },
+ {
+  "id": "luke-cage-s2",
+  "title": "Luke Cage (Sezona 2)",
+  "type": "serija",
+  "year": 2018,
+  "phase": 0,
+  "releaseOrder": 209,
+  "chronoOrder": 209,
+  "runtime": 740,
+  "episodes": 13,
+  "priority": "netflix",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Netflix era.",
+  "week": 5,
+  "weeks": [
+   5
+  ]
+ },
+ {
+  "id": "iron-fist-s2",
+  "title": "Iron Fist (Sezona 2)",
+  "type": "serija",
+  "year": 2018,
+  "phase": 0,
+  "releaseOrder": 210,
+  "chronoOrder": 210,
+  "runtime": 510,
+  "episodes": 10,
+  "priority": "netflix",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Netflix era.",
+  "week": 5,
+  "weeks": [
+   5
+  ]
+ },
+ {
+  "id": "daredevil-s3",
+  "title": "Daredevil (Sezona 3)",
+  "type": "serija",
+  "year": 2018,
+  "phase": 0,
+  "releaseOrder": 211,
+  "chronoOrder": 211,
+  "runtime": 740,
+  "episodes": 13,
+  "priority": "netflix",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Netflix era - Bullseye i Fisk; najbolja sezona, kljucna za Born Again.",
+  "week": 5,
+  "weeks": [
+   5
+  ]
+ },
+ {
+  "id": "punisher-s2",
+  "title": "The Punisher (Sezona 2)",
+  "type": "serija",
+  "year": 2019,
+  "phase": 0,
+  "releaseOrder": 212,
+  "chronoOrder": 212,
+  "runtime": 530,
+  "episodes": 10,
+  "priority": "netflix",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Netflix era.",
+  "week": 5,
+  "weeks": [
+   5
+  ]
+ },
+ {
+  "id": "jessica-jones-s3",
+  "title": "Jessica Jones (Sezona 3)",
+  "type": "serija",
+  "year": 2019,
+  "phase": 0,
+  "releaseOrder": 213,
+  "chronoOrder": 213,
+  "runtime": 660,
+  "episodes": 13,
+  "priority": "netflix",
+  "platform": "disney",
+  "link": "",
+  "poster": "",
+  "note": "Netflix era - kraj Netflix price.",
+  "week": 5,
+  "weeks": [
+   5
   ]
  }
 ]

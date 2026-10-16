@@ -67,13 +67,19 @@ window.MM = window.MM || {};
 
   /**
    * Kljuc za sortiranje.
-   * Bonus (Fox era: X-Men / Deadpool, releaseOrder 101-106) NE ide na kraj,
+   * Bonus (Fox era: X-Men / Deadpool, releaseOrder 101-113) NE ide na kraj,
    * nego neposredno PRE "deadpool-wolverine" (releaseOrder 48) - jer taj film
-   * je nastavak Fox price. Zato ih mapiramo u 47.01 ... 47.06, cime upadaju
+   * je nastavak Fox price. Zato ih mapiramo u 47.01 ... 47.13, cime upadaju
    * izmedju "echo" (47) i "deadpool-wolverine" (48), a medjusobno zadrzavaju
-   * svoj redosled (X-Men, X2, DoFP, Logan, Deadpool, Deadpool 2).
+   * svoj redosled izlaska (X-Men ... The New Mutants).
+   *
+   * Netflix (Daredevil, Jessica Jones, Luke Cage, Iron Fist, Defenders,
+   * Punisher; releaseOrder 201-213) ide isto tako ispred "hawkeye" (31):
+   * 30.01 ... 30.13. Posle njih redom dolaze Hawkeye, She-Hulk, Echo i
+   * Daredevil: Born Again - tacno Daredevil redosled.
    */
   function sortKey(item) {
+    if (item.releaseOrder >= 201) return 30 + (item.releaseOrder - 200) / 100;
     if (item.releaseOrder >= 101) return 47 + (item.releaseOrder - 100) / 100;
     return item.releaseOrder;
   }
