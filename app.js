@@ -15,7 +15,7 @@ window.MM = window.MM || {};
   var modalItemId = null;       // koji naslov je trenutno otvoren u modalu
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
-  var VERSION = '0.31.0';       // pise se u "Ja"; podize se uz svaki deploy
+  var VERSION = '0.31.1';       // pise se u "Ja"; podize se uz svaki deploy
   var calendarScrolled = false; // da skok na danas bude samo pri prvom otvaranju
   var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
   var countdownTimer = null;
@@ -392,6 +392,44 @@ window.MM = window.MM || {};
         '<button class="btn" data-act="notice-ok" data-at="' + n.at + '">U redu</button>' +
         '</div></div>');
     }).catch(function (e) { console.warn('[poruka]', e); });
+  }
+
+  /* ---- novo u aplikaciji ---- */
+
+  /**
+   * Obavestenje uz deploy: sta je dodato. Prikazuje se jednom - id se
+   * pamti u state.seenNews (i sinhronizuje), pa ga ne vidis ponovo ni na
+   * drugom uredjaju. Za sledecu vest dovoljno je promeniti id i tekst.
+   */
+  var NEWS = {
+    id: '0.31-xmen-netflix',
+    title: 'Novo: X-Men i Netflix Daredevil',
+    items: [
+      '<b>7 novih X-Men filmova</b> — The Last Stand, Origins: Wolverine, First Class, The Wolverine, Apocalypse, Dark Phoenix, The New Mutants. Sad je svih 13 Fox filmova po redu izlaska, pre „Deadpool &amp; Wolverine". Ako ti je uključen Fox bonus, već su u planu.',
+      '<b>Netflix Daredevil priča</b> — Daredevil 1–3, Jessica Jones 1–3, Luke Cage 1–2, Iron Fist 1–2, The Defenders, The Punisher 1–2. Idu pre „Hawkeye", pa dalje Echo i Born Again.',
+      'Netflix je <b>isključen</b> jer je ~141h. Uključuje se dugmetom ispod ili u <b>Ja → Šta gledam → Netflix Defenders</b>.'
+    ]
+  };
+
+  /** Vraca true ako je vest prikazana (tada poruka ekipi ceka da je zatvoris). */
+  function checkNews() {
+    var s = state();
+    if (s.seenNews === NEWS.id) return false;
+    if (!$('#modal').classList.contains('hidden')) return false;
+    var o = $('#onboarding');
+    if (o && !o.classList.contains('hidden') && o.innerHTML) return false;
+    Store.mutate(function (st) { st.seenNews = NEWS.id; });
+    var on = (s.plans || []).indexOf('netflix') !== -1;
+    showModal('<div class="sheet"><div class="sheet-body notice-sheet news-sheet">' +
+      '<div class="nt-from">Novo u aplikaciji · v' + VERSION + '</div>' +
+      '<h2>' + esc(NEWS.title) + '</h2>' +
+      '<ul class="news-list">' + NEWS.items.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ul>' +
+      (on
+        ? '<div class="ok-line">✓ Netflix ti je već uključen</div><button class="btn" data-act="news-ok">U redu</button>'
+        : '<div class="btn-row"><button class="btn" data-act="news-netflix">Uključi Netflix</button>' +
+          '<button class="btn ghost" data-act="news-ok">Ne sad</button></div>') +
+      '</div></div>');
+    return true;
   }
 
   /* ---- streak ---- */
@@ -1649,6 +1687,16 @@ window.MM = window.MM || {};
       Store.mutate(function (st) { delete st.skipped[id]; });
       closeModal(); toast('Vraćeno u spisak.');
     },
+    'news-ok': function () {
+      closeModal();
+      setTimeout(checkNotice, 400);
+    },
+    'news-netflix': function () {
+      Store.mutate(function (st) { if (st.plans.indexOf('netflix') === -1) st.plans.push('netflix'); });
+      closeModal();
+      toast('Netflix uključen — plan je preračunat.');
+      setTimeout(checkNotice, 400);
+    },
     'notice-ok': function (n) {
       var at = parseInt(n.dataset.at, 10) || Date.now();
       Store.mutate(function (st) { st.lastNoticeAt = at; });
@@ -1994,7 +2042,7 @@ window.MM = window.MM || {};
         // uspore prvo crtanje.
         setTimeout(function () { startPosterFetch(false); }, 1200);
         setTimeout(function () { loadReviews(true); }, 2000);
-        setTimeout(checkNotice, 3200);
+        setTimeout(function () { if (!checkNews()) checkNotice(); }, 3200);
         setTimeout(function () {
           cleanupNotifications();
           var h = idleHours();

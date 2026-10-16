@@ -38,6 +38,7 @@ window.MM = window.MM || {};
       skipped: {},          // "iron-man": true - necu da gledam, van spiska i rasporeda
       lastPaceAt: 0,        // kad je poslednji put pokazana provera tempa
       lastNoticeAt: 0,      // vreme poslednje procitane poruke ekipi
+      seenNews: '',         // id poslednjeg prikazanog "Novo u aplikaciji" (NEWS.id u app.js)
       displayName: '',      // ime uz tvoje ocene (ti ga biras, ne Google)
       avatar: '',           // URL slike profila (prazno = slovo u krugu)
       updatedAt: 0
