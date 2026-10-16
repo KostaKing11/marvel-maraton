@@ -15,7 +15,7 @@ window.MM = window.MM || {};
   var modalItemId = null;       // koji naslov je trenutno otvoren u modalu
   var modalSource = 'library';  // odakle je modal otvoren ('plan' | 'library')
   var posterJob = null;         // {done,total} dok se povlace posteri
-  var VERSION = '0.31.1';       // pise se u "Ja"; podize se uz svaki deploy
+  var VERSION = '0.31.2';       // pise se u "Ja"; podize se uz svaki deploy
   var calendarScrolled = false; // da skok na danas bude samo pri prvom otvaranju
   var ORD = {};                 // id -> redni broj u redosledu gledanja (#1, #2…)
   var countdownTimer = null;
@@ -846,7 +846,7 @@ window.MM = window.MM || {};
         '<div class="pace-facts">' +
           '<div><b>' + hStr(PLAN.totalRemainingMinutes) + '</b><span>ostalo</span></div>' +
           '<div><b>' + st.weeksLeft + '</b><span>nedelja</span></div>' +
-          '<div><b>' + st.percent + '%</b><span>gotovo</span></div>' +
+          '<div><b>' + P.progress(ITEMS, s).percent + '%</b><span>gotovo</span></div>' +
         '</div>' +
       '</div></div>';
 
@@ -1078,8 +1078,14 @@ window.MM = window.MM || {};
 
   function viewOcene() {
     var list = MM.Reviews.cached();
-    var ppl = MM.Reviews.people();
     var me = Store.uid();
+    // Svoj red uvek racunaj uzivo - objavljeni profil kasni (debounce, a
+    // lista se ucita pre nego sto se novi broj objavi).
+    var mineNow = P.progress(ITEMS, state());
+    var ppl = MM.Reviews.people().map(function (pr) {
+      if (pr.uid !== me) return pr;
+      return Object.assign({}, pr, { watched: mineNow.watched, total: mineNow.total, percent: mineNow.percent });
+    }).sort(function (a, b) { return (b.percent || 0) - (a.percent || 0); });
     var out = '';
 
     if (!me) {
@@ -1164,9 +1170,9 @@ window.MM = window.MM || {};
     if (!Store.uid() || !PLAN) return;
     clearTimeout(profileTimer);
     profileTimer = setTimeout(function () {
-      var st = P.stats(ITEMS, state(), PLAN, new Date());
+      var st = P.progress(ITEMS, state());
       Store.publishProfile({
-        watched: st.watchedTitles, total: st.titles,
+        watched: st.watched, total: st.total,
         minutes: st.watchedMinutes, percent: st.percent,
         streak: computeStreak(state()).n
       });

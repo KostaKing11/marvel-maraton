@@ -466,6 +466,35 @@ window.MM = window.MM || {};
   }
 
   /**
+   * Napredak u TVOM spisku (za "Dokle su stigli" i proveru tempa):
+   * samo naslovi iz ukljucenih tierova, bez onih koje si izbacio.
+   * Zato Netflix (opt-in, ~141h) ne obara procenat onima koji ga ne gledaju,
+   * a novi naslovi u data.json se odmah vide u ukupnom broju.
+   * Fiksna finala (Brand New Day, Doomsday) se racunaju - i njih gledas.
+   */
+  function progress(items, state) {
+    var plans = state.plans || [];
+    var skipped = state.skipped || {};
+    var total = 0, watched = 0, totalMin = 0, watchedMin = 0;
+    items.forEach(function (i) {
+      if (plans.indexOf(i.priority) === -1 || skipped[i.id]) return;
+      total++;
+      totalMin += i.runtime;
+      if (i.type === 'serija' && i.episodes) {
+        watchedMin += Math.min(i.episodes, watchedEpisodes(i, state).length) * episodeMinutes(i);
+      } else if (state.watched[i.id] === true) {
+        watchedMin += i.runtime;
+      }
+      if (isFullyWatched(i, state)) watched++;
+    });
+    return {
+      watched: watched, total: total,
+      watchedMinutes: Math.min(watchedMin, totalMin), totalMinutes: totalMin,
+      percent: totalMin ? Math.round(Math.min(watchedMin, totalMin) / totalMin * 100) : 0
+    };
+  }
+
+  /**
    * DNEVNI RASPORED - srce novog modela.
    *
    * Nema kapaciteta koji korisnik podesava. Dnevna norma se IZVODI:
@@ -589,6 +618,7 @@ window.MM = window.MM || {};
     allUnits: allUnits,
     splitWeekIntoDays: splitWeekIntoDays,
     stats: stats,
+    progress: progress,
     tierMinutes: tierMinutes,
     capacityFor: capacityFor,
     episodeMinutes: episodeMinutes,
