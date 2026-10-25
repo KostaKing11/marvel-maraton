@@ -159,8 +159,7 @@ window.MM = window.MM || {};
       '<div class="cdm-k">' + (arrived ? 'DOOMSDAY JE STIGAO' : 'DO DOOMSDAYA') + '</div>' +
       '<div class="cdm-grid">' + tile('cdD', c.d, plural(c.d, 'dan', 'dana', 'dana')) + tile('cdH', pad(c.h), 'sati') +
         tile('cdM', pad(c.m), 'min') + tile('cdS', pad(c.s), 'sek') + '</div>' +
-      '<p class="cdm-date"><b>Avengers: Doomsday</b><span>petak, 18. decembar · bioskop</span></p>' +
-      '<p class="cdm-hint">tapni bilo gde da zatvoriš</p></div>';
+      '<p class="cdm-date"><b>Avengers: Doomsday</b><span>petak, 18. decembar · bioskop</span></p></div>';
   }
 
   function danas(ctx) {
@@ -1070,27 +1069,11 @@ window.MM = window.MM || {};
       '<div class="sk-cal">' + cells + '</div><p class="muted small">poslednje 4 nedelje</p></div>';
   }
 
-  /** Ko je ispred Dooma, a ko iza (bez tebe). */
-  function crewLine(ctx, time) {
-    var me = ctx.user && ctx.user.uid;
-    var others = MM.Reviews.people().filter(function (p) { return p.uid !== me; });
-    if (!others.length) return '';
-    var ahead = others.filter(function (p) { return (p.percent || 0) / 100 >= time; }).map(function (p) { return esc(p.name || '?'); });
-    var behind = others.filter(function (p) { return (p.percent || 0) / 100 < time; }).map(function (p) { return esc(p.name || '?'); });
-    return (ahead.length ? 'Ispred Dooma: <b>' + ahead.join(', ') + '</b>' : '') + (ahead.length && behind.length ? ' · ' : '') +
-      (behind.length ? 'Iza: ' + behind.join(', ') : '');
-  }
-
   function doomSheet(ctx) {
     var time = P.timeRatio();
     var you = ctx.prog.ratio;
     var c = countdownParts();
     var arrived = time >= 1;
-    var diff = Math.round((you - time) * 100);
-    var behindMin = Math.max(0, Math.round(time * ctx.prog.totalMin - ctx.prog.watchedMin));
-    var msg = arrived ? (you >= 1 ? 'Stigao si pre njega. Spreman si.' : 'Doom je stigao. Vidimo se u bioskopu.')
-      : diff >= 0 ? 'Ispred si Dooma ' + diff + '%. Samo tako.'
-      : 'Doom je ispred tebe ' + (-diff) + '%. Fali ti ' + hm(behindMin) + ' da ga stigneš.';
     var people = ctx.ui.mapPeople || [];
     // dugmici idu redom kao na mapi: start, pa ko je gde na putu (Doom po vremenu), pa cilj
     var marks = [{ doom: true, r: time }].concat(people.map(function (p, i) { return { p: p, i: i, r: p.ratio }; }));
@@ -1112,8 +1095,6 @@ window.MM = window.MM || {};
         '<div class="doom-sub">Doom <b>' + Math.round(time * 100) + '%</b> puta · ti <b>' + Math.round(you * 100) + '%</b> plana</div></div>' +
       '<div class="mp-scroll no-drag" data-keep></div>' +
       '<div class="mp-bot">' +
-        '<div class="mp-msg' + (diff >= 0 || arrived ? ' ok' : '') + '"><b>' + esc(msg) + '</b>' +
-          (crewLine(ctx, time) ? '<span class="crew-line">' + crewLine(ctx, time) + '</span>' : '') + '</div>' +
         '<div class="mp-jump no-drag">' + jumps + '</div>' +
       '</div>' +
       '</div>';
