@@ -533,6 +533,59 @@ body.ready .boot { opacity: 0; pointer-events: none; }
 /* ---------------- KATALOG ---------------- */
 
 .lib-top > * + * { margin-top: 10px; }
+.lib-row { display: flex; gap: 8px; }
+.lib-row .search { flex: 1; min-width: 0; }
+.fbtn {
+  position: relative; flex: none; width: 46px; height: 46px; border-radius: 14px;
+  background: var(--s2); border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center; color: var(--mu);
+}
+.fbtn svg { width: 21px; height: 21px; fill: currentColor; }
+.fbtn.on { color: #fff; border-color: var(--red); }
+.fbtn i {
+  position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; border-radius: 9px;
+  background: var(--red); color: #fff; font: 800 11px/18px system-ui, sans-serif; font-style: normal; text-align: center;
+}
+
+/* kolekcije: tanki tabovi sa podvlakom */
+.ctabs {
+  display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none;
+  margin: 8px -14px 0; padding: 0 14px;
+  border-bottom: 1px solid var(--line);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 28px), transparent);
+          mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 28px), transparent);
+}
+.ctabs::-webkit-scrollbar { display: none; }
+.ctab {
+  flex: none; position: relative; height: 40px; padding: 0 11px;
+  font-size: 14.5px; font-weight: 800; color: var(--mu2); white-space: nowrap;
+  transition: color .15s;
+}
+.ctab.on { color: #fff; }
+.ctab.on::after { content: ''; position: absolute; left: 9px; right: 9px; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0; background: var(--red); }
+
+/* nivoi: jedna mala traka */
+.tseg { display: grid; grid-template-columns: 1.15fr 1.15fr 1fr .8fr; gap: 3px; padding: 3px; border-radius: 12px; background: var(--s1); border: 1px solid var(--line); }
+.tseg button {
+  height: 32px; border-radius: 9px; font-size: 12.5px; font-weight: 800; color: var(--mu);
+  display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap;
+  transition: background .15s, color .15s;
+}
+.tseg i { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.tseg .ts-must i { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.tseg .ts-good i { background: var(--amber); }
+.tseg .ts-skip i { background: var(--mu2); }
+.tseg button.on { background: var(--s3); color: #fff; }
+.tseg .ts-must.on { background: rgba(34, 197, 94, .16); color: var(--green2); }
+.tseg .ts-good.on { background: rgba(245, 184, 61, .14); color: var(--amber); }
+
+.fpill {
+  display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 6px 0 10px; border-radius: 99px;
+  background: rgba(230, 36, 41, .14); border: 1px solid rgba(230, 36, 41, .4); color: #ffb3b5; font-size: 12px; font-weight: 800;
+}
+.fpill svg { width: 13px; height: 13px; fill: currentColor; }
+.fsort { margin-left: auto; font-size: 13px; font-weight: 700; color: var(--mu); padding: 4px 0; }
+.radio.sm { padding: 10px 12px; }
 .search {
   display: flex; align-items: center; gap: 8px; height: 46px; padding: 0 6px 0 13px;
   background: var(--s2); border: 1px solid var(--line); border-radius: 14px;
@@ -540,8 +593,7 @@ body.ready .boot { opacity: 0; pointer-events: none; }
 .search > svg { width: 20px; height: 20px; fill: var(--mu2); flex: none; }
 .search input { flex: 1; min-width: 0; background: none; border: 0; font-size: 16px; height: 100%; }
 .search input::-webkit-search-cancel-button { display: none; }
-.lib-sum { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--mu); padding: 0 2px; }
-.sel-sort select { background: var(--s2); border: 1px solid var(--line); border-radius: 9px; padding: 5px 8px; font-size: 13px; color: var(--tx); }
+.lib-sum { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mu); padding: 0 2px; min-height: 26px; }
 
 .grid-p { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
 @media (min-width: 520px) { .grid-p { grid-template-columns: repeat(4, 1fr); } }

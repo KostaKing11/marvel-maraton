@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.0.1';
+MM.VERSION = '2.0.2';
 
 (function () {
   'use strict';
@@ -381,9 +381,19 @@ MM.VERSION = '2.0.1';
     },
 
     /* --- katalog --- */
-    'lib-col': function (el) { UIS.lib.col = el.getAttribute('data-v'); render(); },
+    'lib-col': function (el) {
+      UIS.lib.col = el.getAttribute('data-v'); render();
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    },
     'lib-tier': function (el) { UIS.lib.tier = el.getAttribute('data-v'); render(); },
-    'lib-status': function (el) { var v = el.getAttribute('data-v'); UIS.lib.status = UIS.lib.status === v ? 'all' : v; render(); },
+    'lib-status-set': function (el) { UIS.lib.status = el.getAttribute('data-v'); render(); },
+    'lib-status-clear': function () { UIS.lib.status = 'all'; render(); },
+    'lib-sort': function (el) { UIS.lib.sort = el.getAttribute('data-v'); render(); },
+    'lib-reset': function () {
+      Object.assign(UIS.lib, { q: '', col: 'all', tier: 'all', status: 'all', sort: 'order' });
+      UI.closeTop(); render();
+    },
+    'lib-filters': function () { UI.openSheet({ id: 'filters', cls: 'small', render: function () { return V.filterSheet(ctx()); } }); },
     'lib-clear': function () { UIS.lib.q = ''; render(); },
     'lib-status-go': function (el) {
       UIS.lib = Object.assign(UIS.lib, { status: el.getAttribute('data-v'), col: 'all', tier: 'all', q: '' });
@@ -687,7 +697,6 @@ MM.VERSION = '2.0.1';
     });
     document.addEventListener('change', function (e) {
       var t = e.target;
-      if (t.id === 'libSort') { UIS.lib.sort = t.value; render(); }
       if (t.id === 'paceRange') { var v = +t.value; Store.mutate(function (s) { s.pace = { mode: 'fixed', min: v }; }); }
       if (t.id === 'linkIn') {
         var id = t.getAttribute('data-id'), url = t.value.trim();

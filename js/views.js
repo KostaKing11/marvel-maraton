@@ -38,6 +38,7 @@ window.MM = window.MM || {};
     star: '★',
     plus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>',
     flame: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 1.7s.8 2.8.8 5.1c0 2.2-1.4 4-3.6 4s-3.8-1.8-3.8-4l.03-.4C4.8 9.1 3.5 12.4 3.5 16a8.5 8.5 0 0017 0c0-5.7-2.7-10.8-7-14.3zM12 20.5c-1.8 0-3.2-1.4-3.2-3.1 0-1.6 1-2.8 2.8-3.1 1.8-.4 3.6-1.2 4.6-2.6.4 1.3.6 2.7.6 4.1 0 2.6-2.1 4.7-4.8 4.7z"/></svg>',
+    filter: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v2H3zm3 6h12v2H6zm4 6h4v2h-4z"/></svg>',
     eye: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c-5 0-9.3 3.1-11 7.5C2.7 16.9 7 20 12 20s9.3-3.1 11-7.5C21.3 8.1 17 5 12 5zm0 12.5a5 5 0 110-10 5 5 0 010 10zm0-8a3 3 0 100 6 3 3 0 000-6z"/></svg>'
   };
 
@@ -555,28 +556,25 @@ window.MM = window.MM || {};
     if (f.sort === 'rating') list.sort(function (a, b) { return (MM.Reviews.avg(b.id) || 0) - (MM.Reviews.avg(a.id) || 0); });
     var mins = list.reduce(function (a, i) { return a + i.runtime; }, 0);
 
+    var nf = (f.status !== 'all' ? 1 : 0) + (f.sort !== 'order' ? 1 : 0);
     var out = '<section class="lib-top" data-k="lt">' +
-      '<label class="search">' + ICON.search + '<input id="libQ" type="search" placeholder="Traži naslov…" value="' + esc(f.q || '') + '" autocomplete="off" enterkeyhint="search">' +
-        (f.q ? '<button type="button" class="ib sm" data-a="lib-clear" aria-label="Obriši">' + ICON.close + '</button>' : '') + '</label>' +
-      '<div class="chips scroll">' +
-        chip('lib-col', 'all', 'Sve', f.col === 'all') +
-        Cat.COLS.map(function (c) { return chip('lib-col', c.id, c.name, f.col === c.id); }).join('') + '</div>' +
-      '<div class="chips scroll">' +
-        chip('lib-tier', 'all', 'Svi nivoi', f.tier === 'all') +
-        chip('lib-tier', 'must', 'Obavezno', f.tier === 'must', 't-must') +
-        chip('lib-tier', 'good', 'Dobro', f.tier === 'good', 't-good') +
-        chip('lib-tier', 'skip', 'Može skip', f.tier === 'skip') +
-        '<span class="chip-sep"></span>' +
-        chip('lib-status', 'plan', 'U planu', f.status === 'plan') +
-        chip('lib-status', 'todo', 'Neodgledano', f.status === 'todo') +
-        chip('lib-status', 'started', 'Započeto', f.status === 'started') +
-        chip('lib-status', 'done', 'Odgledano', f.status === 'done') +
-        chip('lib-status', 'skipped', 'Preskočeno', f.status === 'skipped') +
+      '<div class="lib-row">' +
+        '<label class="search">' + ICON.search + '<input id="libQ" type="search" placeholder="Traži naslov…" value="' + esc(f.q || '') + '" autocomplete="off" enterkeyhint="search">' +
+          (f.q ? '<button type="button" class="ib sm" data-a="lib-clear" aria-label="Obriši">' + ICON.close + '</button>' : '') + '</label>' +
+        '<button type="button" class="fbtn' + (nf ? ' on' : '') + '" data-a="lib-filters" aria-label="Filteri i redosled">' + ICON.filter +
+          (nf ? '<i>' + nf + '</i>' : '') + '</button>' +
+      '</div>' +
+      '<div class="ctabs" role="tablist">' +
+        ctab('all', 'Sve', f.col) +
+        Cat.COLS.map(function (c) { return ctab(c.id, c.name, f.col); }).join('') +
+      '</div>' +
+      '<div class="tseg">' +
+        tseg('all', 'Svi nivoi', f.tier) + tseg('must', 'Obavezno', f.tier) + tseg('good', 'Dobro', f.tier) + tseg('skip', 'Skip', f.tier) +
       '</div>' +
       '<div class="lib-sum"><span>' + nNaslov(list.length) + ' · ' + UI.hours(mins) + '</span>' +
-        '<label class="sel-sort">Poređaj: <select id="libSort">' +
-          opt('order', 'moj plan prvo', f.sort) + opt('runtime', 'po trajanju', f.sort) + opt('rating', 'po oceni ekipe', f.sort) +
-        '</select></label></div>' +
+        (f.status !== 'all' ? '<button type="button" class="fpill" data-a="lib-status-clear">' + esc(STATUS_NAME[f.status]) + ICON.close + '</button>' : '') +
+        '<button type="button" class="fsort" data-a="lib-filters">' + esc(SORT_NAME[f.sort]) + ' ▾</button>' +
+      '</div>' +
       '</section>';
 
     if (!list.length) {
@@ -595,9 +593,38 @@ window.MM = window.MM || {};
         '<button type="button" class="btn sm ghost" data-a="bulk" data-op="undone">Nije</button>' +
         '<button type="button" class="btn sm ghost" data-a="bulk" data-op="skip">Preskoči</button>' +
         '<button type="button" class="btn sm ghost" data-a="bulk" data-op="add">U plan</button></div></div>';
-    } else {
+    } else if (list.length) {
       out += '<p class="muted center small foot" data-k="hint">Drži prst na posteru za višestruki izbor.</p>';
     }
+    return out;
+  }
+
+  var STATUS_NAME = { all: 'Sve', plan: 'U planu', todo: 'Neodgledano', started: 'Započeto', done: 'Odgledano', skipped: 'Preskočeno' };
+  var SORT_NAME = { order: 'Moj plan prvo', runtime: 'Po trajanju', rating: 'Po oceni ekipe' };
+
+  function ctab(val, label, cur) {
+    return '<button type="button" class="ctab' + (val === cur ? ' on' : '') + '" data-a="lib-col" data-v="' + val + '">' + esc(label) + '</button>';
+  }
+  function tseg(val, label, cur) {
+    return '<button type="button" class="' + (val === cur ? 'on ' : '') + 'ts-' + val + '" data-a="lib-tier" data-v="' + val + '">' +
+      (val !== 'all' ? '<i></i>' : '') + esc(label) + '</button>';
+  }
+
+  /** List sa statusom i redosledom kataloga. */
+  function filterSheet(ctx) {
+    var f = ctx.ui.lib;
+    var out = '<div class="pad-sheet"><h2>Filteri</h2><h3>Prikaži</h3><div class="radios">';
+    Object.keys(STATUS_NAME).forEach(function (k) {
+      out += '<button type="button" class="radio sm' + (f.status === k ? ' on' : '') + '" data-a="lib-status-set" data-v="' + k + '">' +
+        '<span class="pr-radio"></span><span><b>' + STATUS_NAME[k] + '</b></span></button>';
+    });
+    out += '</div><h3>Poređaj</h3><div class="radios">';
+    Object.keys(SORT_NAME).forEach(function (k) {
+      out += '<button type="button" class="radio sm' + (f.sort === k ? ' on' : '') + '" data-a="lib-sort" data-v="' + k + '">' +
+        '<span class="pr-radio"></span><span><b>' + SORT_NAME[k] + '</b></span></button>';
+    });
+    out += '</div><div class="btn-row"><button type="button" class="btn ghost" data-a="lib-reset">Resetuj sve</button>' +
+      '<button type="button" class="btn primary" data-a="sheet-close">Gotovo</button></div></div>';
     return out;
   }
 
@@ -984,7 +1011,7 @@ window.MM = window.MM || {};
 
   MM.Views = {
     danas: danas, plan: planView, ekipa: ekipa, katalog: katalog, ja: ja,
-    itemSheet: itemSheet, customSheet: customSheet, rateSheet: rateSheet, profileSheet: profileSheet,
+    itemSheet: itemSheet, customSheet: customSheet, filterSheet: filterSheet, rateSheet: rateSheet, profileSheet: profileSheet,
     welcomeSheet: welcomeSheet, chooseSheet: chooseSheet, newsSheet: newsSheet, streakSheet: streakSheet, doomSheet: doomSheet,
     clock: clock, countdownParts: countdownParts, ICON: ICON, scopeName: scopeName
   };
