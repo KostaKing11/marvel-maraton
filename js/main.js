@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.0.0';
+MM.VERSION = '2.0.1';
 
 (function () {
   'use strict';
@@ -69,7 +69,6 @@ MM.VERSION = '2.0.0';
     }
     UI.refreshSheets();
     pill();
-    bindDeck();
     document.body.classList.toggle('selecting', UIS.tab === 'katalog' && UIS.lib.selecting);
   }
 
@@ -579,13 +578,10 @@ MM.VERSION = '2.0.0';
   function flip(arr, v) { var i = arr.indexOf(v); if (i === -1) arr.push(v); else arr.splice(i, 1); }
 
   /* ============================================================
-     spil na pocetnom ekranu (prevlacenje)
+     kartica "na redu" (samo dugmad - bez prevlacenja)
      ============================================================ */
 
-  var deckBusy = false;
-
   function deckDo(dir, key, id) {
-    if (deckBusy) return;
     var plan = P.build(state());
     var u = plan.next;
     if (dir === 'yes') {
@@ -624,67 +620,6 @@ MM.VERSION = '2.0.0';
     if (card) {
       card.classList.remove('pop'); void card.offsetWidth; card.classList.add('pop');
     }
-  }
-
-  function bindDeck() {
-    var card = $('#dcard');
-    if (!card || card._bound) return;
-    card._bound = true;
-    var x0 = 0, y0 = 0, dx = 0, dy = 0, drag = false, lock = null, moved = false;
-    var TH = 100;
-
-    card.addEventListener('pointerdown', function (e) {
-      if (deckBusy || e.button > 0) return;
-      drag = true; lock = null; dx = dy = 0; moved = false;
-      x0 = e.clientX; y0 = e.clientY;
-      card.style.transition = 'none';
-    });
-    card.addEventListener('pointermove', function (e) {
-      if (!drag) return;
-      var mx = e.clientX - x0, my = e.clientY - y0;
-      if (lock === null) {
-        if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
-        // Vodoravno = odluka; uspravno ostaje stranici (skrol).
-        lock = Math.abs(mx) > Math.abs(my) * 1.1 ? 'x' : 'none';
-        if (lock === 'x') { try { card.setPointerCapture(e.pointerId); } catch (er) { /* */ } }
-      }
-      if (lock !== 'x') return;
-      moved = true;
-      dx = mx;
-      card.style.transform = 'translateX(' + dx + 'px) rotate(' + (dx / 22) + 'deg)';
-      card.classList.toggle('to-yes', dx > 40);
-      card.classList.toggle('to-back', dx < -40);
-    });
-    function release() {
-      if (!drag) return;
-      drag = false;
-      card.style.transition = '';
-      var dir = null;
-      if (lock === 'x' && dx > TH) dir = 'yes';
-      else if (lock === 'x' && dx < -TH) dir = 'back';
-      if (!dir) {
-        card.style.transform = '';
-        card.classList.remove('to-yes', 'to-back', 'to-skip');
-        return;
-      }
-      deckBusy = true;
-      var w = window.innerWidth + 200;
-      card.classList.add('fly');
-      card.style.transform = dir === 'skip' ? 'translateY(-' + (window.innerHeight) + 'px) scale(.8)'
-        : 'translateX(' + (dir === 'yes' ? w : -w) + 'px) rotate(' + (dir === 'yes' ? 24 : -24) + 'deg)';
-      setTimeout(function () {
-        deckBusy = false;
-        card.classList.remove('fly', 'to-yes', 'to-back', 'to-skip');
-        card.style.transform = '';
-        deckDo(dir, card.getAttribute('data-key'), card.getAttribute('data-id'));
-      }, 190);
-    }
-    card.addEventListener('pointerup', release);
-    card.addEventListener('pointercancel', release);
-    card.addEventListener('click', function () {
-      if (moved) { moved = false; return; }
-      openItem(card.getAttribute('data-id'), 'plan');
-    });
   }
 
   /* ============================================================

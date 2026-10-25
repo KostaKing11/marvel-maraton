@@ -383,12 +383,10 @@ body.ready .boot { opacity: 0; pointer-events: none; }
   position: relative; overflow: hidden;
   border-radius: 22px; border: 1px solid var(--line);
   background: var(--s2);
-  touch-action: pan-y;
-  transition: transform .3s var(--ease), box-shadow .2s;
-  will-change: transform;
-  cursor: grab;
+  cursor: pointer;
+  transition: transform .15s;
 }
-.dcard.fly { transition: transform .19s ease-in; }
+.dcard:active { transform: scale(.985); }
 .dcard.pop { animation: deckIn .34s var(--ease); }
 @keyframes deckIn { from { transform: scale(.94); opacity: .4; } to { transform: none; opacity: 1; } }
 .dcard-bg { position: absolute; inset: 0; }
@@ -402,16 +400,6 @@ body.ready .boot { opacity: 0; pointer-events: none; }
 .dcard-sub { font-size: 13px; color: rgba(255, 255, 255, .72); font-weight: 600; }
 .dcard-note { font-size: 13px; color: rgba(255, 255, 255, .78); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .dcard-warn { font-size: 12.5px; font-weight: 800; color: var(--amber); }
-.stamp {
-  position: absolute; top: 18px; padding: 6px 12px; border-radius: 9px;
-  font-size: 18px; font-weight: 900; letter-spacing: 2px; border: 3px solid; opacity: 0;
-  transition: opacity .12s; pointer-events: none;
-}
-.stamp.yes { left: 16px; color: var(--green2); border-color: var(--green2); transform: rotate(-12deg); }
-.stamp.back { right: 16px; color: var(--amber); border-color: var(--amber); transform: rotate(12deg); }
-.stamp.skip { left: 50%; top: auto; bottom: 18px; transform: translateX(-50%); color: #cfd2da; border-color: #cfd2da; }
-.dcard.to-yes .stamp.yes, .dcard.to-back .stamp.back, .dcard.to-skip .stamp.skip { opacity: 1; }
-.dcard.to-yes { box-shadow: 0 0 0 2px var(--green2), 0 10px 40px rgba(74, 222, 128, .25); }
 
 .deck-act { display: grid; grid-template-columns: 1fr 1.6fr 1fr; gap: 8px; margin-top: 10px; }
 .dbtn {
@@ -427,7 +415,6 @@ body.ready .boot { opacity: 0; pointer-events: none; }
 .dbtn:active { transform: scale(.95); }
 .deck-next { margin-top: 10px; font-size: 13px; color: var(--mu); padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .deck-next b { color: var(--tx); }
-.deck-hint { margin-top: 4px; font-size: 11px; color: var(--mu2); padding: 0 4px; }
 
 .today-sum { font-size: 14px; color: var(--mu); font-variant-numeric: tabular-nums; }
 .today-sum b { color: var(--tx); }

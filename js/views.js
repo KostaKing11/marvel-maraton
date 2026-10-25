@@ -192,7 +192,7 @@ window.MM = window.MM || {};
     return '<section class="deck" data-k="deck">' +
       '<div class="deck-k">' + esc(label) +
         '<span>#' + it.order + '</span></div>' +
-      '<div class="dcard" id="dcard" data-key="' + esc(u.key) + '" data-id="' + esc(it.id) + '">' +
+      '<div class="dcard" id="dcard" data-a="item" data-id="' + esc(it.id) + '" role="button">' +
         '<div class="dcard-bg">' + UI.poster(it, 'bg') + '</div>' +
         '<div class="dcard-in">' +
           '<div class="dcard-art">' + UI.poster(it, 'big') + '</div>' +
@@ -204,7 +204,6 @@ window.MM = window.MM || {};
             (avail ? '<p class="dcard-warn">Izlazi ' + esc(UI.dateLabel(u.avail)) + '</p>' : '') +
           '</div>' +
         '</div>' +
-        '<div class="stamp yes">ODGLEDANO</div><div class="stamp back">NAZAD</div><div class="stamp skip">PRESKAČEM</div>' +
       '</div>' +
       '<div class="deck-act">' +
         '<button type="button" class="dbtn" data-a="deck-back" aria-label="Vrati prethodno">' + ICON.undo + '<span>Nazad</span></button>' +
@@ -212,7 +211,6 @@ window.MM = window.MM || {};
         '<button type="button" class="dbtn" data-a="deck-skip" data-id="' + esc(it.id) + '" aria-label="Preskoči naslov">' + ICON.skip + '<span>Preskoči</span></button>' +
       '</div>' +
       (nxt ? '<div class="deck-next">Posle: <b>' + esc(Cat.cleanTitle(nxt.item)) + (nxt.ep ? ' ep ' + nxt.ep : '') + '</b></div>' : '') +
-      '<div class="deck-hint">prevuci karticu desno = odgledano · levo = vrati prethodno</div>' +
       '</section>';
   }
 
