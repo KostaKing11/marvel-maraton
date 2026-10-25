@@ -27,11 +27,15 @@ window.MM = window.MM || {};
       .trim();
   }
 
-  /** TVMaze - najbolji izvor za serije (slike su ~1000x1500). */
-  async function fromTVMaze(title) {
-    var r = await fetch('https://api.tvmaze.com/singlesearch/shows?q=' + encodeURIComponent(title));
+  /** TVMaze - najbolji izvor za serije (slike su ~1000x1500). Za "(Sezona N)" uzima poster te sezone. */
+  async function fromTVMaze(title, season) {
+    var r = await fetch('https://api.tvmaze.com/singlesearch/shows?q=' + encodeURIComponent(title) + (season ? '&embed=seasons' : ''));
     if (!r.ok) return null;                       // 404 = nema takve serije
     var s = await r.json();
+    if (season && s && s._embedded && s._embedded.seasons) {
+      var se = s._embedded.seasons.filter(function (x) { return x.number === season; })[0];
+      if (se && se.image) return se.image.original || se.image.medium;
+    }
     return (s && s.image && (s.image.original || s.image.medium)) || null;
   }
 
@@ -60,7 +64,8 @@ window.MM = window.MM || {};
     var t = searchTitle(item);
     try {
       if (item.type === 'serija') {
-        var tv = await fromTVMaze(t);
+        var m = /\(Sezona\s*(\d+)\)/i.exec(item.title);
+        var tv = await fromTVMaze(t, m ? +m[1] : 0);
         if (tv) return tv;
         return (await fromWikipedia(t + ' TV series')) || '';
       }

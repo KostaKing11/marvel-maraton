@@ -41,6 +41,18 @@ window.MM = window.MM || {};
       seenNews: '',         // id poslednjeg prikazanog "Novo u aplikaciji" (NEWS.id u app.js)
       displayName: '',      // ime uz tvoje ocene (ti ga biras, ne Google)
       avatar: '',           // URL slike profila (prazno = slovo u krugu)
+
+      // --- v2 ---
+      // scope: sta gledas. null = jos nije izabrano (izvodi se iz starog `plans`).
+      //   { preset: 'doomsday'|'doomsday-plus'|'mcu'|'full'|'custom',
+      //     tiers: ['must','good','skip'], cols: ['mcu','xmen',...], must: true }
+      scope: null,
+      extra: {},            // "logan": true - rucno dodato u plan iako je van izbora
+      order: 'maraton',     // maraton | izlazak | hrono
+      pace: null,           // { mode: 'auto'|'fixed', min: 120 }  (minuta dnevno)
+      offDays: [],          // [5, 6] - dani u nedelji bez gledanja (0 = ponedeljak)
+      mustFirst: false,     // obavezni naslovi pre svega ostalog
+      doomSeenP: 0,         // dokle je Doom stigao kad si poslednji put gledao setnju
       updatedAt: 0
     };
   }
@@ -57,6 +69,14 @@ window.MM = window.MM || {};
   var lastPushedAt = 0;
   var status = 'local';     // local | connecting | online | offline | error
   var statusNote = '';
+
+  // Dok prvo citanje sa servera ne stigne, svaka lokalna izmena se pamti.
+  // Ako je na serveru novije stanje (npr. gledao si na laptopu), uzima se
+  // ono, pa se ove izmene ponovo primene - umesto da ga telefon pregazi.
+  var baseAt = 0;           // updatedAt lokalnog stanja pri ucitavanju
+  var settled = false;
+  var pending = [];
+  function settle() { settled = true; pending = []; }
 
   /* ---------------- localStorage ---------------- */
 
@@ -90,6 +110,9 @@ window.MM = window.MM || {};
     if (!Array.isArray(obj.plans) || !obj.plans.length) obj.plans = d.plans;
     if (typeof obj.defaultCapacity !== 'number') obj.defaultCapacity = d.defaultCapacity;
     if (typeof obj.updatedAt !== 'number') obj.updatedAt = 0;
+    if (!Array.isArray(obj.offDays)) obj.offDays = [];
+    if (typeof obj.watched !== 'object') obj.watched = {};
+    if (typeof obj.log !== 'object') obj.log = {};
     return obj;
   }
 
@@ -139,7 +162,7 @@ window.MM = window.MM || {};
     auth = authMod.getAuth(f.app);
     authMod.onAuthStateChanged(auth, function (u) {
       user = u ? { uid: u.uid, email: u.email || '' } : null;
-      if (user) connect(user.uid);
+      if (user) connect(user.uid); else settle();
       authListeners.forEach(function (fn) { try { fn(user); } catch (e) { console.error(e); } });
     });
     // Vrati se sa redirect prijave ako je popup bio blokiran.
@@ -228,19 +251,30 @@ window.MM = window.MM || {};
       if (unsubscribe) { unsubscribe(); unsubscribe = null; }
       docRef = f.doc(f.db, 'users', code);
 
-      // 1) Prvo citanje: uzmi ono sto ima veci updatedAt.
+      // 1) Prvo citanje. Server ima nesto sto ovaj uredjaj nije video
+      //    (remote > baseAt) -> uzmi server i ponovo primeni lokalne izmene
+      //    napravljene od ucitavanja. Inace je lokalno novije -> posalji.
       var snap = await withTimeout(f.getDoc(docRef), 12000);
       if (snap.exists()) {
         var remote = normalize(snap.data());
-        if ((remote.updatedAt || 0) > (state.updatedAt || 0)) {
+        var rAt = remote.updatedAt || 0;
+        var base = settled ? (state.updatedAt || 0) : baseAt;
+        if (rAt > base) {
+          var ops = settled ? [] : pending.slice();
           state = remote;
+          ops.forEach(function (fn) { try { fn(state); } catch (e) { console.warn('[sync] replay', e); } });
+          if (ops.length) state.updatedAt = Date.now();
           saveLocal();
           notify();
-        } else if ((state.updatedAt || 0) > (remote.updatedAt || 0)) {
-          await push();
+          settle();
+          if (ops.length) await push();
+        } else {
+          settle();
+          if ((state.updatedAt || 0) > rAt) await push();
         }
       } else {
-        await push(); // prvi put na ovom kodu
+        settle();
+        await push(); // prvi put na ovom nalogu
       }
 
       // 2) Realtime listener
@@ -260,6 +294,7 @@ window.MM = window.MM || {};
       setStatus('online');
     } catch (e) {
       console.warn('[sync] connect pao:', e);
+      settle();
       setStatus('error', explain(e));
     }
   }
@@ -317,6 +352,7 @@ window.MM = window.MM || {};
     /** Jedina dozvoljena izmena stanja. fn(state) menja objekat na licu mesta. */
     mutate: function (fn) {
       fn(state);
+      if (!settled) pending.push(fn);
       state.updatedAt = Date.now();
       saveLocal();
       notify();
@@ -324,6 +360,8 @@ window.MM = window.MM || {};
     },
 
     replace: function (next) {
+      var clone = JSON.parse(JSON.stringify(next));
+      if (!settled) pending.push(function (s) { Object.keys(s).forEach(function (k) { delete s[k]; }); Object.assign(s, normalize(JSON.parse(JSON.stringify(clone)))); });
       state = normalize(next);
       state.updatedAt = Date.now();
       saveLocal();
@@ -343,7 +381,7 @@ window.MM = window.MM || {};
     onAuth: function (fn) { authListeners.push(fn); fn(user); },
     signInGoogle: signInGoogle,
     publishProfile: publishProfile,
-    initAuth: function () { loadAuth().catch(function (e) { console.warn('[auth]', e); }); },
+    initAuth: function () { loadAuth().catch(function (e) { console.warn('[auth]', e); settle(); }); },
     signOutGoogle: async function () {
       try {
         var m = await loadAuth();
@@ -398,6 +436,7 @@ window.MM = window.MM || {};
     },
 
     reset: function () {
+      if (!settled) pending.push(function (s) { Object.keys(s).forEach(function (k) { delete s[k]; }); Object.assign(s, defaultState()); });
       state = defaultState();
       state.updatedAt = Date.now();
       saveLocal();
@@ -409,6 +448,7 @@ window.MM = window.MM || {};
     init: function () {
       var local = loadLocal();
       if (local) state = local;
+      baseAt = state.updatedAt || 0;
       if (configLooksReal()) {
         // Google prijava je jedini put ka serveru. Stari sync kod se
         // namerno vise ne koristi - njegov dokument nova pravila i ne
@@ -416,6 +456,7 @@ window.MM = window.MM || {};
         Store.initAuth();
         setStatus('local', '');
       } else {
+        settle();
         setStatus('local', 'Firebase config nije popunjen - radi se samo lokalno.');
       }
 

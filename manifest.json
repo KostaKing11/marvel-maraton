@@ -1,7 +1,7 @@
 {
   "name": "Marvel Maraton",
   "short_name": "Maraton",
-  "description": "Praćenje gledanja celog MCU-a do Avengers: Doomsday (18.12.2026).",
+  "description": "Maraton do Avengers: Doomsday (18.12.2026) — samo obavezno ili ceo Marvel.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

@@ -1,10 +1,31 @@
 # MARVEL MARATON
 
-PWA za praćenje gledanja celog MCU-a do **Avengers: Doomsday (18.12.2026)**.
-Čist HTML/CSS/JS, bez frameworka i bez build koraka. Radi kao statični sajt
-(GitHub Pages) i instalira se kao app na Androidu.
+PWA za maraton do **Avengers: Doomsday (18.12.2026)** — od „samo obavezno"
+do celog Marvela (150 naslova). Čist HTML/CSS/JS, bez frameworka i bez build
+koraka. Radi kao statični sajt (GitHub Pages) i instalira se kao app na Androidu.
 
-Maraton traje **18 nedelja: 17.08.2026 → 20.12.2026**.
+**Verzija 2.0** je napravljena od nule. Stanje korisnika (`mm-state-v1` u
+localStorage i `users/{uid}` u Firestore-u) je isto kao u 1.x — odgledano se
+ne gubi, a stari `plans` se sam pretvara u novi izbor („Šta gledam").
+
+### Šta gledaš
+
+| izbor | šta ulazi |
+|---|---|
+| **Samo obavezno** | zvanična Disney+ lista „Countdown to Avengers: Doomsday" (15 naslova) + Brand New Day |
+| **Doomsday+** | obavezno + „dobro za Doomsday" (likovi koji se vraćaju) |
+| **Ceo MCU** | svaki MCU film i serija + X-Men i X2 (obavezni su) |
+| **Full Marvel** | sve: Fox X-Men, Netflix, Spider-Man/Sony, Marvel TV, animacija, klasici |
+| **Prilagođeno** | biraš kolekcije i nivoe ručno |
+
+Nivoi u `data.json` (`doom`): `must` (zeleno, baš obavezno), `good` (žuto),
+`skip` (sivo). `d15: true` = naslov je na zvaničnoj Disney+ listi.
+
+### Doom šetnja
+
+Tap na odbrojavanje: Doom kreće iz Latverije 17.8. i putem ide ka cilju
+„DOOMSDAY 18.12.". Doom se pomera po **vremenu**, a ti („TI") po **odgledanom
+delu svog plana**. Ako si bliže cilju od njega — stižeš. Sve je SVG, bez slika.
 
 ---
 
@@ -44,7 +65,7 @@ automatsko.
 
 ### 2.2 Nalepi config
 
-Otvori `firebase-config.js` i zameni `REPLACE_ME` vrednostima iz koraka 4:
+Otvori `js/firebase-config.js` i zameni `REPLACE_ME` vrednostima iz koraka 4:
 
 ```js
 window.FIREBASE_CONFIG = {
@@ -150,9 +171,9 @@ Branch: `main`, folder: `/ (root)` → Save.**
 
 Za minut-dva sajt je na `https://<korisnik>.github.io/marvel-maraton/`.
 
-> **Bitno pri svakom sledećem deployu:** podigni verziju keša u `sw.js`
-> (`const CACHE = 'marvel-maraton-v1'` → `-v2`, `-v3`…). Bez toga service
-> worker servira staru verziju i izmene se „ne vide".
+> **Bitno pri svakom sledećem deployu:** podigni `CACHE` i `V` u `sw.js` i isti
+> `?v=` broj u `index.html`. Bez toga service worker servira staru verziju i
+> izmene se „ne vide".
 
 ---
 
@@ -172,19 +193,18 @@ na iOS-u ograničenije).
 Prave notifikacije kad je app zatvoren zahtevaju push server. Nemamo ga i ne
 pravimo se da ga imamo — umesto toga koristimo kalendar:
 
-1. **Kalendar → „Izvezi u kalendar (.ics)"** — skine se `marvel-maraton.ics`.
+1. **Plan → „Izvezi u kalendar"** (ili **Ja → Podsetnici**) — skine se `marvel-maraton.ics`.
 2. Otvori **Google Kalendar na računaru** (calendar.google.com).
 3. Zupčanik → **Podešavanja** → levo **Uvoz i izvoz** → **Uvoz**.
 4. Izaberi `marvel-maraton.ics`, izaberi u koji kalendar, klikni **Uvezi**.
 5. Na telefonu se pojavi automatski (isti Google nalog).
 
-Šta dobijaš: svaka nedelja je jedan celodnevni događaj od 7 dana, sa naslovom
-tipa `MCU N7: Moon Knight ep 1-6, Multiverse of Madness`, punom listom i tvojim
-linkovima u opisu, i dva podsetnika — **nedeljom uveče u 19:00** (pred početak
-nedelje) i **sredom u 18:00**. Plus poseban događaj za Doomsday sa podsetnikom
-7 dana ranije.
+Šta dobijaš: svaki dan plana je jedan celodnevni događaj sa naslovom tipa
+`🎬 Loki · S2 ep 3–4 + Thunderbolts* (2h 40m)`, listom i tvojim linkovima u
+opisu, i podsetnikom **u 19:00**. Plus poseban događaj za Doomsday sa
+podsetnikom 7 dana ranije.
 
-Ako promeniš tempo ili izbaciš neki tier, izvezi ponovo — događaji imaju
+Ako promeniš tempo ili plan, izvezi ponovo — događaji imaju
 stabilne UID-eve, pa Google ažurira postojeće umesto da pravi duplikate.
 
 U samoj aplikaciji postoji i mala lokalna notifikacija „Danas: …", ali se
@@ -201,7 +221,7 @@ pozadini traži poster za svaki naslov:
 - **filmovi i specijali** → Wikipedia `pageimages` sa `pilicense=any`
 
 Oba servisa su besplatna, bez API ključa i bez naloga, i šalju CORS zaglavlja
-pa rade direktno sa GitHub Pages. Na testu su nađena sva 69 postera.
+pa rade direktno sa GitHub Pages. Za sezone se uzima poster baš te sezone.
 
 > Bitno: bez parametra `pilicense=any` Wikipedia vraća **samo slobodne slike**,
 > a filmski posteri su non-free — API tada tiho vrati `null`. To je jedina
@@ -221,42 +241,33 @@ U **Ja → Posteri** vidiš koliko ih ima i možeš ručno da pokreneš povlače
 
 ## Kako radi planer (ukratko)
 
-Raspored se **ne čita iz `data.json`** — polja `week` i `weeks` su samo autorov
-predlog i app ih ignoriše. Plan se preračunava od nule na svaku promenu
-(čekiranje, kapacitet, izbačen tier):
+Raspored se **ne čuva** — računa se od nule iz stanja na svaku promenu
+(`js/planner.js`):
 
-1. Uzmu se naslovi čiji je tier uključen u **Ja → Šta gledam**, po redosledu
-   izlaska. Fox filmovi (svih 13, od *X-Men* do *The New Mutants*) se ubacuju
-   **neposredno pre** *Deadpool & Wolverine*, ne na kraj. Netflix serije
-   (Daredevil, Jessica Jones, Luke Cage, Iron Fist, Defenders, Punisher) idu
-   **neposredno pre** *Hawkeye*, pa posle njih redom dolaze Hawkeye, She-Hulk,
-   Echo i Daredevil: Born Again. Netflix tier je ~138h, pa je po defaultu
-   isključen — uključuje se u **Ja → Šta gledam**.
-2. Serije se razlažu na epizode (`runtime / episodes` po epizodi).
-3. Odgledano ispada iz plana.
-4. Nedelje se pune redom do kapaciteta (`Ja → Tempo`, ili olovka na konkretnoj
-   nedelji u Kalendaru), sa tolerancijom od 20 minuta da se epizoda ne cepa.
-   Serija sme da se prelije u sledeću nedelju.
-5. Ako sve ne stane do 18. nedelje, app ne puca — prikaže koliko ne stiže i
-   ponudi dva izlaza (izbaci `skip` tier ili digni tempo).
+1. Jedinice = filmovi + pojedinačne epizode iz tvog plana, u izabranom
+   redosledu (**Maraton**: po izlasku, ali Fox X-Meni idu pre *Deadpool &
+   Wolverine*, Netflix pre *Hawkeye*, Spider-Man filmovi pre *No Way Home*;
+   **Po izlasku**; **Hronološki**). Opcija „Obavezno prvo" stavlja zelene napred.
+2. Odgledano ispada.
+3. Dnevna norma:
+   - **Stigni do Doomsdaya** — `(preostalo + danas odgledano) / slobodnih dana do 17.12.`
+   - **Moj tempo** — koliko sam zadaš; plan tada sme da ide i posle Doomsdaya.
+4. Dani se pune redom, **kumulativno** (manjak jednog dana prelazi u sledeći),
+   bez dana dužih od ~1,6× norme. Poslednji slobodan dan pred Doomsday uzima
+   sve što je ostalo. Danas, ako još ništa nisi gledao, uvek dobiješ bar nešto.
+5. Epizode koje još nisu izašle (`epDates`, npr. VisionQuest) čekaju svoj datum.
+6. Slobodni dani: dani u nedelji (`offDays`) + „nemam vremena" za bilo koji
+   dan (`skipDays`).
 
-Zato „zaostatak" ne postoji kao lista koja raste: ono što ne odgledaš ove
-nedelje samo ponovo uđe u pakovanje i pojavi se u sledećoj.
+Označavanje iz **Danas/Plan** upisuje se u dnevnik (`log`) za taj dan — to
+broji današnju normu i niz. Označavanje iz **Kataloga** (npr. 20 filmova koje si
+davno gledao) samo skida naslov iz plana, bez upisa u dnevnik.
 
-### Biblioteka ne dira nedeljni plan
+### Sinhronizacija bez gubitaka
 
-Postoje dva različita „odgledano", i to namerno:
-
-| gde označiš | šta se dešava |
-|---|---|
-| kvačica u planu (**Danas** / **Kalendar**) | broji se u „3.2h / 9.8h" i troši kapacitet te nedelje |
-| **Biblioteka** (kartica, modal, dugi pritisak → višestruki izbor) | samo skida naslov sa spiska; nedeljni plan ostaje netaknut |
-
-Razlog: kad označiš 20 filmova koje si davno gledao, njihovih 40h ne sme da se
-upiše kao „odgledano ove nedelje" — pojelo bi kapacitet i ostavilo nedelju
-praznu.
-
----
+Dok prvo čitanje sa servera ne stigne, svaka lokalna izmena se pamti. Ako je na
+serveru novije stanje (gledao si na laptopu), uzima se ono i lokalne izmene se
+ponovo primene — telefon više ne može da pregazi tuđe novije stanje.
 
 ## Platforme
 
@@ -272,17 +283,21 @@ Dugme „Gde gledati u Srbiji?" otvara JustWatch pretragu za taj naslov.
 
 | fajl | šta radi |
 |---|---|
-| `index.html` | kostur, tab bar, kontejneri |
-| `style.css` | dark tema, mobile-first |
-| `app.js` | UI, četiri ekrana, interakcija |
-| `planner.js` | dinamički raspored (najkomplikovaniji deo, detaljno komentarisan) |
-| `sync.js` | stanje korisnika, localStorage + Firestore |
-| `posters.js` | automatsko povlačenje postera (TVMaze + Wikipedia) |
-| `ics.js` | izvoz u `.ics` |
-| `firebase-config.js` | tvoj Firebase config (placeholder) |
-| `data.json` | 89 naslova (63 MCU + 13 Fox bonus + 13 Netflix) |
+| `index.html` | ljuska: zaglavlje, 5 ekrana, tab bar |
+| `css/app.css` | ceo izgled (tamna tema, mobilno prvo, bez selektovanja i povlačenja za osvežavanje) |
+| `js/store.js` | stanje korisnika, localStorage + Firestore, Google prijava |
+| `js/catalog.js` | naslovi, kolekcije, izbori („Šta gledam"), redosledi |
+| `js/planner.js` | dnevni raspored, napredak, niz |
+| `js/views.js` | svi ekrani i listovi (HTML) |
+| `js/ui.js` | morph (osvežavanje bez treptanja), listovi, toast, vibracija |
+| `js/doom.js` | Doom šetnja (SVG) |
+| `js/main.js` | pokretanje, akcije, gestovi, notifikacije |
+| `js/posters.js` | posteri (TVMaze za serije — poster sezone, Wikipedia za filmove) |
+| `js/reviews.js` | ocene, ekipa, poruke |
+| `js/ics.js` | izvoz u kalendar (jedan događaj po danu) |
+| `js/firebase-config.js` | Firebase config |
+| `data.json` | 150 naslova (MCU 66, X-Men 13, Netflix 13, Sony 14, Marvel TV 21, animacija 6, klasici 17) |
 | `manifest.json`, `sw.js`, `icons/` | PWA |
-| `.claude/launch.json` | pomoćni fajl za lokalni server, može da se obriše |
 
 Bez reklama, bez trackera, bez analitike. Jedini spoljni poziv je Firebase
 (ako ga uključiš) i JustWatch/tvoji linkovi kad ih sam otvoriš.
