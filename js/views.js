@@ -1179,7 +1179,7 @@ window.MM = window.MM || {};
   var NEWS = [
     { id: '2.6', title: 'Predmeti, Gauntlet i nedeljni pregled', big: true, items: [
       '<b>Predmet za svaki naslov</b> — odgledaš Thora, dobiješ Mjolnir. Guardians? Awesome Mix kaseta. Svih 150, od običnih do legendarnih. Tapni predmet i nešto uradi.',
-      '<b>Infinity Gauntlet</b> — prazna rukavica iz Age of Ultron, kamenje iz filmova u kojima se pojavljuje i lebdi oko nje. Na Endgame kamenje uleti u rukavicu — i pucanj prstima.',
+      '<b>Infinity Gauntlet</b> — kamenje skupljaš iz filmova u kojima se pojavljuje i ono lebdi. Na Endgame dobiješ rukavicu, kamenje uleti u nju — i pucanj prstima.',
       '<b>Slavlje posle „Odgledano“</b> — pomeriš se na putu, Doom nešto dobaci i dobiješ predmet.',
       '<b>Dostignuća</b> — niz dana, broj naslova, noćna ptica, Infinity Saga, svi X-Meni…',
       '<b>Scene posle špice</b> — piše da li da čekaš do kraja ili slobodno gasiš.',

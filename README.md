@@ -43,10 +43,10 @@ dobro = retko, ostalo obično; Avengers filmovi, No Way Home, Deadpool &
 Wolverine i Doomsday su legendarni. Predmeti se ne čuvaju posebno — izvode
 se iz odgledanog, pa uvek prate stanje.
 
-Gauntlet: prazna rukavica iz Age of Ultron, kamenje iz filma u kome se
-pojavljuje (prostor — Captain America, um — Avengers, stvarnost — Thor 2,
+Gauntlet: kamenje stiže iz filma u kome se pojavljuje i lebdi dok ne
+odgledaš Endgame, koji donosi rukavicu (prostor — Captain America, um — Avengers, stvarnost — Thor 2,
 moć — Guardians, vreme — Doctor Strange, duša — Infinity War). Endgame
-dopuni sve što fali. Dostignuća (`ACH`) se pamte u `s.ach` kad se otključaju.
+dopuni i kamenje koje fali. Dostignuća (`ACH`) se pamte u `s.ach` kad se otključaju.
 
 Scene posle špice su u `data.json` kao `pc: [usred špice, na samom kraju]`.
 

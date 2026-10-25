@@ -449,7 +449,7 @@ window.MM = window.MM || {};
     { id: 'time', short: 'Vreme', name: 'Kamen vremena', film: 'doctor-strange', c: '#2fe07a' },
     { id: 'soul', short: 'Duša', name: 'Kamen duše', film: 'infinity-war', c: '#ff8c1a' }
   ];
-  var GLOVE_FILM = 'age-of-ultron', FULL_FILM = 'endgame';
+  var FULL_FILM = 'endgame';   // rukavica stize tek sa Endgameom
 
   function doneMap(s) {
     var out = {};
@@ -461,24 +461,28 @@ window.MM = window.MM || {};
     var full = !!done[FULL_FILM];
     var stones = {};
     STONES.forEach(function (st) { stones[st.id] = full || !!done[st.film]; });
-    return { glove: full || !!done[GLOVE_FILM], full: full, stones: stones,
+    return { glove: full, full: full, stones: stones,
       n: STONES.filter(function (st) { return stones[st.id]; }).length };
   }
 
   // utori za kamenje na rukavici (palac, 4 prsta, sredina sake)
   var SOCKETS = { soul: [54, 60], space: [70, 33], reality: [84, 30], power: [98, 34], mind: [112, 44], time: [86, 80] };
   // gde kamenje lebdi dok nije u rukavici (oko sake)
-  var FLOAT = { soul: [14, 104], space: [20, 36], reality: [58, -8], power: [112, -8], mind: [150, 36], time: [148, 108] };
+  // bez rukavice kamenje lebdi u krugu (pocinje gore, ide u krug)
+  var FLOAT = {};
+  ['space', 'mind', 'reality', 'power', 'time', 'soul'].forEach(function (id, i) {
+    var a = -Math.PI / 2 + i * Math.PI / 3;
+    FLOAT[id] = [Math.round(80 + Math.cos(a) * 54), Math.round(96 + Math.sin(a) * 54)];
+  });
 
   /** Rukavica (SVG 160x200). Ako postoji slika iz Figme, koristi se ona + kamenje preko. */
   function gauntletSvg(gs, cls, float) {
     if (float == null) float = !gs.full;
-    var gold = gs.glove ? 'url(#gtGold)' : '#2a2a33';
-    var edge = gs.glove ? '#6b4a10' : '#3d3d48';
-    var out = '<svg class="gt ' + (cls || '') + (gs.full ? ' full' : '') + (float ? ' float' : '') + (gs.glove ? '' : ' empty') + '" viewBox="0 0 160 200" aria-hidden="true">' +
+    var gold = 'url(#gtGold)', edge = '#6b4a10';
+    var out = '<svg class="gt ' + (cls || '') + (gs.full ? ' full' : '') + (float ? ' float' : '') + '" viewBox="0 0 160 200" aria-hidden="true">' +
       '<defs><linearGradient id="gtGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9a0"/><stop offset=".45" stop-color="#e2b33b"/><stop offset="1" stop-color="#9a6a12"/></linearGradient>' +
       '<radialGradient id="gtGlow"><stop offset="0" stop-color="#fff"/><stop offset=".4" stop-color="#fff" stop-opacity=".6"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>' +
-      '<g stroke="' + edge + '" stroke-width="3" stroke-linejoin="round">' +
+      '<g class="gt-glove" stroke="' + edge + '" stroke-width="3" stroke-linejoin="round">' +
       // prsti
       '<rect x="62" y="14" width="17" height="52" rx="8.5" fill="' + gold + '"/>' +
       '<rect x="77" y="8" width="17" height="56" rx="8.5" fill="' + gold + '"/>' +
@@ -490,13 +494,19 @@ window.MM = window.MM || {};
       '<path d="M58 60h64c4 0 6 3 6 7v40c0 18-14 30-34 30h-8c-18 0-30-12-30-28V64c0-2 1-4 2-4z" fill="' + gold + '"/>' +
       '<path d="M60 134h56l6 56H54z" fill="' + gold + '"/>' +
       '<path d="M58 150h62M57 170h66" fill="none" stroke-width="2.5"/>' +
-      '<path d="M66 70l10 10M110 70l-10 10" fill="none" stroke-width="2"/>' +
-      '</g>';
-    // prazni utori
+      '<path d="M66 70l10 10M110 70l-10 10" fill="none" stroke-width="2"/>';
+    // utori (deo rukavice)
     STONES.forEach(function (st) {
       var p = SOCKETS[st.id], r = st.id === 'time' ? 10 : 6.5;
       out += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (r + 3) + '" fill="#2b2014" stroke="' + edge + '" stroke-width="2"/>' +
-        '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + r + '" fill="#15121b"/>';
+        '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + r + '" fill="#15121b" stroke="none"/>';
+    });
+    out += '</g>';
+    // kamenje koje jos fali: bledi krugovi u praznom
+    if (float) STONES.forEach(function (st) {
+      if (gs.stones[st.id]) return;
+      var f = FLOAT[st.id];
+      out += '<circle class="gt-ghost" cx="' + f[0] + '" cy="' + f[1] + '" r="7.5" fill="none" stroke="' + st.c + '" stroke-opacity=".35" stroke-width="1.6" stroke-dasharray="2.5 3"/>';
     });
     // kamenje: dok nema Endgamea lebdi oko rukavice, posle je u utorima
     STONES.forEach(function (st, i) {
@@ -627,12 +637,11 @@ window.MM = window.MM || {};
 
     // rukavica
     out += '<section class="gt-card" data-a="bd-gauntlet">' + gauntletSvg(gs, 'gt-big') +
-      '<div class="gt-info"><em>' + (gs.full ? 'INFINITY GAUNTLET' : gs.glove ? 'GAUNTLET' : 'GAUNTLET · ZAKLJUČANO') + '</em>' +
+      '<div class="gt-info"><em>' + (gs.full ? 'INFINITY GAUNTLET' : 'KAMENJE BESKONAČNOSTI') + '</em>' +
       '<b>' + (gs.full ? 'Kompletna' : gs.n + ' / 6 kamenja') + '</b>' +
       '<span>' + (gs.full ? 'Infinity Saga je gotova. Tapni i pucni prstima.'
-        : gs.n === 6 ? 'Sve kamenje je tu. Endgame ga stavlja u rukavicu.'
-        : gs.glove ? 'Kamenje stiže iz filmova. Endgame ga stavlja u rukavicu i dopuni što fali.'
-        : 'Rukavica stiže iz Age of Ultron. Kamenje skupljaš usput.') + '</span>' +
+        : gs.n === 6 ? 'Sve kamenje je tu. Endgame donosi rukavicu.'
+        : 'Kamenje stiže iz filmova i lebdi dok ne odgledaš Endgame. Tad dobijaš rukavicu.') + '</span>' +
       '<div class="gt-stones">' + STONES.map(function (st) {
         return '<span class="gt-s' + (gs.stones[st.id] ? ' on' : '') + '">' + stoneSvg(st, 26) + '<i>' + esc(st.short) + '</i></span>';
       }).join('') + '</div></div></section>';
@@ -681,7 +690,7 @@ window.MM = window.MM || {};
       (on ? (when ? '<p class="muted small">' + esc(when) + '</p>' : '') + '<p class="bdm-hint">tapni predmet</p>'
         : '<p class="muted small">Odgledaj ' + esc(MM.Cat.cleanTitle(it)) + ' i predmet je tvoj.</p>') +
       (st ? '<div class="bdm-stone' + (on ? ' on' : '') + '">' + stoneSvg(st, 30) + '<span>' + (on ? 'Doneo ti je i ' : 'Donosi i ') + '<b>' + esc(st.name) + '</b></span></div>' : '') +
-      (id === GLOVE_FILM ? '<div class="bdm-stone' + (on ? ' on' : '') + '"><span>' + (on ? 'Doneo ti je i ' : 'Donosi i ') + '<b>praznu rukavicu</b></span></div>' : '') +
+      (id === FULL_FILM ? '<div class="bdm-stone' + (on ? ' on' : '') + '"><span>' + (on ? 'Doneo ti je ' : 'Donosi ') + '<b>Infinity Gauntlet</b></span></div>' : '') +
       '</div>';
   }
 
@@ -720,7 +729,7 @@ window.MM = window.MM || {};
      slavlje posle "Odgledano"
      ============================================================ */
 
-  var queue = null;   // { items, ach, stones, glove, full, from, to, time }
+  var queue = null;   // { items, ach, stones, full, from, to, time, phase }
 
   /** before/after: mape zavrsenih naslova. */
   function gains(before, after) {
@@ -765,7 +774,6 @@ window.MM = window.MM || {};
 
     // dodatno: kamenje, rukavica, dostignuca
     var extra = '';
-    if (q.glove && !q.full) extra += '<div class="cel-x gl">' + gauntletSvg(gauntletState(q.after), 'gt-sm') + '<span><b>Prazna rukavica</b><i>Thanos: „Dobro, uradiću sam.“</i></span></div>';
     q.stones.forEach(function (st) {
       if (q.full) return;
       extra += '<div class="cel-x st">' + stoneSvg(st, 36) + '<span><b>' + esc(st.name) + '</b><i>ide u rukavicu</i></span></div>';
@@ -790,7 +798,7 @@ window.MM = window.MM || {};
     var g0 = gauntletState(info.before), g1 = gauntletState(info.after);
     var stones = STONES.filter(function (st) { return g1.stones[st.id] && !g0.stones[st.id]; });
     var me = info.me || {};
-    queue = { items: items, ach: ach, stones: stones, glove: g1.glove && !g0.glove, full: g1.full && !g0.full, after: info.after,
+    queue = { items: items, ach: ach, stones: stones, full: g1.full && !g0.full, after: info.after,
       from: info.from, to: info.to, time: info.time, me: me, phase: 'float',
       line: MM.Doom.line ? MM.Doom.line(info.to, info.time) : 'Doom te vidi.' };
     UI.openSheet({
