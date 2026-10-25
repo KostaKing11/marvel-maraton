@@ -40,7 +40,8 @@ window.MM = window.MM || {};
       lastNoticeAt: 0,      // vreme poslednje procitane poruke ekipi
       seenNews: '',         // id poslednjeg prikazanog "Novo u aplikaciji" (NEWS.id u app.js)
       displayName: '',      // ime uz tvoje ocene (ti ga biras, ne Google)
-      avatar: '',           // URL slike profila (prazno = slovo u krugu)
+      avatar: '',           // slika profila: data URL iz galerije ili link (prazno = slovo)
+      posterSeasons: 0,     // 1 = posteri sezona su osvezeni (jednom)
 
       // --- v2 ---
       // scope: sta gledas. null = jos nije izabrano (izvodi se iz starog `plans`).
@@ -197,7 +198,8 @@ window.MM = window.MM || {};
       await withTimeout(fb.setDoc(fb.doc(fb.db, 'profiles', user.uid), {
         uid: user.uid,
         name: (state.displayName || 'Bez imena').slice(0, 40),
-        photo: (state.avatar || '').slice(0, 400),
+        // mala slika iz galerije (data URL ~10 KB) ili link
+        photo: (state.avatar || '').length <= 60000 ? (state.avatar || '') : '',
         watched: data.watched | 0,
         total: data.total | 0,
         minutes: data.minutes | 0,

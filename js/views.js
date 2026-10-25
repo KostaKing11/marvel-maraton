@@ -600,7 +600,7 @@ window.MM = window.MM || {};
   }
 
   var STATUS_NAME = { all: 'Sve', plan: 'U planu', todo: 'Neodgledano', started: 'Započeto', done: 'Odgledano', skipped: 'Preskočeno' };
-  var SORT_NAME = { order: 'Moj plan prvo', runtime: 'Po trajanju', rating: 'Po oceni ekipe' };
+  var SORT_NAME = { order: 'Moj plan prvo', runtime: 'Po trajanju', rating: 'Po oceni' };
 
   function ctab(val, label, cur) {
     return '<button type="button" class="ctab' + (val === cur ? ' on' : '') + '" data-a="lib-col" data-v="' + val + '">' + esc(label) + '</button>';
@@ -613,17 +613,15 @@ window.MM = window.MM || {};
   /** List sa statusom i redosledom kataloga. */
   function filterSheet(ctx) {
     var f = ctx.ui.lib;
-    var out = '<div class="pad-sheet"><h2>Filteri</h2><h3>Prikaži</h3><div class="radios">';
+    var out = '<div class="pad-sheet filters"><h2>Filteri</h2><h3>Prikaži</h3><div class="fgrid">';
     Object.keys(STATUS_NAME).forEach(function (k) {
-      out += '<button type="button" class="radio sm' + (f.status === k ? ' on' : '') + '" data-a="lib-status-set" data-v="' + k + '">' +
-        '<span class="pr-radio"></span><span><b>' + STATUS_NAME[k] + '</b></span></button>';
+      out += '<button type="button" class="chip' + (f.status === k ? ' on' : '') + '" data-a="lib-status-set" data-v="' + k + '">' + STATUS_NAME[k] + '</button>';
     });
-    out += '</div><h3>Poređaj</h3><div class="radios">';
+    out += '</div><h3>Poređaj</h3><div class="fgrid">';
     Object.keys(SORT_NAME).forEach(function (k) {
-      out += '<button type="button" class="radio sm' + (f.sort === k ? ' on' : '') + '" data-a="lib-sort" data-v="' + k + '">' +
-        '<span class="pr-radio"></span><span><b>' + SORT_NAME[k] + '</b></span></button>';
+      out += '<button type="button" class="chip' + (f.sort === k ? ' on' : '') + '" data-a="lib-sort" data-v="' + k + '">' + SORT_NAME[k] + '</button>';
     });
-    out += '</div><div class="btn-row"><button type="button" class="btn ghost" data-a="lib-reset">Resetuj sve</button>' +
+    out += '</div><div class="btn-row"><button type="button" class="btn ghost" data-a="lib-reset">Resetuj</button>' +
       '<button type="button" class="btn primary" data-a="sheet-close">Gotovo</button></div></div>';
     return out;
   }
@@ -661,9 +659,11 @@ window.MM = window.MM || {};
     /* nalog */
     out += '<section class="card acct" data-k="acct">';
     if (user) {
-      out += '<div class="acct-row">' + avatar(s.displayName || user.email, s.avatar, 'lg') +
+      var bad = ctx.syncStatus === 'error' || ctx.syncStatus === 'offline';
+      out += '<div class="acct-row"><button type="button" class="av-edit" data-a="profile" aria-label="Izmeni sliku">' +
+          avatar(s.displayName || user.email, s.avatar, 'lg') + '<span class="av-pen">✎</span></button>' +
         '<div class="acct-t"><b>' + esc(s.displayName || 'Postavi ime') + '</b><span>' + esc(user.email || '') + '</span>' +
-        '<span class="sync s-' + ctx.syncStatus + '">' + esc(ctx.syncText) + '</span></div>' +
+        (bad ? '<span class="sync s-error">' + esc(ctx.syncText) + '</span>' : '') + '</div>' +
         '<button type="button" class="btn ghost sm" data-a="profile">Izmeni</button></div>';
     } else {
       out += '<div class="acct-row">' + avatar('?', '', 'lg') + '<div class="acct-t"><b>Nisi prijavljen</b><span>Lista je samo na ovom uređaju.</span></div></div>' +
@@ -919,11 +919,13 @@ window.MM = window.MM || {};
   }
 
   function profileSheet(ctx) {
-    var s = ctx.s;
+    var p = ctx.ui.prof || { name: ctx.s.displayName || '', avatar: ctx.s.avatar || '' };
     return '<div class="pad-sheet"><h2>Profil</h2>' +
       '<p class="muted small">Ovo ekipa vidi uz tvoje ocene i napredak.</p>' +
-      '<label class="field"><span>Ime</span><input id="profName" type="text" maxlength="40" placeholder="npr. Kosta" value="' + esc(s.displayName || '') + '"></label>' +
-      '<label class="field"><span>Slika (URL, prazno = slovo)</span><input id="profAvatar" type="url" maxlength="400" placeholder="https://…/slika.jpg" value="' + esc(s.avatar || '') + '"></label>' +
+      '<div class="prof-pic">' + avatar(p.name || '?', p.avatar, 'xl') +
+        '<div class="prof-btns"><button type="button" class="btn sm primary" data-a="pick-photo">Izaberi iz galerije</button>' +
+        (p.avatar ? '<button type="button" class="btn sm ghost" data-a="drop-photo">Ukloni sliku</button>' : '') + '</div></div>' +
+      '<label class="field"><span>Ime</span><input id="profName" type="text" maxlength="40" placeholder="npr. Kosta" value="' + esc(p.name) + '"></label>' +
       '<div class="btn-row"><button type="button" class="btn ghost" data-a="sheet-close">Odustani</button>' +
       '<button type="button" class="btn primary" data-a="profile-save">Sačuvaj</button></div></div>';
   }

@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.0.2';
+MM.VERSION = '2.1.0';
 
 (function () {
   'use strict';
@@ -72,11 +72,20 @@ MM.VERSION = '2.0.2';
     document.body.classList.toggle('selecting', UIS.tab === 'katalog' && UIS.lib.selecting);
   }
 
+  /** Gore desno: tvoja slika (ili prvo slovo). Tap = profil i podesavanja. */
+  var pillKey = '';
   function pill() {
     var s = state(), u = Store.user();
-    var el = $('#me-pill');
-    el.className = 'me-pill s-' + syncStatus + (u ? ' in' : '');
-    el.querySelector('.me-name').textContent = u ? (s.displayName || 'ja') : 'lokalno';
+    var el = $('#me-av');
+    var warn = u && (syncStatus === 'error' || syncStatus === 'offline');
+    el.className = 'me-av' + (UIS.tab === 'ja' ? ' on' : '') + (warn ? ' warn' : '');
+    var key = (s.avatar || '') + '|' + (s.displayName || '') + '|' + !!u;
+    if (key === pillKey) return;
+    pillKey = key;
+    el.innerHTML = s.avatar
+      ? '<img src="' + esc(s.avatar) + '" alt="" referrerpolicy="no-referrer" draggable="false" onerror="this.remove()">'
+      : (s.displayName ? '<b>' + esc(s.displayName.slice(0, 1).toUpperCase()) + '</b>'
+        : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-5 0-9 2.5-9 5.5V21h18v-1.5c0-3-4-5.5-9-5.5z"/></svg>');
   }
 
   // Android "nazad": sa bilo kog taba vraca na Danas, sa Danas izlazi.
@@ -393,7 +402,7 @@ MM.VERSION = '2.0.2';
       Object.assign(UIS.lib, { q: '', col: 'all', tier: 'all', status: 'all', sort: 'order' });
       UI.closeTop(); render();
     },
-    'lib-filters': function () { UI.openSheet({ id: 'filters', cls: 'small', render: function () { return V.filterSheet(ctx()); } }); },
+    'lib-filters': function () { UI.openSheet({ id: 'filters', render: function () { return V.filterSheet(ctx()); } }); },
     'lib-clear': function () { UIS.lib.q = ''; render(); },
     'lib-status-go': function (el) {
       UIS.lib = Object.assign(UIS.lib, { status: el.getAttribute('data-v'), col: 'all', tier: 'all', q: '' });
@@ -539,10 +548,29 @@ MM.VERSION = '2.0.2';
       UI.confirm({ title: 'Odjava', text: 'Lista ostaje na ovom uređaju, ali se više ne sinhronizuje dok se ponovo ne prijaviš.', yes: 'Odjavi me',
         onYes: function () { Store.signOutGoogle().then(schedule); } });
     },
-    'profile': function () { UI.openSheet({ cls: 'small', render: function () { return V.profileSheet(ctx()); } }); },
+    'profile': function () {
+      UIS.prof = { name: state().displayName || '', avatar: state().avatar || '' };
+      UI.openSheet({ cls: 'small', render: function () { return V.profileSheet(ctx()); } });
+    },
+    'pick-photo': function () {
+      var inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'image/*';
+      inp.onchange = function () {
+        var f = inp.files && inp.files[0];
+        if (!f) return;
+        var nm = $('#profName'); if (nm) UIS.prof.name = nm.value;
+        squarePhoto(f).then(function (url) { UIS.prof.avatar = url; UI.refreshSheets(); })
+          .catch(function () { UI.toast('Ta slika ne može da se učita.'); });
+      };
+      inp.click();
+    },
+    'drop-photo': function () {
+      var nm = $('#profName'); if (nm) UIS.prof.name = nm.value;
+      UIS.prof.avatar = ''; UI.refreshSheets();
+    },
     'profile-save': function () {
       var n = ($('#profName').value || '').trim().slice(0, 40);
-      var a = ($('#profAvatar').value || '').trim().slice(0, 400);
+      var a = UIS.prof.avatar || '';
       Store.mutate(function (s) { s.displayName = n; s.avatar = a; });
       UI.closeTop(); UI.toast('Sačuvano.');
     },
@@ -584,6 +612,58 @@ MM.VERSION = '2.0.2';
     'posters': function () { startPosters(true); },
     'news': function () { openNews(); }
   };
+
+  /**
+   * Slika iz galerije -> kvadrat 160x160 JPEG kao data URL (~6-10 KB).
+   * Toliko mala da staje u profil u Firestore-u bez Storage-a.
+   */
+  function squarePhoto(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        var S = 160, w = img.naturalWidth, h = img.naturalHeight, m = Math.min(w, h);
+        var c = document.createElement('canvas');
+        c.width = S; c.height = S;
+        var g = c.getContext('2d');
+        g.imageSmoothingQuality = 'high';
+        g.drawImage(img, (w - m) / 2, (h - m) / 2, m, m, 0, 0, S, S);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL('image/jpeg', 0.8));
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('slika')); };
+      img.src = url;
+    });
+  }
+
+  /**
+   * Posteri sezona: ranije je svaka sezona dobijala poster serije. Jednom
+   * prodji kroz sve "(Sezona N)" naslove i uzmi poster bas te sezone.
+   * Stari poster ostaje dok novi ne stigne, pa nista ne treperi.
+   */
+  function refreshSeasonPosters() {
+    var s = state();
+    if (s.posterSeasons >= 1 || !navigator.onLine) return;
+    var list = Cat.all().filter(function (i) {
+      return /\(Sezona\s*\d+\)/i.test(i.title) && !(s.myPosters && s.myPosters[i.id]);
+    });
+    var found = {}, i = 0;
+    (function next() {
+      if (i >= list.length) {
+        Store.mutate(function (st) {
+          st.posters = st.posters || {};
+          Object.keys(found).forEach(function (k) { st.posters[k] = found[k]; });
+          st.posterSeasons = 1;
+        });
+        return;
+      }
+      var it = list[i++];
+      MM.Posters.findOne(it).then(function (u) {
+        if (u) found[it.id] = u;
+        setTimeout(next, 150);
+      }).catch(function () { setTimeout(next, 150); });
+    })();
+  }
 
   function flip(arr, v) { var i = arr.indexOf(v); if (i === -1) arr.push(v); else arr.splice(i, 1); }
 
@@ -942,6 +1022,7 @@ MM.VERSION = '2.0.2';
       }
 
       setTimeout(function () { startPosters(false); }, 1500);
+      setTimeout(refreshSeasonPosters, 6000);
       setTimeout(function () { dailyNotification(); idleWarning(); writeMeta(); registerPeriodic(); }, 2500);
       setTimeout(function () { if (!UI.topSheet()) checkNotice(); }, 3500);
     }).catch(function (e) {

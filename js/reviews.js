@@ -46,7 +46,7 @@ window.MM = window.MM || {};
       itemId: String(itemId),
       uid: uid,
       name: (st.displayName || 'Bez imena').slice(0, 40),
-      photo: (st.avatar || '').slice(0, 400),
+      photo: /^data:/.test(st.avatar || '') ? '' : (st.avatar || '').slice(0, 400),
       stars: Math.max(1, Math.min(5, parseInt(stars, 10) || 0)),
       text: String(text || '').slice(0, 500),
       at: Date.now()
