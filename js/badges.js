@@ -467,12 +467,15 @@ window.MM = window.MM || {};
 
   // utori za kamenje na rukavici (palac, 4 prsta, sredina sake)
   var SOCKETS = { soul: [54, 60], space: [70, 33], reality: [84, 30], power: [98, 34], mind: [112, 44], time: [86, 80] };
+  // gde kamenje lebdi dok nije u rukavici (oko sake)
+  var FLOAT = { soul: [14, 104], space: [20, 36], reality: [58, -8], power: [112, -8], mind: [150, 36], time: [148, 108] };
 
   /** Rukavica (SVG 160x200). Ako postoji slika iz Figme, koristi se ona + kamenje preko. */
-  function gauntletSvg(gs, cls) {
+  function gauntletSvg(gs, cls, float) {
+    if (float == null) float = !gs.full;
     var gold = gs.glove ? 'url(#gtGold)' : '#2a2a33';
     var edge = gs.glove ? '#6b4a10' : '#3d3d48';
-    var out = '<svg class="gt ' + (cls || '') + (gs.full ? ' full' : '') + (gs.glove ? '' : ' empty') + '" viewBox="0 0 160 200" aria-hidden="true">' +
+    var out = '<svg class="gt ' + (cls || '') + (gs.full ? ' full' : '') + (float ? ' float' : '') + (gs.glove ? '' : ' empty') + '" viewBox="0 0 160 200" aria-hidden="true">' +
       '<defs><linearGradient id="gtGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9a0"/><stop offset=".45" stop-color="#e2b33b"/><stop offset="1" stop-color="#9a6a12"/></linearGradient>' +
       '<radialGradient id="gtGlow"><stop offset="0" stop-color="#fff"/><stop offset=".4" stop-color="#fff" stop-opacity=".6"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>' +
       '<g stroke="' + edge + '" stroke-width="3" stroke-linejoin="round">' +
@@ -489,16 +492,22 @@ window.MM = window.MM || {};
       '<path d="M58 150h62M57 170h66" fill="none" stroke-width="2.5"/>' +
       '<path d="M66 70l10 10M110 70l-10 10" fill="none" stroke-width="2"/>' +
       '</g>';
+    // prazni utori
     STONES.forEach(function (st) {
-      var p = SOCKETS[st.id], on = gs.stones[st.id];
-      var r = st.id === 'time' ? 10 : 6.5;
-      out += '<g class="gt-st' + (on ? ' on' : '') + '" data-stone="' + st.id + '">' +
-        '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (r + 3) + '" fill="#2b2014" stroke="' + edge + '" stroke-width="2"/>' +
-        (on ? '<circle class="gt-glow" cx="' + p[0] + '" cy="' + p[1] + '" r="' + (r * 2.6) + '" fill="' + st.c + '" opacity=".35"/>' +
-          '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + r + '" fill="' + st.c + '"/>' +
-          '<circle cx="' + (p[0] - r * .35) + '" cy="' + (p[1] - r * .35) + '" r="' + (r * .35) + '" fill="#fff" opacity=".8"/>'
-          : '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + r + '" fill="#15121b"/>') +
-        '</g>';
+      var p = SOCKETS[st.id], r = st.id === 'time' ? 10 : 6.5;
+      out += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (r + 3) + '" fill="#2b2014" stroke="' + edge + '" stroke-width="2"/>' +
+        '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + r + '" fill="#15121b"/>';
+    });
+    // kamenje: dok nema Endgamea lebdi oko rukavice, posle je u utorima
+    STONES.forEach(function (st, i) {
+      if (!gs.stones[st.id]) return;
+      var p = SOCKETS[st.id], f = FLOAT[st.id], r = st.id === 'time' ? 10 : 6.5;
+      out += '<g class="gt-st on" data-stone="' + st.id + '" style="--ft:translate(' + (f[0] - p[0]) + 'px,' + (f[1] - p[1]) + 'px);transition-delay:' + (i * 0.18).toFixed(2) + 's">' +
+        '<g class="gt-bob" style="animation-delay:-' + (i * 0.45).toFixed(2) + 's">' +
+        '<circle class="gt-glow" cx="' + p[0] + '" cy="' + p[1] + '" r="' + (r * 2.6) + '" fill="' + st.c + '" opacity=".35"/>' +
+        '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + r + '" fill="' + st.c + '" stroke="#15121b" stroke-width="1.5"/>' +
+        '<circle cx="' + (p[0] - r * .35) + '" cy="' + (p[1] - r * .35) + '" r="' + (r * .35) + '" fill="#fff" opacity=".8"/>' +
+        '</g></g>';
     });
     return out + '</svg>';
   }
@@ -619,8 +628,10 @@ window.MM = window.MM || {};
     // rukavica
     out += '<section class="gt-card" data-a="bd-gauntlet">' + gauntletSvg(gs, 'gt-big') +
       '<div class="gt-info"><em>' + (gs.full ? 'INFINITY GAUNTLET' : gs.glove ? 'GAUNTLET' : 'GAUNTLET · ZAKLJUČANO') + '</em>' +
-      '<b>' + gs.n + ' / 6 kamenja</b>' +
-      '<span>' + (gs.full ? 'Tapni i pucni prstima.' : gs.glove ? 'Kamenje stiže iz filmova. Endgame dopuni sve.'
+      '<b>' + (gs.full ? 'Kompletna' : gs.n + ' / 6 kamenja') + '</b>' +
+      '<span>' + (gs.full ? 'Infinity Saga je gotova. Tapni i pucni prstima.'
+        : gs.n === 6 ? 'Sve kamenje je tu. Endgame ga stavlja u rukavicu.'
+        : gs.glove ? 'Kamenje stiže iz filmova. Endgame ga stavlja u rukavicu i dopuni što fali.'
         : 'Rukavica stiže iz Age of Ultron. Kamenje skupljaš usput.') + '</span>' +
       '<div class="gt-stones">' + STONES.map(function (st) {
         return '<span class="gt-s' + (gs.stones[st.id] ? ' on' : '') + '">' + stoneSvg(st, 26) + '<i>' + esc(st.short) + '</i></span>';
@@ -723,7 +734,7 @@ window.MM = window.MM || {};
     function pos(r) { return (Math.max(0, Math.min(1, r)) * 100).toFixed(1) + '%'; }
     var main = q.items[0];
     var r = main ? rarityOf(main) : 'common';
-    var out = '<div class="cel r-' + r + '">';
+    var out = '<div class="cel r-' + r + (q.phase === 'snap' ? ' snapped' : '') + '">';
 
     // put: pomeras se
     out += '<div class="cel-road"><div class="rm-track"><i class="rm-done" style="width:' + pos(time) + '"></i>' +
@@ -742,9 +753,9 @@ window.MM = window.MM || {};
       var big = q.full ? MM.Cat.get(FULL_FILM) : main;
       out += '<div class="cel-main' + (q.full ? ' is-full' : '') + '"><div class="cel-rays r-' + rarityOf(big) + '"></div>' +
         '<div class="cel-k">' + (q.full ? 'INFINITY GAUNTLET' : 'NOVI PREDMET') + '</div>' +
-        '<button type="button" class="cel-art" data-a="bd-poke">' + (q.full ? gauntletSvg(gauntletState({ endgame: 1 }), 'gt-cel') : tile(big, { size: 'xl' })) + '</button>' +
+        '<button type="button" class="cel-art" data-a="bd-poke">' + (q.full ? gauntletSvg(gauntletState({ endgame: 1 }), 'gt-cel', q.phase === 'float') : tile(big, { size: 'xl' })) + '</button>' +
         '<div class="bdm-r r-' + rarityOf(big) + '">' + RARITY[rarityOf(big)].name.toUpperCase() + '</div>' +
-        '<h2>' + esc(q.full ? 'Sve kamenje je tvoje.' : spec(big).name) + '</h2>' +
+        '<h2 class="cel-h">' + esc(q.full ? (q.phase === 'snap' ? 'Infinity Saga je gotova.' : 'Kamenje ide u rukavicu…') : spec(big).name) + '</h2>' +
         '<p class="muted">' + esc(MM.Cat.cleanTitle(big)) + '</p></div>';
     } else {
       out += '<div class="cel-main"><div class="cel-rays r-epic"></div><div class="cel-k">+' + q.items.length + ' PREDMETA</div><div class="cel-grid">' +
@@ -780,7 +791,7 @@ window.MM = window.MM || {};
     var stones = STONES.filter(function (st) { return g1.stones[st.id] && !g0.stones[st.id]; });
     var me = info.me || {};
     queue = { items: items, ach: ach, stones: stones, glove: g1.glove && !g0.glove, full: g1.full && !g0.full, after: info.after,
-      from: info.from, to: info.to, time: info.time, me: me,
+      from: info.from, to: info.to, time: info.time, me: me, phase: 'float',
       line: MM.Doom.line ? MM.Doom.line(info.to, info.time) : 'Doom te vidi.' };
     UI.openSheet({
       id: 'celebrate', full: true, cls: 'cel-sheet',
@@ -789,7 +800,16 @@ window.MM = window.MM || {};
         var p = el.querySelector('.cel-me');
         if (p) setTimeout(function () { p.style.left = p.getAttribute('data-to'); }, 350);
         UI.buzz([16, 50, 24]);
-        if (queue && queue.full) setTimeout(function () { var a = el.querySelector('.cel-art'); if (a) poke(a); }, 1700);
+        if (queue && queue.full) {
+          // kamenje uleti u utore, pa pucanj prstima i sve se raspadne u prah
+          var mine = queue;
+          setTimeout(function () { if (queue !== mine) return; mine.phase = 'in'; UI.refreshSheets(); UI.buzz(10); }, 1500);
+          setTimeout(function () {
+            if (queue !== mine) return;
+            mine.phase = 'snap'; UI.refreshSheets();
+            var a = el.querySelector('.cel-art'); if (a) poke(a);
+          }, 3300);
+        }
       },
       onClose: function () { queue = null; if (info.onClose) info.onClose(); }
     });

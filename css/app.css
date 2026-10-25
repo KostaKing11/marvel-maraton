@@ -1035,6 +1035,10 @@ body.has-sheet #toasts { bottom: calc(18px + var(--safeB)); }
 .news-list li.hot { list-style: none; margin-left: -18px; padding: 10px 12px; border-radius: 12px; background: rgba(57, 217, 122, .1); border: 1px solid rgba(57, 217, 122, .35); }
 .news-list.old { color: var(--mu); font-size: 13px; }
 .news h3 { margin-top: 22px; }
+.news h2 { margin-bottom: 16px; }
+.news-list li.hot { margin-bottom: 18px; }
+.news-list li { margin-bottom: 12px; }
+.news .btn.primary { margin-top: 16px; }
 .me-av.news { border-color: var(--doom); box-shadow: 0 0 12px rgba(57, 217, 122, .55); }
 .me-av.news::after { content: ''; position: absolute; right: 3px; top: 3px; width: 10px; height: 10px; border-radius: 50%; background: var(--doom); border: 2px solid var(--bg); box-shadow: 0 0 8px var(--doom); }
 
@@ -1094,6 +1098,12 @@ body.has-sheet #toasts { bottom: calc(18px + var(--safeB)); }
 .gt { display: block; overflow: visible; }
 .gt.empty { opacity: .55; }
 .gt-st.on .gt-glow { animation: gtGlow 2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.gt-st { transition: transform 1s cubic-bezier(.5, -.3, .3, 1.2); }
+.gt.float .gt-st { transform: var(--ft); }
+.gt.float .gt-bob { animation: gtBob 2.6s ease-in-out infinite; }
+@keyframes gtBob { 50% { transform: translateY(-5px); } }
+.cel.snapped .cel-rays { opacity: 0; transition: opacity 1.6s ease 1s; }
+.cel.snapped .cel-road, .cel.snapped .cel-say { opacity: .25; filter: blur(1px); transition: opacity 1.4s ease 1.2s, filter 1.4s ease 1.2s; }
 @keyframes gtGlow { 50% { opacity: .1; transform: scale(.8); } }
 .gt.full { filter: drop-shadow(0 0 18px rgba(255, 200, 80, .45)); }
 .gt-big { width: 112px; height: 140px; flex: none; }
