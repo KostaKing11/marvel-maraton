@@ -18,8 +18,8 @@ window.MM = window.MM || {};
   var W = 360, H = 640;
 
   // Kontrolne tacke puta: od zamka (daleko, gore) ka gledaocu (dole).
-  var ROAD = [[180, 150], [194, 168], [164, 194], [202, 230], [146, 280], [222, 350], [134, 438], [204, 526], [180, 600], [180, 660]];
-  var GOAL_U = 0.94;   // deo puta gde je ciljna traka
+  var ROAD = [[180, 158], [200, 182], [156, 214], [214, 258], [128, 318], [238, 394], [116, 478], [216, 552], [180, 612], [180, 680]];
+  var GOAL_U = 0.82;   // deo puta gde je ciljna traka (iznad donje kartice)
 
   /* ---------------- geometrija puta ---------------- */
 
@@ -63,10 +63,11 @@ window.MM = window.MM || {};
     return { x: s[s.length - 1].x, y: s[s.length - 1].y };
   }
 
-  function width(u) { return 7 + 168 * Math.pow(u, 1.7); }
-  function scale(u) { return 0.14 + 0.86 * Math.pow(u, 1.25); }
-  /** Vreme/napredak (0..1) -> deo puta. Daleko se sporije prelazi (perspektiva). */
-  function uOf(r) { return GOAL_U * Math.pow(Math.max(0, Math.min(1, r)), 1.45); }
+  // Blaza perspektiva: i na pocetku puta sve je dovoljno veliko da se vidi.
+  function width(u) { return 16 + 146 * Math.pow(u, 1.3); }
+  function scale(u) { return 0.3 + 0.66 * Math.pow(u, 1.1); }
+  /** Vreme/napredak (0..1) -> deo puta (linearno - 50% vremena je pola puta). */
+  function uOf(r) { return GOAL_U * Math.max(0, Math.min(1, r)); }
 
   /* ---------------- figura ---------------- */
 
@@ -154,14 +155,16 @@ window.MM = window.MM || {};
     var P = MM.Plan, out = '';
     [['2026-09-01', '1. sep'], ['2026-10-01', '1. okt'], ['2026-11-01', '1. nov'], ['2026-12-01', '1. dec']].forEach(function (m, i) {
       var r = P.daysBetween(P.START_ISO, m[0]) / P.daysBetween(P.START_ISO, P.DOOMSDAY_ISO);
-      var u = uOf(r), p = at(u), w = width(u), sc = scale(u);
+      var u = uOf(r), p = at(u), w = width(u);
+      var k = 0.75 + 0.45 * u;                       // velicina table
       var side = i % 2 ? -1 : 1;
-      var x = p.x + side * (w / 2 + 10 * sc + 4);
-      var h = 34 * sc + 8;
+      var x = p.x + side * (w / 2 + 34 * k);
+      x = Math.max(64, Math.min(W - 64, x));   // na uskom ekranu se vidi samo sredina scene
+      var h = 18 * k;
       out += '<g class="dm-post">' +
-        '<rect x="' + (x - 1.2 * sc - .6).toFixed(1) + '" y="' + (p.y - h).toFixed(1) + '" width="' + (2.4 * sc + 1.2).toFixed(1) + '" height="' + h.toFixed(1) + '" fill="#59606a"/>' +
-        '<rect x="' + (x - 22 * sc - 6).toFixed(1) + '" y="' + (p.y - h - 11 * sc - 4).toFixed(1) + '" width="' + (44 * sc + 12).toFixed(1) + '" height="' + (13 * sc + 6).toFixed(1) + '" rx="2" fill="#1e2a22" stroke="#3d7a52" stroke-width=".8"/>' +
-        '<text x="' + x.toFixed(1) + '" y="' + (p.y - h - 1.5 * sc - 1.6).toFixed(1) + '" font-size="' + (9 * sc + 4).toFixed(1) + '" text-anchor="middle" fill="#bfe9cb" font-weight="700">' + m[1] + '</text>' +
+        '<rect x="' + (x - 1).toFixed(1) + '" y="' + (p.y - h).toFixed(1) + '" width="2" height="' + h.toFixed(1) + '" fill="#59606a"/>' +
+        '<rect x="' + (x - 19 * k).toFixed(1) + '" y="' + (p.y - h - 12 * k).toFixed(1) + '" width="' + (38 * k).toFixed(1) + '" height="' + (13 * k).toFixed(1) + '" rx="3" fill="#16241b" stroke="#3d7a52" stroke-width=".8"/>' +
+        '<text x="' + x.toFixed(1) + '" y="' + (p.y - h - 2.8 * k).toFixed(1) + '" font-size="' + (8 * k).toFixed(1) + '" text-anchor="middle" fill="#bfe9cb" font-weight="800">' + m[1] + '</text>' +
         '</g>';
     });
     return out;
@@ -207,14 +210,44 @@ window.MM = window.MM || {};
       '</g>';
   }
 
-  function you(ctx) {
-    return '<g class="dm-you" id="dmYou">' +
-      '<circle r="15" fill="#e62429" opacity=".35" filter="url(#dmSoft)"/>' +
-      '<circle r="11" fill="#e62429" stroke="#fff" stroke-width="2"/>' +
-      (ctx.photo ? '<clipPath id="dmYouClip"><circle r="9.5"/></clipPath><image href="' + UI.esc(ctx.photo) + '" x="-9.5" y="-9.5" width="19" height="19" clip-path="url(#dmYouClip)" preserveAspectRatio="xMidYMid slice"/>'
-        : '<text y="4" text-anchor="middle" font-size="11" font-weight="900" fill="#fff">' + UI.esc((ctx.name || 'Ti').slice(0, 1).toUpperCase()) + '</text>') +
-      '<text y="-16" text-anchor="middle" font-size="9" font-weight="900" letter-spacing="1" fill="#fff">TI</text>' +
-      '</g>';
+  /** Cioda za svakog iz ekipe: slika ili slovo + ime ispod. Ti si crven. */
+  function pins(people) {
+    return (people || []).map(function (p, i) {
+      var col = p.me ? '#e62429' : '#5aa9ff';
+      var clip = 'dmPinClip' + i;
+      return '<g class="dm-pin' + (p.me ? ' me' : '') + '" id="dmPin' + i + '">' +
+        (p.me ? '<circle r="15" fill="' + col + '" opacity=".35" filter="url(#dmSoft)"/>' : '') +
+        '<path d="M0 14l-6-8h12z" fill="' + col + '"/>' +
+        '<circle r="11.5" fill="' + col + '"/>' +
+        '<circle r="9.5" fill="#1d1d24"/>' +
+        (p.photo ? '<clipPath id="' + clip + '"><circle r="9.5"/></clipPath><image href="' + UI.esc(p.photo) + '" x="-9.5" y="-9.5" width="19" height="19" clip-path="url(#' + clip + ')" preserveAspectRatio="xMidYMid slice"/>'
+          : '<text y="3.8" text-anchor="middle" font-size="10.5" font-weight="900" fill="#fff">' + UI.esc((p.name || '?').slice(0, 1).toUpperCase()) + '</text>') +
+        '<g transform="translate(0 -19)"><rect x="' + (-p.label.length * 2.6 - 6) + '" y="-7" width="' + (p.label.length * 5.2 + 12) + '" height="11" rx="5.5" fill="' + col + '"/>' +
+        '<text y="1.6" text-anchor="middle" font-size="7.5" font-weight="900" fill="#fff">' + UI.esc(p.label) + '</text></g>' +
+        '</g>';
+    }).join('');
+  }
+
+  /**
+   * Gde stoji ko: na putu po svom napretku, levo ili desno od sredine
+   * (Doom ide sredinom). Ako su dvoje blizu, idu na suprotne strane, a
+   * treci se podigne malo iznad.
+   */
+  function layoutPins(people) {
+    var list = (people || []).map(function (p, i) { return { i: i, u: uOf(p.ratio) }; })
+      .sort(function (a, b) { return a.u - b.u; });
+    var placed = [];
+    list.forEach(function (o) {
+      var near = placed.filter(function (q) { return Math.abs(q.u - o.u) < 0.06; });
+      var left = near.filter(function (q) { return q.side < 0; }).length;
+      var right = near.filter(function (q) { return q.side > 0; }).length;
+      o.side = right <= left ? 1 : -1;
+      o.lift = Math.min(left, right) * 26;
+      placed.push(o);
+    });
+    var out = {};
+    placed.forEach(function (o) { out[o.i] = o; });
+    return out;
   }
 
   function sceneSvg(ctx) {
@@ -225,8 +258,8 @@ window.MM = window.MM || {};
         '<linearGradient id="dmRoad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2e33"/><stop offset="1" stop-color="#1a1d21"/></linearGradient>' +
         '</defs>') +
       sky() + landscape() + roadSvg() + milestones() + goal() +
-      '<g id="dmStart"><text x="156" y="174" text-anchor="end" font-size="6.5" font-weight="800" letter-spacing="1.2" fill="#86c79a">LATVERIJA · 17.8.</text></g>' +
-      you(ctx) +
+      '<g id="dmStart"><text x="150" y="176" text-anchor="end" font-size="8" font-weight="800" letter-spacing="1.2" fill="#86c79a">LATVERIJA · 17.8.</text></g>' +
+      pins(ctx.people) +
       '<g id="dmDoom">' + figure() + '</g>' +
       '<g id="dmSay" class="dm-say" opacity="0"><rect x="-70" y="-26" width="140" height="24" rx="12" fill="#f4fff6"/>' +
         '<path d="M-6-3l6 8 6-8z" fill="#f4fff6"/><text y="-9.5" text-anchor="middle" font-size="10.5" font-weight="800" fill="#0c2414"></text></g>' +
@@ -241,18 +274,21 @@ window.MM = window.MM || {};
 
   var anim = null;
 
-  function place(svg, uDoom, uYou) {
+  function place(svg, uDoom, lay) {
     var p = at(uDoom), sc = scale(uDoom);
     var g = svg.querySelector('#dmDoom');
     g.setAttribute('transform', 'translate(' + p.x.toFixed(2) + ' ' + p.y.toFixed(2) + ') scale(' + sc.toFixed(3) + ')');
     var say = svg.querySelector('#dmSay');
     say.setAttribute('transform', 'translate(' + p.x.toFixed(1) + ' ' + (p.y - 212 * sc - 4).toFixed(1) + ')');
-    if (uYou != null) {
-      var q = at(uYou), ys = 0.55 + 0.6 * scale(uYou), w = width(uYou);
-      var y = svg.querySelector('#dmYou');
-      // Ti ides desnom stranom puta da se ne preklapate.
-      y.setAttribute('transform', 'translate(' + (q.x + w * 0.32 + 6 * ys).toFixed(1) + ' ' + (q.y - 11 * ys).toFixed(1) + ') scale(' + ys.toFixed(3) + ')');
-    }
+    if (!lay) return;
+    Object.keys(lay).forEach(function (i) {
+      var o = lay[i], q = at(o.u), w = width(o.u);
+      var k = 0.85 + 0.45 * o.u;
+      var el = svg.querySelector('#dmPin' + i);
+      if (!el) return;
+      var x = q.x + o.side * (w * 0.5 + 10 * k);
+      el.setAttribute('transform', 'translate(' + x.toFixed(1) + ' ' + (q.y - 14 * k - o.lift).toFixed(1) + ') scale(' + k.toFixed(3) + ')');
+    });
   }
 
   function say(svg, text) {
@@ -268,7 +304,7 @@ window.MM = window.MM || {};
   }
 
   /** Doom hoda od u0 do u1. Hod je animiran samo dok se krece. */
-  function walk(svg, u0, u1, uYou, done) {
+  function walk(svg, u0, u1, lay, done) {
     if (anim) cancelAnimationFrame(anim);
     var doom = svg.querySelector('.dm');
     var dist = Math.abs(u1 - u0);
@@ -278,7 +314,7 @@ window.MM = window.MM || {};
     function step(now) {
       var f = Math.min(1, (now - t0) / dur);
       var e = f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2;
-      place(svg, u0 + (u1 - u0) * e, uYou);
+      place(svg, u0 + (u1 - u0) * e, lay);
       if (f < 1) { anim = requestAnimationFrame(step); return; }
       anim = null;
       doom.classList.remove('walk');
@@ -287,16 +323,20 @@ window.MM = window.MM || {};
     anim = requestAnimationFrame(step);
   }
 
-  /** Popunjava kontejner scenom i pokrece setnju. ctx: {time, you, name, photo, from} */
+  /**
+   * Popunjava kontejner scenom i pokrece setnju.
+   * ctx: {time, you, from, people: [{name, photo, ratio, me, label}]}
+   */
   function mount(el, ctx) {
     el.innerHTML = sceneSvg(ctx);
     var svg = el.querySelector('svg');
-    var uDoom = uOf(ctx.time), uYou = uOf(ctx.you);
+    var uDoom = uOf(ctx.time);
+    var lay = layoutPins(ctx.people);
     var from = ctx.from != null ? uOf(ctx.from) : Math.max(0, uDoom - 0.12);
-    place(svg, from, uYou);
+    place(svg, from, lay);
     var arrived = ctx.time >= 1;
     setTimeout(function () {
-      walk(svg, from, uDoom, uYou, function () {
+      walk(svg, from, uDoom, lay, function () {
         if (arrived) {
           svg.classList.add('arrived');
           say(svg, 'DOOMSDAY JE STIGAO.');

@@ -116,7 +116,17 @@ body.ready #app { opacity: 1; }
 .prof-pic { display: flex; align-items: center; gap: 16px; }
 .prof-btns { display: flex; flex-direction: column; gap: 8px; flex: 1; }
 .av-edit { position: relative; flex: none; border-radius: 50%; }
-.av-pen { position: absolute; right: -2px; bottom: -2px; width: 22px; height: 22px; border-radius: 50%; background: var(--s3); border: 2px solid var(--s1); font-size: 11px; display: flex; align-items: center; justify-content: center; }
+.av-pen { position: absolute; right: -2px; bottom: -2px; width: 24px; height: 24px; border-radius: 50%; background: var(--s3); border: 2px solid var(--s1); display: flex; align-items: center; justify-content: center; }
+.av-pen svg, .ib.pen svg { width: 13px; height: 13px; fill: currentColor; }
+.ib.pen svg { width: 16px; height: 16px; }
+/* profil: bez donjeg bara */
+body.on-ja #tabs { display: none; }
+body.on-ja #toasts { bottom: calc(18px + var(--safeB)); }
+.rev-who-tabs { margin-top: 4px; }
+.tseg.three { grid-template-columns: 1fr 1fr 1fr; }
+.crew-line { color: #d6d6de !important; }
+.crew-line b { color: var(--green2); }
+.dm-pin { cursor: default; }
 .filters h3 { margin-top: 14px; }
 .fgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
 .fgrid .chip { width: 100%; padding: 0 6px; height: 40px; font-size: 13px; }

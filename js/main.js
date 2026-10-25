@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.1.0';
+MM.VERSION = '2.2.0';
 
 (function () {
   'use strict';
@@ -19,6 +19,8 @@ MM.VERSION = '2.1.0';
   var UIS = {
     tab: 'danas',
     lib: { q: '', col: 'all', tier: 'all', status: 'all', sort: 'order', sel: {}, selecting: false },
+    rev: { who: 'all', sort: 'new' },
+    prevTab: 'danas',
     cal: { view: 'mesec', month: P.today().slice(0, 7), sel: P.today() },
     rate: { id: null, stars: 0, text: '' },
     custom: null,
@@ -95,7 +97,9 @@ MM.VERSION = '2.1.0';
   function setTab(t, scrollTo, fromPop) {
     if (TABS.indexOf(t) === -1) t = 'danas';
     var same = UIS.tab === t;
+    if (t === 'ja' && UIS.tab !== 'ja') UIS.prevTab = UIS.tab;
     UIS.tab = t;
+    document.body.classList.toggle('on-ja', t === 'ja');
     if (!fromPop) {
       if (t !== 'danas' && !tabPushed) { history.pushState({ mm: 'tab' }, ''); tabPushed = true; }
       else if (t === 'danas' && tabPushed) { tabPushed = false; popIgnore++; history.back(); }
@@ -245,13 +249,25 @@ MM.VERSION = '2.1.0';
         var box = el.querySelector('#doomScene');
         var time = P.timeRatio();
         var from = s.doomSeenP && s.doomSeenP < time ? s.doomSeenP : null;
-        MM.Doom.mount(box, { time: time, you: c.prog.ratio, name: s.displayName || 'Ti', photo: s.avatar, from: from });
+        MM.Doom.mount(box, { time: time, you: c.prog.ratio, from: from, people: crewOnMap(c) });
         if (Math.abs((s.doomSeenP || 0) - time) > 0.002) {
           setTimeout(function () { Store.mutate(function (st) { st.doomSeenP = Math.round(time * 1000) / 1000; }); }, 4500);
         }
       },
       onClose: function () { MM.Doom.stop(); }
     });
+  }
+
+  /** Svi na mapi: ti (uzivo) + ekipa iz profila. */
+  function crewOnMap(c) {
+    var me = Store.uid();
+    var out = [{ me: true, name: c.s.displayName || 'Ti', photo: c.s.avatar, ratio: c.prog.ratio, label: 'TI' }];
+    MM.Reviews.people().forEach(function (p) {
+      if (me && p.uid === me) return;
+      var n = (p.name || '?').split(' ')[0].slice(0, 10);
+      out.push({ me: false, name: p.name, photo: p.photo, ratio: Math.min(1, (p.percent || 0) / 100), label: n });
+    });
+    return out;
   }
 
   function openChoose() {
@@ -277,6 +293,7 @@ MM.VERSION = '2.1.0';
   var A = {
     'tab': function (el) {
       var t = el.getAttribute('data-tab'), sc = el.getAttribute('data-scroll');
+      if (t === 'ja' && UIS.tab === 'ja' && el.id === 'me-av') t = UIS.prevTab || 'danas';
       if (UI.topSheet()) { UI.closeAll(); setTimeout(function () { setTab(t, sc); }, 300); return; }
       setTab(t, sc);
     },
@@ -402,6 +419,8 @@ MM.VERSION = '2.1.0';
       Object.assign(UIS.lib, { q: '', col: 'all', tier: 'all', status: 'all', sort: 'order' });
       UI.closeTop(); render();
     },
+    'rev-who': function (el) { UIS.rev.who = el.getAttribute('data-v'); render(); },
+    'rev-sort': function (el) { UIS.rev.sort = el.getAttribute('data-v'); render(); },
     'lib-filters': function () { UI.openSheet({ id: 'filters', render: function () { return V.filterSheet(ctx()); } }); },
     'lib-clear': function () { UIS.lib.q = ''; render(); },
     'lib-status-go': function (el) {
@@ -804,6 +823,12 @@ MM.VERSION = '2.1.0';
       if (UI.onPop()) return;
       if (UIS.lib.selecting) {
         UIS.lib.selecting = false; UIS.lib.sel = {}; render();
+        history.pushState({ mm: 'tab' }, ''); tabPushed = true;
+        return;
+      }
+      if (UIS.tab === 'ja' && UIS.prevTab && UIS.prevTab !== 'danas') {
+        // iz profila nazad na tab sa kog si dosao
+        setTab(UIS.prevTab, null, true);
         history.pushState({ mm: 'tab' }, ''); tabPushed = true;
         return;
       }

@@ -39,6 +39,7 @@ window.MM = window.MM || {};
     plus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>',
     flame: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 1.7s.8 2.8.8 5.1c0 2.2-1.4 4-3.6 4s-3.8-1.8-3.8-4l.03-.4C4.8 9.1 3.5 12.4 3.5 16a8.5 8.5 0 0017 0c0-5.7-2.7-10.8-7-14.3zM12 20.5c-1.8 0-3.2-1.4-3.2-3.1 0-1.6 1-2.8 2.8-3.1 1.8-.4 3.6-1.2 4.6-2.6.4 1.3.6 2.7.6 4.1 0 2.6-2.1 4.7-4.8 4.7z"/></svg>',
     filter: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v2H3zm3 6h12v2H6zm4 6h4v2h-4z"/></svg>',
+    pen: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>',
     eye: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c-5 0-9.3 3.1-11 7.5C2.7 16.9 7 20 12 20s9.3-3.1 11-7.5C21.3 8.1 17 5 12 5zm0 12.5a5 5 0 110-10 5 5 0 010 10zm0-8a3 3 0 100 6 3 3 0 000-6z"/></svg>'
   };
 
@@ -492,17 +493,29 @@ window.MM = window.MM || {};
     });
     out += '</div></section>';
 
-    /* poruka */
-    out += '<section class="card" data-k="msg"><div class="card-h"><h2>Poruka ekipi</h2></div>' +
-      '<p class="muted small">Svi je vide kad sledeći put otvore aplikaciju.</p>' +
-      '<div class="msg-row"><textarea id="noticeText" maxlength="300" rows="2" placeholder="npr. Ko gleda Loki večeras?"></textarea>' +
-      '<button type="button" class="btn primary" data-a="send-notice">Pošalji</button></div></section>';
-
     /* ocene */
-    var list = MM.Reviews.cached();
-    out += '<section class="card" data-k="revs"><div class="card-h"><h2>Šta kažu</h2></div>';
+    var all = MM.Reviews.cached().filter(function (r) { return Cat.get(r.itemId); });
+    var rf = ctx.ui.rev;
+    // ko je ocenjivao (ti prvi, ostali po imenu)
+    var who = {};
+    all.forEach(function (r) { if (!who[r.uid]) who[r.uid] = r.name || 'Bez imena'; });
+    var uids = Object.keys(who).sort(function (a, b) { return a === me ? -1 : b === me ? 1 : who[a].localeCompare(who[b]); });
+    var list = all.filter(function (r) { return rf.who === 'all' || r.uid === rf.who; });
+    if (rf.sort === 'order') list.sort(function (a, b) { return Cat.get(a.itemId).order - Cat.get(b.itemId).order; });
+    else if (rf.sort === 'chrono') list.sort(function (a, b) { return Cat.get(a.itemId).chrono - Cat.get(b.itemId).chrono; });
+    else list.sort(function (a, b) { return (b.at || 0) - (a.at || 0); });
+    out += '<section class="card" data-k="revs"><div class="card-h"><h2>Šta kažu</h2><span class="muted">' + list.length + '</span></div>';
+    if (all.length) {
+      out += '<div class="ctabs rev-who-tabs">' + revTab('all', 'Svi', rf.who) +
+        uids.map(function (u) { return revTab(u, u === me ? 'Moje' : who[u], rf.who); }).join('') + '</div>' +
+        '<div class="tseg three">' +
+          '<button type="button" class="' + (rf.sort === 'new' ? 'on' : '') + '" data-a="rev-sort" data-v="new">Najnovije</button>' +
+          '<button type="button" class="' + (rf.sort === 'order' ? 'on' : '') + '" data-a="rev-sort" data-v="order">Po izlasku</button>' +
+          '<button type="button" class="' + (rf.sort === 'chrono' ? 'on' : '') + '" data-a="rev-sort" data-v="chrono">Hronološki</button>' +
+        '</div>';
+    }
     if (!list.length) {
-      out += '<p class="muted pad">' + (ctx.ui.reviewsLoading ? 'Učitavam…' : 'Još nema ocena. Označi nešto kao odgledano pa te pita.') + '</p>';
+      out += '<p class="muted pad">' + (ctx.ui.reviewsLoading ? 'Učitavam…' : all.length ? 'Ovde još nema ocena.' : 'Još nema ocena. Označi nešto kao odgledano pa te pita.') + '</p>';
     } else {
       out += '<div class="revs">';
       list.forEach(function (r) {
@@ -514,7 +527,7 @@ window.MM = window.MM || {};
           '<div class="rev-b"><div class="rev-top">' + stars(r.stars) + '<span>' + esc(r.name || 'Bez imena') + (mine ? ' · ti' : '') + '</span></div>' +
             '<div class="rev-t">#' + it.order + ' ' + esc(Cat.cleanTitle(it)) + '</div>' +
             (r.text ? '<p>' + esc(r.text) + '</p>' : '') + '</div>' +
-          (mine ? '<button type="button" class="ib sm" data-a="rate" data-id="' + esc(it.id) + '" aria-label="Izmeni">✎</button>' : '') +
+          (mine ? '<button type="button" class="ib sm pen" data-a="rate" data-id="' + esc(it.id) + '" aria-label="Izmeni">' + ICON.pen + '</button>' : '') +
           '</div>';
       });
       out += '</div>';
@@ -525,6 +538,10 @@ window.MM = window.MM || {};
   /* ============================================================
      KATALOG
      ============================================================ */
+
+  function revTab(val, label, cur) {
+    return '<button type="button" class="ctab' + (val === cur ? ' on' : '') + '" data-a="rev-who" data-v="' + esc(val) + '">' + esc(label) + '</button>';
+  }
 
   function libFilter(ctx) {
     var f = ctx.ui.lib, s = ctx.s;
@@ -552,8 +569,8 @@ window.MM = window.MM || {};
       // naslovi iz tvog plana prvi, ostalo posle (oba dela u redosledu plana)
       list = list.filter(function (i) { return Cat.inPlan(i, s); }).concat(list.filter(function (i) { return !Cat.inPlan(i, s); }));
     }
-    if (f.sort === 'runtime') list.sort(function (a, b) { return a.runtime - b.runtime; });
-    if (f.sort === 'rating') list.sort(function (a, b) { return (MM.Reviews.avg(b.id) || 0) - (MM.Reviews.avg(a.id) || 0); });
+    if (f.sort === 'chrono') list.sort(function (a, b) { return (a.chrono - b.chrono) || (a.order - b.order); });
+    if (f.sort === 'release') list.sort(function (a, b) { return (a.date < b.date ? -1 : a.date > b.date ? 1 : 0) || (a.order - b.order); });
     var mins = list.reduce(function (a, i) { return a + i.runtime; }, 0);
 
     var nf = (f.status !== 'all' ? 1 : 0) + (f.sort !== 'order' ? 1 : 0);
@@ -600,7 +617,7 @@ window.MM = window.MM || {};
   }
 
   var STATUS_NAME = { all: 'Sve', plan: 'U planu', todo: 'Neodgledano', started: 'Započeto', done: 'Odgledano', skipped: 'Preskočeno' };
-  var SORT_NAME = { order: 'Moj plan prvo', runtime: 'Po trajanju', rating: 'Po oceni' };
+  var SORT_NAME = { order: 'Moj plan prvo', chrono: 'Hronološki', release: 'Po izlasku' };
 
   function ctab(val, label, cur) {
     return '<button type="button" class="ctab' + (val === cur ? ' on' : '') + '" data-a="lib-col" data-v="' + val + '">' + esc(label) + '</button>';
@@ -661,7 +678,7 @@ window.MM = window.MM || {};
     if (user) {
       var bad = ctx.syncStatus === 'error' || ctx.syncStatus === 'offline';
       out += '<div class="acct-row"><button type="button" class="av-edit" data-a="profile" aria-label="Izmeni sliku">' +
-          avatar(s.displayName || user.email, s.avatar, 'lg') + '<span class="av-pen">✎</span></button>' +
+          avatar(s.displayName || user.email, s.avatar, 'lg') + '<span class="av-pen">' + ICON.pen + '</span></button>' +
         '<div class="acct-t"><b>' + esc(s.displayName || 'Postavi ime') + '</b><span>' + esc(user.email || '') + '</span>' +
         (bad ? '<span class="sync s-error">' + esc(ctx.syncText) + '</span>' : '') + '</div>' +
         '<button type="button" class="btn ghost sm" data-a="profile">Izmeni</button></div>';
@@ -991,6 +1008,17 @@ window.MM = window.MM || {};
       '<div class="heat">' + cells + '</div><p class="muted small">poslednje 4 nedelje</p></div>';
   }
 
+  /** Ko je ispred Dooma, a ko iza (bez tebe). */
+  function crewLine(ctx, time) {
+    var me = ctx.user && ctx.user.uid;
+    var others = MM.Reviews.people().filter(function (p) { return p.uid !== me; });
+    if (!others.length) return '';
+    var ahead = others.filter(function (p) { return (p.percent || 0) / 100 >= time; }).map(function (p) { return esc(p.name || '?'); });
+    var behind = others.filter(function (p) { return (p.percent || 0) / 100 < time; }).map(function (p) { return esc(p.name || '?'); });
+    return (ahead.length ? 'Ispred Dooma: <b>' + ahead.join(', ') + '</b>' : '') + (ahead.length && behind.length ? ' · ' : '') +
+      (behind.length ? 'Iza: ' + behind.join(', ') : '');
+  }
+
   function doomSheet(ctx) {
     var time = P.timeRatio();
     var you = ctx.prog.ratio;
@@ -1007,7 +1035,9 @@ window.MM = window.MM || {};
         '<div class="doom-k">' + (arrived ? 'DOOMSDAY' : 'DOOM STIŽE ZA') + '</div>' +
         '<div class="doom-d">' + (arrived ? 'JE STIGAO' : c.d + ' ' + plural(c.d, 'dan', 'dana', 'dana')) + '</div>' +
         '<div class="doom-sub">Doom je prešao <b>' + Math.round(time * 100) + '%</b> puta · ti <b>' + Math.round(you * 100) + '%</b> plana</div></div>' +
-      '<div class="doom-bot' + (diff >= 0 || arrived ? ' ok' : '') + '"><b>' + esc(msg) + '</b><span>Doom ide po kalendaru, ti po odgledanom. Tapni Dooma.</span></div>' +
+      '<div class="doom-bot' + (diff >= 0 || arrived ? ' ok' : '') + '"><b>' + esc(msg) + '</b>' +
+        (crewLine(ctx, time) ? '<span class="crew-line">' + crewLine(ctx, time) + '</span>' : '') +
+        '<span>Doom ide po kalendaru, svi ostali po odgledanom. Tapni Dooma.</span></div>' +
       '</div>';
   }
 
