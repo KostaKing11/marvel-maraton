@@ -33,7 +33,49 @@ window.MM = window.MM || {};
     cache = [];
     snap.forEach(function (d) { cache.push(d.data()); });
     loadedAt = Date.now();
+    try { await loadReactions(f); } catch (e) { /* pravila jos nisu nalepljena - ocene rade i bez reakcija */ }
     return cache;
+  }
+
+  /* ---------------- reakcije na ocene ---------------- */
+
+  // kolekcija "reactions", doc id = "<itemId>__<autorOcene>__<ko reaguje>"
+  var EMOJI = ['🔥', '😂', '💀', '👎'];
+  var reacts = {};         // rid -> { uid: emoji }
+
+  async function loadReactions(f) {
+    var snap = await f.getDocs(f.query(f.collection(f.db, 'reactions'), f.orderBy('at', 'desc'), f.limit(600)));
+    reacts = {};
+    snap.forEach(function (d) {
+      var x = d.data();
+      if (!x || !x.rid || EMOJI.indexOf(x.e) === -1) return;
+      (reacts[x.rid] = reacts[x.rid] || {})[x.uid] = x.e;
+    });
+  }
+
+  /** Tap na emoji: isti emoji = skini, drugi = zameni. Odmah se vidi, pa tek onda salje. */
+  async function react(rid, e) {
+    var f = await MM.Store.firestore();
+    var uid = MM.Store.uid();
+    if (!f || !uid) throw new Error('nije prijavljen');
+    if (EMOJI.indexOf(e) === -1) return;
+    var map = reacts[rid] = reacts[rid] || {};
+    var prev = map[uid];
+    var ref = f.doc(f.db, 'reactions', rid + '__' + uid);
+    if (prev === e) {
+      delete map[uid];
+      try { await f.deleteDoc(ref); } catch (err) { map[uid] = prev; throw err; }
+    } else {
+      map[uid] = e;
+      try { await f.setDoc(ref, { rid: rid, uid: uid, e: e, at: Date.now() }); }
+      catch (err) { if (prev) map[uid] = prev; else delete map[uid]; throw err; }
+    }
+  }
+
+  function reactionsFor(rid) {
+    var map = reacts[rid] || {}, uid = MM.Store.uid(), counts = {};
+    Object.keys(map).forEach(function (u) { counts[map[u]] = (counts[map[u]] || 0) + 1; });
+    return { counts: counts, mine: uid ? map[uid] || '' : '' };
   }
 
   async function save(itemId, stars, text) {
@@ -135,6 +177,7 @@ window.MM = window.MM || {};
     load: load, save: save, cached: cached,
     forItem: forItem, mine: mine, avg: avg, isStale: isStale,
     loadPeople: loadPeople, people: cachedPeople, remove: remove,
-    latestNotice: latestNotice, postNotice: postNotice
+    latestNotice: latestNotice, postNotice: postNotice,
+    EMOJI: EMOJI, react: react, reactionsFor: reactionsFor
   };
 })();

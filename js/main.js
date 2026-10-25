@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.5.1';
+MM.VERSION = '2.6.0';
 
 (function () {
   'use strict';
@@ -132,6 +132,7 @@ MM.VERSION = '2.5.1';
    */
   function mark(keys, on, countToday) {
     var s = state();
+    var before = on ? MM.Badges.doneMap(s) : null, fromR = on ? P.progress(s).ratio : 0;
     var snap = { watched: {}, log: {}, skipped: {} };
     keys.forEach(function (k) {
       var id = k.split('#')[0];
@@ -161,6 +162,7 @@ MM.VERSION = '2.5.1';
       });
       if (on) { st.lastWatchAt = now; if (!st.firstWatchAt) st.firstWatchAt = now; }
     });
+    if (on) celebrateAfter(before, fromR);
     return function undo() {
       Store.mutate(function (st) {
         Object.keys(snap.watched).forEach(function (id) {
@@ -176,13 +178,29 @@ MM.VERSION = '2.5.1';
   function allEps(item) { var a = []; for (var i = 1; i <= (item.episodes || 0); i++) a.push(i); return a; }
   function itemKeys(item) { return Cat.isSeries(item) ? allEps(item).map(function (e) { return item.id + '#' + e; }) : [item.id]; }
 
+  /** Posle "Odgledano": novi predmeti, kamenje, dostignuca -> slavlje preko celog ekrana. */
+  var pendingRate = null;
+  function celebrateAfter(before, fromR) {
+    var s = state(), prog = P.progress(s);
+    var ach = MM.Badges.checkAch(s, prog, P.streak(s));
+    MM.Badges.celebrate({
+      before: before, after: MM.Badges.doneMap(state()), ach: ach,
+      from: fromR, to: prog.ratio, time: P.timeRatio(),
+      me: { name: s.displayName || 'Ti', photo: s.avatar },
+      onClose: function () { if (pendingRate) { var id = pendingRate; pendingRate = null; setTimeout(function () { rateBar(id); }, 300); } }
+    });
+  }
+
   function afterWatched(keys) {
     // ocena kad se zavrsi film ili cela sezona
     var ids = {};
     keys.forEach(function (k) { ids[k.split('#')[0]] = 1; });
     var s = state();
     var id = Object.keys(ids).filter(function (x) { return P.isDone(Cat.get(x), s); })[0];
-    if (id && Store.uid() && !MM.Reviews.mine(id)) setTimeout(function () { rateBar(id); }, 500);
+    if (id && Store.uid() && !MM.Reviews.mine(id)) {
+      if (MM.Badges.busy()) pendingRate = id;      // posle slavlja
+      else setTimeout(function () { rateBar(id); }, 500);
+    }
   }
 
   function labelOf(keys) {
@@ -249,12 +267,30 @@ MM.VERSION = '2.5.1';
         var box = el.querySelector('.doom-wrap');
         var time = P.timeRatio();
         var from = s.doomSeenP && s.doomSeenP < time ? s.doomSeenP : null;
-        MM.Doom.mount(box, { time: time, from: from, people: UIS.mapPeople });
+        MM.Doom.mount(box, { time: time, from: from, people: UIS.mapPeople, trail: trailOf(ctx()) });
         if (Math.abs((s.doomSeenP || 0) - time) > 0.002) {
           setTimeout(function () { Store.mutate(function (st) { st.doomSeenP = Math.round(time * 1000) / 1000; }); }, 4500);
         }
       },
       onClose: function () { MM.Doom.stop(); }
+    });
+  }
+
+  /** Tvoj trag na mapi: dokle si stigao na kraju svakog dana kad si gledao. */
+  function trailOf(c) {
+    var s = c.s, prog = c.prog, days = c.logByDay;
+    if (!prog.totalMin) return [];
+    var keys = Object.keys(days).sort(), logged = 0;
+    keys.forEach(function (d) { days[d].forEach(function (u) { if (Cat.inPlan(u.item, s)) logged += u.min; }); });
+    var cum = Math.max(0, prog.watchedMin - logged);
+    return keys.map(function (d) {
+      var titles = [];
+      days[d].forEach(function (u) {
+        if (Cat.inPlan(u.item, s)) cum += u.min;
+        var t = Cat.cleanTitle(u.item);
+        if (titles.indexOf(t) === -1) titles.push(t);
+      });
+      return { d: d, r: Math.min(1, cum / prog.totalMin), titles: titles };
     });
   }
 
@@ -289,9 +325,56 @@ MM.VERSION = '2.5.1';
     'item': function (el) { openItem(el.getAttribute('data-id'), UIS.tab === 'katalog' || UIS.tab === 'ekipa' ? 'lib' : 'plan'); },
     'sheet-close': function () { UI.closeTop(); },
     'doom': function () { openDoom(); },
+    /* --- predmeti i kolekcija --- */
+    'collection': function () {
+      UI.openSheet({ id: 'collection', cls: 'col-wrap', render: function () { return MM.Badges.collectionSheet(ctx()); } });
+    },
+    'bd-open': function (el) {
+      var id = el.getAttribute('data-id');
+      UI.openSheet({ id: 'bd-' + id, center: true, cls: 'bd-sheet', render: function () { return MM.Badges.itemSheet(id, ctx()); },
+        onOpen: function (w) { var a = w.querySelector('.bdm-art'); if (a && !a.querySelector('.locked')) setTimeout(function () { MM.Badges.poke(a); }, 250); } });
+    },
+    'bd-poke': function (el) { MM.Badges.poke(el); },
+    'bd-gauntlet': function (el) { MM.Badges.poke(el); },
+    'bd-ach': function (el) {
+      var a = MM.Badges.ACH.filter(function (x) { return x.id === el.getAttribute('data-id'); })[0];
+      var got = state().ach && state().ach[a.id];
+      UI.buzz(8);
+      UI.toast((got ? '🏆 ' : '🔒 ') + a.name + ' — ' + a.desc);
+    },
+    'goal-done': function () {
+      var undo = mark([Cat.GOAL_ID], true, true);
+      UI.toast('✓ Avengers: Doomsday', { action: 'Poništi', onAction: undo });
+    },
+
+    /* --- recenzije --- */
+    'spoil': function (el) { UIS.spoil = UIS.spoil || {}; UIS.spoil[el.getAttribute('data-rid')] = true; UI.buzz(6); render(); UI.refreshSheets(); },
+    'react': function (el) {
+      UI.buzz(8);
+      MM.Reviews.react(el.getAttribute('data-rid'), el.getAttribute('data-e')).then(render, function () {
+        render();
+        UI.toast('Reakcija nije sačuvana — proveri Firebase pravila (README).');
+      });
+      render();
+    },
+
+    /* --- nedeljni pregled --- */
+    'recap': function (el) {
+      var mon = el.getAttribute('data-v');
+      if (mon !== V.mondayOf(P.today())) Store.mutate(function (s) { s.recapSeen = mon; });
+      UIS.recapMon = mon;
+      UI.openSheet({ id: 'recap', render: function () { return V.recapSheet(ctx(), UIS.recapMon); } });
+    },
+    'recap-week': function (el) { UIS.recapMon = el.getAttribute('data-v'); UI.buzz(6); UI.refreshSheets(); },
+    'recap-hide': function (el) { Store.mutate(function (s) { s.recapSeen = el.getAttribute('data-v'); }); },
+
     'countdown': function () {
       UI.buzz(6);
       UI.openSheet({ id: 'countdown', center: true, cls: 'cd-sheet', render: function () { return V.countdownSheet(); } });
+    },
+    'collection-news': function () {
+      UI.closeAll();
+      setTimeout(function () { A.collection(); }, 320);
     },
     'news-order': function () {
       UI.closeAll();
@@ -518,6 +601,12 @@ MM.VERSION = '2.5.1';
       el.disabled = true;
       MM.Reviews.save(r.id, r.stars, r.text).then(function () {
         UI.closeTop(); UI.toast('Objavljeno ★' + r.stars); schedule();
+        var st = state(), pr = P.progress(st), ach = MM.Badges.checkAch(st, pr, P.streak(st));
+        if (ach.length) setTimeout(function () {
+          var dm = MM.Badges.doneMap(state());
+          MM.Badges.celebrate({ before: dm, after: dm, ach: ach, from: pr.ratio, to: pr.ratio, time: P.timeRatio(),
+            me: { name: st.displayName || 'Ti', photo: st.avatar } });
+        }, 400);
       }).catch(function (e) { el.disabled = false; console.warn(e); UI.toast('Nije uspelo — proveri internet.'); });
     },
     'rate-del': function () {
@@ -1047,6 +1136,7 @@ MM.VERSION = '2.5.1';
         setTimeout(maybeNews, 900);
       }
 
+      MM.Badges.checkAch(state(), P.progress(state()), P.streak(state()));   // prvi put: tiho upisi sta je vec ispunjeno
       setTimeout(function () { startPosters(false); }, 1500);
       setTimeout(refreshSeasonPosters, 6000);
       setTimeout(function () { dailyNotification(); idleWarning(); writeMeta(); registerPeriodic(); }, 2500);

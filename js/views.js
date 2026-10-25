@@ -26,6 +26,7 @@ window.MM = window.MM || {};
      ============================================================ */
 
   var ICON = {
+    clap: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h16v9.5A1.5 1.5 0 0118.5 21h-13A1.5 1.5 0 014 19.5zm-.3-1.6L3 5.6a1.5 1.5 0 011.1-1.8l13-3.1a1.5 1.5 0 011.8 1.1l.6 2.6zM6.4 3.9l2.2 3 2.3-.5-2.2-3zm5 -1.2l2.2 3 2.3-.5-2.2-3z"/></svg>',
     check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.2 16.6L4.9 12.3l-1.4 1.4 5.7 5.7L20.6 8l-1.4-1.4z"/></svg>',
     undo: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.5 8c-2.6 0-5 1-6.9 2.6L2 7v9h9l-3.6-3.6A8 8 0 0120.1 16l2.3-.8A10.5 10.5 0 0012.5 8z"/></svg>',
     skip: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18l8.5-6L5 6v12zm9-12v12h2V6h-2z"/></svg>',
@@ -101,6 +102,112 @@ window.MM = window.MM || {};
   function nNaslov(n) { return n + ' ' + plural(n, 'naslov', 'naslova', 'naslova'); }
   function nDan(n) { return n + ' ' + plural(n, 'dan', 'dana', 'dana'); }
 
+  /* ---------------- scene posle spice ---------------- */
+
+  function scenes(n) { return n + ' ' + plural(n, 'scena', 'scene', 'scena'); }
+  /** it.pc = [usred spice, na samom kraju]. null = nema podatka (serije). */
+  function pcInfo(it) {
+    if (!it.pc) return null;
+    var m = it.pc[0], e = it.pc[1];
+    if (!m && !e) return { none: true, t: 'Nema scene posle špice — slobodno ugasi kad krenu imena.', s: 'bez scene posle špice' };
+    var parts = [];
+    if (m) parts.push(scenes(m) + ' usred špice');
+    if (e) parts.push(scenes(e) + ' na samom kraju');
+    return { t: (e ? 'Ostani do kraja špice: ' : 'Ostani do pola špice: ') + parts.join(' + ') + '.' + (e ? '' : ' Na kraju nema ništa.'),
+      s: e ? 'posle špice: ostani do kraja' : 'posle špice: ostani do pola' };
+  }
+
+  /* ---------------- recenzije: bez spojlera + reakcije ---------------- */
+
+  function revText(r, it, ctx) {
+    if (!r.text) return '';
+    var me = ctx.user && ctx.user.uid;
+    var rid = r.itemId + '__' + r.uid;
+    var hide = r.uid !== me && !P.isDone(it, ctx.s) && !(ctx.ui.spoil && ctx.ui.spoil[rid]);
+    if (!hide) return '<p>' + esc(r.text) + '</p>';
+    return '<button type="button" class="spoil" data-a="spoil" data-rid="' + esc(rid) + '"><span>' + esc(r.text.replace(/\S/g, '•').slice(0, 60)) + '</span>' +
+      '<b>Nisi još gledao · tapni da vidiš</b></button>';
+  }
+
+  function reactRow(r, ctx) {
+    if (!ctx.user) return '';
+    var rid = r.itemId + '__' + r.uid, x = MM.Reviews.reactionsFor(rid);
+    return '<div class="reacts">' + MM.Reviews.EMOJI.map(function (e) {
+      var n = x.counts[e] || 0;
+      return '<button type="button" class="rx' + (x.mine === e ? ' on' : '') + (n ? ' has' : '') + '" data-a="react" data-rid="' + esc(rid) + '" data-e="' + e + '">' +
+        e + (n ? '<b>' + n + '</b>' : '') + '</button>';
+    }).join('') + '</div>';
+  }
+
+  /* ---------------- nedeljni pregled ---------------- */
+
+  function mondayOf(iso) { return P.addDays(iso, -P.weekday(iso)); }
+
+  function recapData(ctx, mon) {
+    var days = ctx.logByDay, s = ctx.s, B = MM.Badges;
+    var out = { mon: mon, min: 0, units: 0, days: [], titles: [], earned: [] };
+    var seen = {};
+    for (var i = 0; i < 7; i++) {
+      var d = P.addDays(mon, i), us = days[d] || [], m = 0;
+      us.forEach(function (u) {
+        m += u.min; out.units++;
+        if (!seen[u.id]) { seen[u.id] = 1; out.titles.push(u.item); }
+      });
+      out.min += m;
+      out.days.push({ d: d, m: m, n: us.length });
+    }
+    // predmeti: naslovi zavrseni ove nedelje (poslednji upis pao u ovu nedelju)
+    out.titles.forEach(function (it) {
+      if (!P.isDone(it, s)) return;
+      var last = '';
+      Object.keys(s.log || {}).forEach(function (k) { if (k.split('#')[0] === it.id && s.log[k].d > last) last = s.log[k].d; });
+      if (last >= mon && last <= P.addDays(mon, 6)) out.earned.push(it);
+    });
+    out.active = out.days.filter(function (x) { return x.n; }).length;
+    out.best = out.days.slice().sort(function (a, b) { return b.m - a.m; })[0];
+    out.youPct = ctx.prog.totalMin ? out.min / ctx.prog.totalMin * 100 : 0;
+    out.doomPct = 7 / P.daysBetween(P.START_ISO, P.DOOMSDAY_ISO) * 100;
+    return out;
+  }
+
+  function weekLabel(mon) {
+    var a = P.parse(mon), b = P.parse(P.addDays(mon, 6));
+    return a.getMonth() === b.getMonth() ? a.getDate() + '–' + b.getDate() + '. ' + UI.MON3[b.getMonth()]
+      : a.getDate() + '. ' + UI.MON3[a.getMonth()] + ' – ' + b.getDate() + '. ' + UI.MON3[b.getMonth()];
+  }
+
+  function recapSheet(ctx, mon) {
+    var x = recapData(ctx, mon), today = ctx.plan.today, thisMon = mondayOf(today);
+    var maxM = Math.max(60, Math.max.apply(null, x.days.map(function (d) { return d.m; })));
+    var title = mon === thisMon ? 'Ova nedelja' : mon === P.addDays(thisMon, -7) ? 'Prošla nedelja' : 'Nedelja';
+    var out = '<div class="pad-sheet recap">' +
+      '<div class="rc-nav"><button type="button" class="ib" data-a="recap-week" data-v="' + P.addDays(mon, -7) + '" aria-label="Prethodna">‹</button>' +
+        '<div><div class="news-k">NEDELJNI PREGLED</div><h2>' + esc(title) + '</h2><span class="muted">' + esc(weekLabel(mon)) + '</span></div>' +
+        '<button type="button" class="ib" data-a="recap-week" data-v="' + P.addDays(mon, 7) + '" aria-label="Sledeća"' + (mon >= thisMon ? ' disabled' : '') + '>›</button></div>';
+    if (!x.units) {
+      return out + '<p class="muted center pad">Ove nedelje nije bilo gledanja.' + (mon === thisMon ? ' Još ima vremena.' : '') + '</p></div>';
+    }
+    out += '<div class="rc-stats"><div><b>' + hm(x.min) + '</b><i>gledanja</i></div><div><b>' + x.titles.length + '</b><i>' + plural(x.titles.length, 'naslov', 'naslova', 'naslova') + '</i></div>' +
+      '<div><b>' + x.active + '/7</b><i>dana</i></div></div>';
+    out += '<div class="rc-bars">' + x.days.map(function (d, i) {
+      var h = d.m ? Math.max(8, Math.round(d.m / maxM * 100)) : 0;
+      return '<div class="rc-bar' + (d.d === today ? ' today' : '') + (d.d > today ? ' fut' : '') + '"><span><i style="height:' + h + '%"></i></span><em>' + UI.DOW[i].slice(0, 2) + '</em></div>';
+    }).join('') + '</div>';
+    var faster = x.youPct >= x.doomPct;
+    out += '<div class="rc-doom' + (faster ? ' ok' : '') + '">' + MM.Doom.head(30) + '<span>Ti <b>+' + x.youPct.toFixed(1) + '%</b> plana · Doom <b>+' + x.doomPct.toFixed(1) + '%</b> puta.<br>' +
+      (faster ? 'Bio si brži od Dooma.' : 'Doom je bio brži ove nedelje.') + '</span></div>';
+    out += '<h3>Gledao si</h3><div class="rc-posters no-drag">' + x.titles.map(function (it) {
+      return '<button type="button" class="rc-p" data-a="item" data-id="' + esc(it.id) + '">' + UI.poster(it, 'thumb') + '<i>' + esc(Cat.cleanTitle(it)) + '</i></button>';
+    }).join('') + '</div>';
+    if (x.earned.length) {
+      out += '<h3>Predmeti ove nedelje</h3><div class="rc-bd no-drag">' + x.earned.map(function (it) {
+        return '<button type="button" class="bd-cell" data-a="bd-open" data-id="' + esc(it.id) + '">' + MM.Badges.tile(it, { size: 'sm' }) + '<i>' + esc(MM.Badges.spec(it).name) + '</i></button>';
+      }).join('') + '</div>';
+    }
+    if (x.best && x.best.m) out += '<p class="muted small center">Najjači dan: <b>' + esc(UI.dayName(x.best.d)) + '</b>, ' + hm(x.best.m) + '.</p>';
+    return out + '</div>';
+  }
+
   /* ============================================================
      DANAS
      ============================================================ */
@@ -131,19 +238,16 @@ window.MM = window.MM || {};
     return out;
   }
 
-  /** Mini mapa na pocetnom ekranu: iste slike kao velika mapa, put, Doom, ti i ekipa. */
+  /** Traka puta na pocetnom ekranu: Doom (vreme), ti i ekipa. Tap = cela mapa. */
   function roadMini(ctx, time) {
     var ppl = crew(ctx), me = ppl[0];
     function pos(r) { return (Math.max(0, Math.min(1, r)) * 100).toFixed(1) + '%'; }
     var out = '<div class="rm" data-a="doom" role="button" aria-label="Otvori mapu puta do Doomsdaya">' +
-      '<span class="rm-chip">MAPA ›</span>' +
-      '<img class="rm-start" src="img/map/start.webp" alt="" draggable="false">' +
-      '<img class="rm-goal" src="img/map/goal.webp" alt="" draggable="false">' +
-      '<div class="rm-road"><i class="rm-done" style="width:' + pos(time) + '"></i>';
+      '<div class="rm-track"><i class="rm-done" style="width:' + pos(time) + '"></i>';
     ppl.slice(1).forEach(function (p, i) {
       out += '<span class="rm-p" data-k="rmp' + i + '" style="left:' + pos(p.ratio) + '">' + avatar(p.name, p.photo, 'rm-av') + '</span>';
     });
-    out += '<span class="rm-doom" style="left:' + pos(time) + '">' + MM.Doom.head(34) + '</span>' +
+    out += '<span class="rm-doom" style="left:' + pos(time) + '">' + MM.Doom.head(30) + '</span>' +
       '<span class="rm-p me' + (me.ratio >= time ? ' ahead' : '') + '" style="left:' + pos(me.ratio) + '">' + avatar(me.name, me.photo, 'rm-av') + '</span>' +
       '</div></div>';
     return out;
@@ -162,15 +266,33 @@ window.MM = window.MM || {};
       '<p class="cdm-date"><b>Avengers: Doomsday</b><span>petak, 18. decembar · bioskop</span></p></div>';
   }
 
+  /** 18.12: ceo vrh ekrana je posvecen premijeri. */
+  function premiereHero(ctx) {
+    var ppl = crew(ctx);
+    var watched = P.isDone(Cat.get(Cat.GOAL_ID), ctx.s);
+    return '<section class="hero premiere" data-k="hero">' +
+      '<div class="pm-glow"></div>' +
+      '<div class="pm-head">' + MM.Doom.head(76) + '</div>' +
+      '<div class="pm-k">18. DECEMBAR</div>' +
+      '<h1 class="pm-t">DOOMSDAY<br>JE DANAS</h1>' +
+      '<p class="pm-s">' + (watched ? 'Odgledano. Doom je pao… ili nije? Bez spojlera ekipi.' : 'Vidimo se u bioskopu. Kokice, karte, telefon na tiho.') + '</p>' +
+      '<div class="pm-crew">' + ppl.map(function (p) {
+        return '<span class="pm-p">' + avatar(p.name, p.photo, 'pm-av') + '<b>' + Math.round(p.ratio * 100) + '%</b><i>' + esc(p.me ? 'Ti' : p.label) + '</i></span>';
+      }).join('') + '</div>' +
+      (watched ? '' : '<button type="button" class="btn primary wide pm-go" data-a="goal-done">Odgledao sam Avengers: Doomsday</button>') +
+      '</section>';
+  }
+
   function danas(ctx) {
     var s = ctx.s, plan = ctx.plan, prog = ctx.prog;
     var c = countdownParts();
     var time = P.timeRatio();
     var out = '';
 
-    /* --- odbrojavanje + Doom traka --- */
+    /* --- dan premijere --- */
     var arrived = P.today() >= P.DOOMSDAY_ISO;
-    out += '<section class="hero" data-k="hero">' +
+    if (P.today() === P.DOOMSDAY_ISO) out += premiereHero(ctx);
+    else out += '<section class="hero" data-k="hero">' +
       '<div class="hero-top">' +
         '<button type="button" class="cd" data-a="countdown">' +
           '<span class="cd-k">' + (arrived ? 'DOOMSDAY JE STIGAO' : 'DO DOOMSDAYA') + '</span>' +
@@ -181,6 +303,19 @@ window.MM = window.MM || {};
       '</div>' +
       roadMini(ctx, time) +
       '</section>';
+
+    /* --- nedeljni pregled (pon-sre, za proslu nedelju) --- */
+    var lastMon = P.addDays(mondayOf(plan.today), -7);
+    if (P.weekday(plan.today) <= 2 && s.recapSeen !== lastMon) {
+      var rc = recapData(ctx, lastMon);
+      if (rc.units) {
+        out += '<div class="recap-card" data-k="recap" data-a="recap" data-v="' + lastMon + '" role="button">' +
+          '<span class="rc-ic">' + MM.Badges.tile(rc.earned[0] || rc.titles[0], { size: 'sm' }) + '</span>' +
+          '<span class="rc-t"><em>PROŠLA NEDELJA</em><b>' + hm(rc.min) + ' · ' + nNaslov(rc.titles.length) + '</b>' +
+          '<span>' + (rc.earned.length ? '+' + rc.earned.length + ' ' + plural(rc.earned.length, 'predmet', 'predmeta', 'predmeta') + ' · ' : '') + rc.active + '/7 dana</span></span>' +
+          '<button type="button" class="ib sm rc-x" data-a="recap-hide" data-v="' + lastMon + '" aria-label="Sakrij">' + ICON.close + '</button></div>';
+      }
+    }
 
     var idle = idleDays(s);
     if (idle >= 1 && plan.unitsLeft) {
@@ -247,6 +382,7 @@ window.MM = window.MM || {};
             '<div class="dcard-sub">' + esc(sub.join(' · ')) + '</div>' +
             (it.note ? '<p class="dcard-note">' + esc(it.note) + '</p>' : '') +
             (avail ? '<p class="dcard-warn">Izlazi ' + esc(UI.dateLabel(u.avail)) + '</p>' : '') +
+            (pcInfo(it) && !u.ep ? '<p class="dcard-pc' + (pcInfo(it).none ? ' none' : '') + '">' + ICON.clap + esc(pcInfo(it).s) + '</p>' : '') +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -567,7 +703,7 @@ window.MM = window.MM || {};
           '<button type="button" class="rev-art" data-a="item" data-id="' + esc(it.id) + '">' + UI.poster(it, 'thumb') + '</button>' +
           '<div class="rev-b"><div class="rev-top">' + stars(r.stars) + '<span>' + esc(r.name || 'Bez imena') + (mine ? ' · ti' : '') + '</span></div>' +
             '<div class="rev-t">#' + it.order + ' ' + esc(Cat.cleanTitle(it)) + '</div>' +
-            (r.text ? '<p>' + esc(r.text) + '</p>' : '') + '</div>' +
+            revText(r, it, ctx) + reactRow(r, ctx) + '</div>' +
           (mine ? '<button type="button" class="ib sm pen" data-a="rate" data-id="' + esc(it.id) + '" aria-label="Izmeni">' + ICON.pen + '</button>' : '') +
           '</div>';
       });
@@ -737,6 +873,22 @@ window.MM = window.MM || {};
         '<span class="nc-go">›</span></button>';
     }
 
+    /* kolekcija */
+    var B = MM.Badges, dm = B.doneMap(s), gs = B.gauntletState(dm);
+    var recent = Object.keys(s.log || {}).sort(function (a, b) { return (s.log[b].t || 0) - (s.log[a].t || 0); })
+      .map(function (k) { return k.split('#')[0]; }).filter(function (id, i, arr) { return dm[id] && arr.indexOf(id) === i; }).slice(0, 5);
+    out += '<section class="card col-card" data-k="colc" data-a="collection" role="button">' +
+      '<div class="cc-gt">' + B.gauntletSvg(gs, 'gt-mini') + '</div>' +
+      '<div class="cc-t"><em>KOLEKCIJA</em><b>' + Object.keys(dm).length + ' / ' + Cat.all().length + ' predmeta</b>' +
+        '<span>' + gs.n + '/6 kamenja · ' + Object.keys(s.ach || {}).length + '/' + B.ACH.length + ' dostignuća</span>' +
+        '<div class="cc-recent">' + recent.map(function (id) { return B.tile(Cat.get(id), { size: 'xs' }); }).join('') + '</div></div>' +
+      '<span class="nc-go">›</span></section>';
+    var wk = recapData(ctx, mondayOf(ctx.plan.today));
+    out += '<button type="button" class="card wk-card" data-k="wkc" data-a="recap" data-v="' + mondayOf(ctx.plan.today) + '">' +
+      '<span class="wk-t"><em>OVA NEDELJA</em><b>' + (wk.units ? hm(wk.min) + ' · ' + nNaslov(wk.titles.length) : 'Još ništa') + '</b></span>' +
+      '<span class="wk-dots">' + wk.days.map(function (d) { return '<i class="' + (d.n ? 'on' : '') + (d.d === ctx.plan.today ? ' t' : '') + '"></i>'; }).join('') + '</span>' +
+      '<span class="nc-go">›</span></button>';
+
     /* sta gledam */
     var sc = Cat.scopeOf(s);
     var cur = Cat.presetIdOf(sc);
@@ -863,7 +1015,17 @@ window.MM = window.MM || {};
     out += '<div class="item-body">';
     if (it.note) out += '<p class="item-note">' + esc(it.note) + '</p>';
     out += '<p class="tier-why t-' + it.doom + '"><b>' + esc(Cat.TIERS[it.doom].name) + '.</b> ' + esc(Cat.TIERS[it.doom].desc) + '</p>';
+    var pc = pcInfo(it);
+    if (pc) out += '<p class="pc-line' + (pc.none ? ' none' : '') + '">' + ICON.clap + '<span>' + esc(pc.t) + '</span></p>';
+    var bsp = MM.Badges.spec(it), brr = MM.Badges.rarityOf(it);
+    out += '<button type="button" class="item-bd" data-a="bd-open" data-id="' + esc(id) + '">' + MM.Badges.tile(it, { locked: !done, size: 'sm' }) +
+      '<span><em class="r-' + brr + '">PREDMET · ' + MM.Badges.RARITY[brr].name.toUpperCase() + '</em><b>' + esc(done ? bsp.name : 'Zaključan predmet') + '</b>' +
+      '<i>' + (done ? 'tvoj je' : 'dobiješ ga kad odgledaš') + '</i></span></button>';
 
+    if (isGoal && P.today() >= P.DOOMSDAY_ISO) {
+      out += done ? '<button type="button" class="btn ghost wide" data-a="item-toggle" data-id="' + esc(id) + '">✓ Odgledano u bioskopu — poništi</button>'
+        : '<button type="button" class="btn primary wide" data-a="goal-done">' + ICON.check + ' Odgledao sam u bioskopu</button>';
+    }
     if (!isGoal) {
       /* status u planu */
       var when = null;
@@ -909,7 +1071,7 @@ window.MM = window.MM || {};
     if (!isGoal) {
       out += '<div class="sec"><div class="eps-h"><h3>Ocene ekipe</h3>' + (avg ? '<span>' + stars(Math.round(avg)) + ' <b>' + avg.toFixed(1) + '</b> (' + revs.length + ')</span>' : '<span class="muted">još nema</span>') + '</div>';
       revs.slice(0, 6).forEach(function (r) {
-        out += '<div class="rev-mini">' + stars(r.stars) + '<b>' + esc(r.name || 'Bez imena') + '</b>' + (r.text ? '<p>' + esc(r.text) + '</p>' : '') + '</div>';
+        out += '<div class="rev-mini">' + stars(r.stars) + '<b>' + esc(r.name || 'Bez imena') + '</b>' + revText(r, it, ctx) + '</div>';
       });
       if (ctx.user) out += '<button type="button" class="btn ghost sm" data-a="rate" data-id="' + esc(id) + '">' + (mine ? 'Izmeni svoju ocenu' : '★ Oceni') + '</button>';
       out += '</div>';
@@ -1015,6 +1177,17 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.6', title: 'Predmeti, Gauntlet i nedeljni pregled', big: true, items: [
+      '<b>Predmet za svaki naslov</b> — odgledaš Thora, dobiješ Mjolnir. Guardians? Awesome Mix kaseta. Svih 150, od običnih do legendarnih. Tapni predmet i nešto uradi.',
+      '<b>Infinity Gauntlet</b> — prazna rukavica iz Age of Ultron, kamenje iz filmova u kojima se pojavljuje. Endgame dopuni sve i pucne prstima.',
+      '<b>Slavlje posle „Odgledano“</b> — pomeriš se na putu, Doom nešto dobaci i dobiješ predmet.',
+      '<b>Dostignuća</b> — niz dana, broj naslova, noćna ptica, Infinity Saga, svi X-Meni…',
+      '<b>Scene posle špice</b> — piše da li da čekaš do kraja ili slobodno gasiš.',
+      '<b>Recenzije bez spojlera</b> — dok ne odgledaš, vidiš samo zvezdice. Plus reakcije 🔥😂💀👎.',
+      '<b>Nedeljni pregled</b> — šta si gledao, koliko, i da li si bio brži od Dooma.',
+      '<b>Otisci na mapi</b> — za svaki dan kad si gledao ostaje trag na putu.',
+      'Početni ekran je opet čist: jedna traka, ti, Doom i ekipa.'
+    ], cta: { a: 'collection-news', label: 'Otvori kolekciju' } },
     { id: '2.5', title: 'Nova mapa i odbrojavanje', big: false, items: [
       '<b>Redosled gledanja</b> — biraš kako ideš: preporučeni maraton, po izlasku ili hronološki (po priči). Profil → Redosled.',
       '<b>Mapa je sređena</b> — kameni put, bioskopski znak tačno na dan premijere, prave ikone, i dugmići dole idu redom kao na putu.',
@@ -1103,7 +1276,7 @@ window.MM = window.MM || {};
   MM.Views = {
     danas: danas, plan: planView, ekipa: ekipa, katalog: katalog, ja: ja,
     itemSheet: itemSheet, customSheet: customSheet, filterSheet: filterSheet, rateSheet: rateSheet, profileSheet: profileSheet,
-    welcomeSheet: welcomeSheet, chooseSheet: chooseSheet, newsSheet: newsSheet, countdownSheet: countdownSheet, crew: crew, NEWS: NEWS, streakSheet: streakSheet, doomSheet: doomSheet,
+    welcomeSheet: welcomeSheet, chooseSheet: chooseSheet, newsSheet: newsSheet, countdownSheet: countdownSheet, crew: crew, NEWS: NEWS, recapSheet: recapSheet, mondayOf: mondayOf, streakSheet: streakSheet, doomSheet: doomSheet,
     clock: clock, countdownParts: countdownParts, ICON: ICON, scopeName: scopeName
   };
 })();

@@ -35,6 +35,21 @@ Slike su u `img/map/` (oslikane u Figmi): pozadine zona `z1`–`z5`, Doom
 (`doom.webp`, glava `doomhead.jpg`), tekstura puta `road.jpg`, znak
 `sign.webp`, ikone `start.webp` / `goal.webp` i `mini.jpg` za mini mapu.
 
+### Predmeti, Gauntlet i dostignuća
+
+Svaki naslov kad ga završiš daje svoj predmet (`ITEMS` u `js/badges.js`):
+Mjolnir, štit, Awesome Mix kaseta… Retkost prati nivo: obavezno = epsko,
+dobro = retko, ostalo obično; Avengers filmovi, No Way Home, Deadpool &
+Wolverine i Doomsday su legendarni. Predmeti se ne čuvaju posebno — izvode
+se iz odgledanog, pa uvek prate stanje.
+
+Gauntlet: prazna rukavica iz Age of Ultron, kamenje iz filma u kome se
+pojavljuje (prostor — Captain America, um — Avengers, stvarnost — Thor 2,
+moć — Guardians, vreme — Doctor Strange, duša — Infinity War). Endgame
+dopuni sve što fali. Dostignuća (`ACH`) se pamte u `s.ach` kad se otključaju.
+
+Scene posle špice su u `data.json` kao `pc: [usred špice, na samom kraju]`.
+
 „Šta je novo" (`NEWS` u `js/views.js`) iskače samo za velike promene
 (`big: true`); ostalo čeka u profilu, a slika gore desno ima tačkicu dok ne
 pročitaš.
@@ -138,6 +153,16 @@ service cloud.firestore {
         && request.auth.uid == request.resource.data.uid
         && request.resource.data.text.size() <= 300;
       allow update: if false;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.uid;
+    }
+
+    // Reakcije na ocene (🔥 😂 💀 👎): svako jednu po oceni, samo u svoje ime.
+    match /reactions/{xid} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+        && request.auth.uid == request.resource.data.uid
+        && xid == request.resource.data.rid + '__' + request.auth.uid
+        && request.resource.data.e in ['🔥', '😂', '💀', '👎'];
       allow delete: if request.auth != null && request.auth.uid == resource.data.uid;
     }
 

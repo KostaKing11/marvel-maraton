@@ -12,7 +12,8 @@
   "note": "Prvi Marvel film u bioskopu. Legendarno loš.",
   "poster": "",
   "order": 1,
-  "chrono": 2.986
+  "chrono": 2.986,
+  "pc": [0, 0]
  },
  {
   "id": "punisher-1989",
@@ -27,7 +28,8 @@
   "note": "Dolph Lundgren kao Frank Castle.",
   "poster": "",
   "order": 2,
-  "chrono": 2.987
+  "chrono": 2.987,
+  "pc": [0, 0]
  },
  {
   "id": "captain-america-1990",
@@ -42,7 +44,8 @@
   "note": "Niskobudžetni Kap — kuriozitet.",
   "poster": "",
   "order": 3,
-  "chrono": 2.988
+  "chrono": 2.988,
+  "pc": [0, 0]
  },
  {
   "id": "blade",
@@ -57,7 +60,8 @@
   "note": "Wesley Snipes — film koji je spasao Marvel.",
   "poster": "",
   "order": 4,
-  "chrono": 2.989
+  "chrono": 2.989,
+  "pc": [0, 0]
  },
  {
   "id": "blade-2",
@@ -72,7 +76,8 @@
   "note": "Guillermo del Toro.",
   "poster": "",
   "order": 5,
-  "chrono": 2.99
+  "chrono": 2.99,
+  "pc": [0, 0]
  },
  {
   "id": "daredevil-2003",
@@ -87,7 +92,8 @@
   "note": "Ben Affleck; gledaj Director's Cut ako možeš.",
   "poster": "",
   "order": 6,
-  "chrono": 2.991
+  "chrono": 2.991,
+  "pc": [0, 1]
  },
  {
   "id": "hulk-2003",
@@ -102,7 +108,8 @@
   "note": "Ang Lee, Eric Bana.",
   "poster": "",
   "order": 7,
-  "chrono": 2.992
+  "chrono": 2.992,
+  "pc": [0, 0]
  },
  {
   "id": "punisher-2004",
@@ -117,7 +124,8 @@
   "note": "Thomas Jane.",
   "poster": "",
   "order": 8,
-  "chrono": 2.993
+  "chrono": 2.993,
+  "pc": [0, 0]
  },
  {
   "id": "blade-trinity",
@@ -132,7 +140,8 @@
   "note": "Ryan Reynolds pre Deadpoola.",
   "poster": "",
   "order": 9,
-  "chrono": 2.994
+  "chrono": 2.994,
+  "pc": [0, 0]
  },
  {
   "id": "elektra",
@@ -147,7 +156,8 @@
   "note": "Spin-off Daredevila.",
   "poster": "",
   "order": 10,
-  "chrono": 2.995
+  "chrono": 2.995,
+  "pc": [0, 0]
  },
  {
   "id": "man-thing",
@@ -162,7 +172,8 @@
   "note": "Opskurni horor, samo za kompletiste.",
   "poster": "",
   "order": 11,
-  "chrono": 2.996
+  "chrono": 2.996,
+  "pc": [0, 0]
  },
  {
   "id": "fantastic-four-2005",
@@ -177,7 +188,8 @@
   "note": "Chris Evans kao Johnny Storm — vraća se u D&W.",
   "poster": "",
   "order": 12,
-  "chrono": 2.997
+  "chrono": 2.997,
+  "pc": [0, 0]
  },
  {
   "id": "ghost-rider",
@@ -192,7 +204,8 @@
   "note": "Nicolas Cage.",
   "poster": "",
   "order": 13,
-  "chrono": 2.998
+  "chrono": 2.998,
+  "pc": [0, 0]
  },
  {
   "id": "rise-of-the-silver-surfer",
@@ -207,7 +220,8 @@
   "note": "Silver Surfer i Galactus (oblak).",
   "poster": "",
   "order": 14,
-  "chrono": 2.999
+  "chrono": 2.999,
+  "pc": [1, 0]
  },
  {
   "id": "iron-man",
@@ -223,7 +237,8 @@
   "poster": "",
   "order": 15,
   "chrono": 3,
-  "phase": 1
+  "phase": 1,
+  "pc": [0, 1]
  },
  {
   "id": "incredible-hulk",
@@ -239,7 +254,8 @@
   "poster": "",
   "order": 16,
   "chrono": 4,
-  "phase": 1
+  "phase": 1,
+  "pc": [0, 0]
  },
  {
   "id": "punisher-war-zone",
@@ -254,7 +270,8 @@
   "note": "Ray Stevenson.",
   "poster": "",
   "order": 17,
-  "chrono": 4.001
+  "chrono": 4.001,
+  "pc": [0, 0]
  },
  {
   "id": "iron-man-2",
@@ -270,7 +287,8 @@
   "poster": "",
   "order": 18,
   "chrono": 5,
-  "phase": 1
+  "phase": 1,
+  "pc": [0, 1]
  },
  {
   "id": "thor",
@@ -286,7 +304,8 @@
   "poster": "",
   "order": 19,
   "chrono": 6,
-  "phase": 1
+  "phase": 1,
+  "pc": [0, 1]
  },
  {
   "id": "captain-america-first-avenger",
@@ -303,7 +322,8 @@
   "poster": "",
   "order": 20,
   "chrono": 1,
-  "phase": 1
+  "phase": 1,
+  "pc": [0, 1]
  },
  {
   "id": "ghost-rider-2",
@@ -318,7 +338,8 @@
   "note": "Nastavak.",
   "poster": "",
   "order": 21,
-  "chrono": 6.001
+  "chrono": 6.001,
+  "pc": [0, 0]
  },
  {
   "id": "avengers",
@@ -335,7 +356,8 @@
   "poster": "",
   "order": 22,
   "chrono": 7,
-  "phase": 1
+  "phase": 1,
+  "pc": [1, 1]
  },
  {
   "id": "iron-man-3",
@@ -351,7 +373,8 @@
   "poster": "",
   "order": 23,
   "chrono": 8,
-  "phase": 2
+  "phase": 2,
+  "pc": [0, 1]
  },
  {
   "id": "agents-of-shield-s1",
@@ -383,7 +406,8 @@
   "poster": "",
   "order": 25,
   "chrono": 9,
-  "phase": 2
+  "phase": 2,
+  "pc": [1, 1]
  },
  {
   "id": "winter-soldier",
@@ -399,7 +423,8 @@
   "poster": "",
   "order": 26,
   "chrono": 10,
-  "phase": 2
+  "phase": 2,
+  "pc": [1, 1]
  },
  {
   "id": "guardians",
@@ -415,7 +440,8 @@
   "poster": "",
   "order": 27,
   "chrono": 11,
-  "phase": 2
+  "phase": 2,
+  "pc": [1, 1]
  },
  {
   "id": "agents-of-shield-s2",
@@ -463,7 +489,8 @@
   "poster": "",
   "order": 30,
   "chrono": 13,
-  "phase": 2
+  "phase": 2,
+  "pc": [1, 0]
  },
  {
   "id": "ant-man",
@@ -479,7 +506,8 @@
   "poster": "",
   "order": 31,
   "chrono": 14,
-  "phase": 2
+  "phase": 2,
+  "pc": [1, 1]
  },
  {
   "id": "fantastic-four-2015",
@@ -494,7 +522,8 @@
   "note": "Fant4stic — samo za kompletiste.",
   "poster": "",
   "order": 32,
-  "chrono": 14.001
+  "chrono": 14.001,
+  "pc": [0, 0]
  },
  {
   "id": "agents-of-shield-s3",
@@ -542,7 +571,8 @@
   "poster": "",
   "order": 35,
   "chrono": 15,
-  "phase": 3
+  "phase": 3,
+  "pc": [1, 1]
  },
  {
   "id": "agents-of-shield-s4",
@@ -574,7 +604,8 @@
   "poster": "",
   "order": 37,
   "chrono": 19,
-  "phase": 3
+  "phase": 3,
+  "pc": [1, 1]
  },
  {
   "id": "legion-s1",
@@ -606,7 +637,8 @@
   "poster": "",
   "order": 39,
   "chrono": 12,
-  "phase": 3
+  "phase": 3,
+  "pc": [4, 1]
  },
  {
   "id": "spider-man-homecoming",
@@ -622,7 +654,8 @@
   "poster": "",
   "order": 40,
   "chrono": 18,
-  "phase": 3
+  "phase": 3,
+  "pc": [1, 1]
  },
  {
   "id": "inhumans",
@@ -670,7 +703,8 @@
   "poster": "",
   "order": 43,
   "chrono": 20,
-  "phase": 3
+  "phase": 3,
+  "pc": [1, 1]
  },
  {
   "id": "runaways-s1",
@@ -718,7 +752,8 @@
   "poster": "",
   "order": 46,
   "chrono": 17,
-  "phase": 3
+  "phase": 3,
+  "pc": [1, 1]
  },
  {
   "id": "legion-s2",
@@ -751,7 +786,8 @@
   "poster": "",
   "order": 48,
   "chrono": 22,
-  "phase": 3
+  "phase": 3,
+  "pc": [0, 1]
  },
  {
   "id": "cloak-dagger-s1",
@@ -783,7 +819,8 @@
   "poster": "",
   "order": 50,
   "chrono": 21,
-  "phase": 3
+  "phase": 3,
+  "pc": [1, 1]
  },
  {
   "id": "gifted-s2",
@@ -831,7 +868,8 @@
   "poster": "",
   "order": 53,
   "chrono": 2,
-  "phase": 3
+  "phase": 3,
+  "pc": [1, 1]
  },
  {
   "id": "cloak-dagger-s2",
@@ -864,7 +902,8 @@
   "poster": "",
   "order": 55,
   "chrono": 23,
-  "phase": 3
+  "phase": 3,
+  "pc": [0, 0]
  },
  {
   "id": "agents-of-shield-s6",
@@ -912,7 +951,8 @@
   "poster": "",
   "order": 58,
   "chrono": 24,
-  "phase": 3
+  "phase": 3,
+  "pc": [1, 1]
  },
  {
   "id": "runaways-s3",
@@ -1044,7 +1084,8 @@
   "poster": "",
   "order": 66,
   "chrono": 16,
-  "phase": 4
+  "phase": 4,
+  "pc": [0, 1]
  },
  {
   "id": "what-if-s1",
@@ -1078,7 +1119,8 @@
   "poster": "",
   "order": 68,
   "chrono": 29,
-  "phase": 4
+  "phase": 4,
+  "pc": [1, 1]
  },
  {
   "id": "eternals",
@@ -1094,7 +1136,8 @@
   "poster": "",
   "order": 69,
   "chrono": 30,
-  "phase": 4
+  "phase": 4,
+  "pc": [1, 1]
  },
  {
   "id": "hit-monkey-s1",
@@ -1350,7 +1393,8 @@
   "note": "Tobey Maguire — vraća se u No Way Home.",
   "poster": "",
   "order": 85,
-  "chrono": 31.001
+  "chrono": 31.001,
+  "pc": [0, 0]
  },
  {
   "id": "spider-man-2",
@@ -1365,7 +1409,8 @@
   "note": "Doc Ock — vraća se u No Way Home.",
   "poster": "",
   "order": 86,
-  "chrono": 31.002
+  "chrono": 31.002,
+  "pc": [0, 0]
  },
  {
   "id": "spider-man-3",
@@ -1380,7 +1425,8 @@
   "note": "Sandman — vraća se u No Way Home.",
   "poster": "",
   "order": 87,
-  "chrono": 31.003
+  "chrono": 31.003,
+  "pc": [0, 0]
  },
  {
   "id": "amazing-spider-man",
@@ -1395,7 +1441,8 @@
   "note": "Andrew Garfield i Lizard.",
   "poster": "",
   "order": 88,
-  "chrono": 31.004
+  "chrono": 31.004,
+  "pc": [1, 0]
  },
  {
   "id": "amazing-spider-man-2",
@@ -1410,7 +1457,8 @@
   "note": "Electro i Gwen — No Way Home se direktno nadovezuje.",
   "poster": "",
   "order": 89,
-  "chrono": 31.005
+  "chrono": 31.005,
+  "pc": [1, 0]
  },
  {
   "id": "venom",
@@ -1425,7 +1473,8 @@
   "note": "Tom Hardy kao Eddie Brock.",
   "poster": "",
   "order": 90,
-  "chrono": 31.006
+  "chrono": 31.006,
+  "pc": [1, 1]
  },
  {
   "id": "into-the-spider-verse",
@@ -1440,7 +1489,8 @@
   "note": "Animirani Miles Morales — remek-delo.",
   "poster": "",
   "order": 91,
-  "chrono": 31.007
+  "chrono": 31.007,
+  "pc": [0, 1]
  },
  {
   "id": "venom-carnage",
@@ -1455,7 +1505,8 @@
   "note": "Scena posle špice vodi u No Way Home.",
   "poster": "",
   "order": 92,
-  "chrono": 31.008
+  "chrono": 31.008,
+  "pc": [1, 0]
  },
  {
   "id": "no-way-home",
@@ -1472,7 +1523,8 @@
   "poster": "",
   "order": 93,
   "chrono": 32,
-  "phase": 4
+  "phase": 4,
+  "pc": [1, 1]
  },
  {
   "id": "morbius",
@@ -1487,7 +1539,8 @@
   "note": "Sony svet bez Spider-Mana.",
   "poster": "",
   "order": 94,
-  "chrono": 32.001
+  "chrono": 32.001,
+  "pc": [2, 0]
  },
  {
   "id": "across-the-spider-verse",
@@ -1502,7 +1555,8 @@
   "note": "Nastavak Into the Spider-Verse.",
   "poster": "",
   "order": 95,
-  "chrono": 32.002
+  "chrono": 32.002,
+  "pc": [0, 0]
  },
  {
   "id": "madame-web",
@@ -1517,7 +1571,8 @@
   "note": "Samo za kompletiste.",
   "poster": "",
   "order": 96,
-  "chrono": 32.003
+  "chrono": 32.003,
+  "pc": [0, 0]
  },
  {
   "id": "venom-last-dance",
@@ -1532,7 +1587,8 @@
   "note": "Kraj Venom trilogije.",
   "poster": "",
   "order": 97,
-  "chrono": 32.004
+  "chrono": 32.004,
+  "pc": [1, 1]
  },
  {
   "id": "kraven",
@@ -1547,7 +1603,8 @@
   "note": "Poslednji film Sony Spider-Man sveta.",
   "poster": "",
   "order": 98,
-  "chrono": 32.005
+  "chrono": 32.005,
+  "pc": [0, 0]
  },
  {
   "id": "moon-knight",
@@ -1581,7 +1638,8 @@
   "poster": "",
   "order": 100,
   "chrono": 34,
-  "phase": 4
+  "phase": 4,
+  "pc": [1, 1]
  },
  {
   "id": "ms-marvel",
@@ -1614,7 +1672,8 @@
   "poster": "",
   "order": 102,
   "chrono": 36,
-  "phase": 4
+  "phase": 4,
+  "pc": [1, 1]
  },
  {
   "id": "i-am-groot-s1",
@@ -1681,7 +1740,8 @@
   "poster": "",
   "order": 106,
   "chrono": 39,
-  "phase": 4
+  "phase": 4,
+  "pc": [1, 0]
  },
  {
   "id": "gotg-holiday-special",
@@ -1713,7 +1773,8 @@
   "poster": "",
   "order": 108,
   "chrono": 41,
-  "phase": 5
+  "phase": 5,
+  "pc": [1, 1]
  },
  {
   "id": "guardians-3",
@@ -1729,7 +1790,8 @@
   "poster": "",
   "order": 109,
   "chrono": 42,
-  "phase": 5
+  "phase": 5,
+  "pc": [1, 1]
  },
  {
   "id": "secret-invasion",
@@ -1797,7 +1859,8 @@
   "poster": "",
   "order": 113,
   "chrono": 46,
-  "phase": 5
+  "phase": 5,
+  "pc": [1, 0]
  },
  {
   "id": "what-if-s2",
@@ -1895,7 +1958,8 @@
   "note": "Patrick Stewart i Ian McKellen se vraćaju u Doomsdayu. Na zvaničnoj Disney+ listi.",
   "poster": "",
   "order": 119,
-  "chrono": 47.004
+  "chrono": 47.004,
+  "pc": [0, 0]
  },
  {
   "id": "x2",
@@ -1911,7 +1975,8 @@
   "note": "Nightcrawler, Cyclops, Mystique — svi su u Doomsdayu. Na zvaničnoj Disney+ listi.",
   "poster": "",
   "order": 120,
-  "chrono": 47.005
+  "chrono": 47.005,
+  "pc": [0, 0]
  },
  {
   "id": "x-men-last-stand",
@@ -1926,7 +1991,8 @@
   "note": "Kraj prve trilogije; Beast Kelseyja Grammera.",
   "poster": "",
   "order": 121,
-  "chrono": 47.006
+  "chrono": 47.006,
+  "pc": [0, 1]
  },
  {
   "id": "x-men-origins-wolverine",
@@ -1941,7 +2007,8 @@
   "note": "Loganovo poreklo; slab, ali D&W ga zeza.",
   "poster": "",
   "order": 122,
-  "chrono": 47.007
+  "chrono": 47.007,
+  "pc": [1, 1]
  },
  {
   "id": "x-men-first-class",
@@ -1956,7 +2023,8 @@
   "note": "Mladi Xavier i Magneto.",
   "poster": "",
   "order": 123,
-  "chrono": 47.008
+  "chrono": 47.008,
+  "pc": [0, 0]
  },
  {
   "id": "the-wolverine",
@@ -1971,7 +2039,8 @@
   "note": "Logan u Japanu; scena posle špice vodi u Days of Future Past.",
   "poster": "",
   "order": 124,
-  "chrono": 47.009
+  "chrono": 47.009,
+  "pc": [1, 0]
  },
  {
   "id": "days-of-future-past",
@@ -1986,7 +2055,8 @@
   "note": "Menja kraj prve trilogije — najbitniji Fox film posle prva dva.",
   "poster": "",
   "order": 125,
-  "chrono": 47.01
+  "chrono": 47.01,
+  "pc": [0, 1]
  },
  {
   "id": "deadpool",
@@ -2001,7 +2071,8 @@
   "note": "Kontekst za Deadpool & Wolverine.",
   "poster": "",
   "order": 126,
-  "chrono": 47.011
+  "chrono": 47.011,
+  "pc": [0, 1]
  },
  {
   "id": "x-men-apocalypse",
@@ -2016,7 +2087,8 @@
   "note": "Nastavak Days of Future Past.",
   "poster": "",
   "order": 127,
-  "chrono": 47.012
+  "chrono": 47.012,
+  "pc": [0, 1]
  },
  {
   "id": "logan",
@@ -2031,7 +2103,8 @@
   "note": "Oproštaj Hugha Jackmana — D&W ga direktno pominje.",
   "poster": "",
   "order": 128,
-  "chrono": 47.013
+  "chrono": 47.013,
+  "pc": [0, 0]
  },
  {
   "id": "deadpool-2",
@@ -2046,7 +2119,8 @@
   "note": "Kontekst za Deadpool & Wolverine.",
   "poster": "",
   "order": 129,
-  "chrono": 47.014
+  "chrono": 47.014,
+  "pc": [1, 0]
  },
  {
   "id": "dark-phoenix",
@@ -2061,7 +2135,8 @@
   "note": "Poslednji film glavne X-Men linije.",
   "poster": "",
   "order": 130,
-  "chrono": 47.015
+  "chrono": 47.015,
+  "pc": [0, 0]
  },
  {
   "id": "new-mutants",
@@ -2076,7 +2151,8 @@
   "note": "Horor sporedna priča.",
   "poster": "",
   "order": 131,
-  "chrono": 47.016
+  "chrono": 47.016,
+  "pc": [0, 0]
  },
  {
   "id": "deadpool-wolverine",
@@ -2093,7 +2169,8 @@
   "poster": "",
   "order": 132,
   "chrono": 48,
-  "phase": 5
+  "phase": 5,
+  "pc": [1, 1]
  },
  {
   "id": "agatha-all-along",
@@ -2161,7 +2238,8 @@
   "poster": "",
   "order": 136,
   "chrono": 53,
-  "phase": 5
+  "phase": 5,
+  "pc": [0, 1]
  },
  {
   "id": "daredevil-born-again-s1",
@@ -2195,7 +2273,8 @@
   "poster": "",
   "order": 138,
   "chrono": 54,
-  "phase": 5
+  "phase": 5,
+  "pc": [1, 1]
  },
  {
   "id": "ironheart",
@@ -2229,7 +2308,8 @@
   "poster": "",
   "order": 140,
   "chrono": 57,
-  "phase": 6
+  "phase": 6,
+  "pc": [1, 1]
  },
  {
   "id": "eyes-of-wakanda",
@@ -2361,7 +2441,8 @@
   "poster": "",
   "order": 148,
   "chrono": 62,
-  "phase": 6
+  "phase": 6,
+  "pc": [0, 1]
  },
  {
   "id": "visionquest",

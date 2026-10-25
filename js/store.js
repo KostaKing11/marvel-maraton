@@ -54,6 +54,8 @@ window.MM = window.MM || {};
       offDays: [],          // [5, 6] - dani u nedelji bez gledanja (0 = ponedeljak)
       mustFirst: false,     // obavezni naslovi pre svega ostalog
       doomSeenP: 0,         // dokle je Doom stigao kad si poslednji put gledao setnju
+      ach: null,            // dostignuca: { id: vreme otkljucavanja } (null = jos nije provereno)
+      recapSeen: '',        // ponedeljak nedelje ciji je pregled vec otvoren/sakriven
       updatedAt: 0
     };
   }

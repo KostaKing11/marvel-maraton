@@ -171,6 +171,18 @@ window.MM = window.MM || {};
       '</g>';
   }
 
+  /** Otisci: za svaki dan kad si gledao, trag na putu tamo gde si bio na kraju dana. */
+  function trail(list) {
+    return (list || []).map(function (t, i) {
+      var x = xOf(t.r), y = roadY(x);
+      return '<g class="mp-fp" data-i="' + i + '" transform="translate(' + f1(x) + ' ' + f1(y) + ')">' +
+        '<circle r="20" fill="transparent"/>' +
+        '<ellipse cx="-5" cy="-3" rx="4.2" ry="7" transform="rotate(-14 -5 -3)" fill="#ffd36b" stroke="#2a1a05" stroke-width="1.6"/>' +
+        '<ellipse cx="5" cy="5" rx="4.2" ry="7" transform="rotate(14 5 5)" fill="#ffd36b" stroke="#2a1a05" stroke-width="1.6"/>' +
+        '</g>';
+    }).join('');
+  }
+
   /** Cioda za svakog iz ekipe: slika ili slovo, ime iznad. Ti si crven. */
   function pin(p, i) {
     var col = p.me ? '#e62429' : '#3d8bff';
@@ -221,6 +233,7 @@ window.MM = window.MM || {};
     return '<svg class="mp-svg" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">' + defs +
       panels() + banners() + goal() + track(xd) + nodes(ctx.time) + ticket() + embers() +
       '<g id="mpDoom">' + doomFigure() + '</g>' +
+      trail(ctx.trail) +
       (ctx.people || []).map(pin).join('') +
       '<g id="mpSay" class="mp-say" opacity="0"><rect x="-90" y="-30" width="180" height="32" rx="16" fill="#f4fff6"/>' +
         '<path d="M-8 2l8 10 8-10z" fill="#f4fff6"/><text y="-9" text-anchor="middle" font-size="15" font-weight="900" fill="#0c2414"></text></g>' +
@@ -242,6 +255,13 @@ window.MM = window.MM || {};
     'Izgubićeš ovu trku.', 'Doom te čeka… ne dugo.'];
   var AHEAD = ['Hm. Brz si… za sada.', 'Impresivno. Za smrtnika.', 'Ne raduj se prerano.', 'Doom ceni posvećenost.',
     'Ispred si mene? Zanimljivo.'];
+
+  /** Recenica za van mape (slavlje posle gledanja): zna da li kasnis. */
+  function quip(you, time) {
+    if (time >= 1) return ['Doomsday je stigao.', 'Vidimo se u bioskopu, smrtniče.', 'Ovo je bio tvoj put. Sad je moj film.'][Math.floor(Math.random() * 3)];
+    var pool = Math.random() < 0.55 ? (you >= time ? AHEAD : BEHIND) : LINES;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
 
   function line() {
     var me = cur && cur.ctx.people && cur.ctx.people[0];
@@ -350,6 +370,12 @@ window.MM = window.MM || {};
       setTimeout(function () { d.classList.remove('cast'); }, 1200);
     });
     svg.addEventListener('click', function (e) {
+      var fp = e.target.closest('.mp-fp');
+      if (fp) {
+        var t = (cur.ctx.trail || [])[+fp.getAttribute('data-i')];
+        if (t) { UI.buzz(6); UI.toast(UI.dateLabel(t.d, { plain: true }) + ': ' + t.titles.join(', ')); }
+        return;
+      }
       var p = e.target.closest('.mp-pin');
       if (!p) return;
       var person = (cur.ctx.people || [])[+p.getAttribute('data-i')];
@@ -377,5 +403,5 @@ window.MM = window.MM || {};
     cur = null;
   }
 
-  MM.Doom = { mount: mount, jump: jump, stop: stop, head: head };
+  MM.Doom = { mount: mount, jump: jump, stop: stop, head: head, line: quip };
 })();
