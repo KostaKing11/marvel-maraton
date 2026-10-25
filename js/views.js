@@ -129,10 +129,11 @@ window.MM = window.MM || {};
     var arrived = P.today() >= P.DOOMSDAY_ISO;
     out += '<section class="hero" data-k="hero">' +
       '<div class="hero-top">' +
-        '<button type="button" class="cd" data-a="doom">' +
+        '<button type="button" class="cd" data-a="clock-toggle">' +
           '<span class="cd-k">' + (arrived ? 'DOOMSDAY JE STIGAO' : 'DO DOOMSDAYA') + '</span>' +
           '<span class="cd-d"><b>' + c.d + '</b><i>' + plural(c.d, 'dan', 'dana', 'dana') + '</i></span>' +
-          (arrived ? '<span class="cd-c">vidimo se u bioskopu 🎬</span>' : '<span class="cd-c" id="clock">' + clock() + '</span>') +
+          (arrived ? '<span class="cd-c">vidimo se u bioskopu 🎬</span>'
+            : (ctx.ui.showClock ? '<span class="cd-c" id="clock">' + clock() + '</span>' : '')) +
         '</button>' +
         streakChip(ctx.streak) +
       '</div>' +
@@ -212,7 +213,6 @@ window.MM = window.MM || {};
         '<button type="button" class="dbtn main" data-a="deck-yes" data-key="' + esc(u.key) + '">' + ICON.check + '<span>Odgledano</span></button>' +
         '<button type="button" class="dbtn" data-a="deck-skip" data-id="' + esc(it.id) + '" aria-label="Preskoči naslov">' + ICON.skip + '<span>Preskoči</span></button>' +
       '</div>' +
-      (nxt ? '<div class="deck-next">Posle: <b>' + esc(Cat.cleanTitle(nxt.item)) + (nxt.ep ? ' ep ' + nxt.ep : '') + '</b></div>' : '') +
       '</section>';
   }
 
@@ -856,20 +856,6 @@ window.MM = window.MM || {};
       }
     }
 
-    /* gde gledati */
-    var plat = (s.platforms && s.platforms[id]) || it.platform || 'check';
-    var link = (s.links && s.links[id]) || '';
-    out += '<div class="sec"><h3>Gde gledam</h3><div class="chips wrap">' +
-      PLATFORMS.map(function (p) {
-        return '<button type="button" class="chip' + (plat === p[0] ? ' on' : '') + '" data-a="platform" data-id="' + esc(id) + '" data-v="' + p[0] + '">' + p[1] + '</button>';
-      }).join('') + '</div>' +
-      (it.platform === 'disney' || it.platform === 'check' ? '' : '') +
-      '<label class="field"><span>Moj link</span><input type="url" id="linkIn" data-id="' + esc(id) + '" placeholder="https://…" value="' + esc(link) + '" inputmode="url"></label>' +
-      '<div class="btn-row">' +
-        (link ? '<a class="btn ghost sm" href="' + esc(link) + '" target="_blank" rel="noopener">' + ICON.play + ' Otvori</a>' : '') +
-        '<a class="btn ghost sm" href="https://www.justwatch.com/rs/pretraga?q=' + encodeURIComponent(it.title.replace(/\s*\(Sezona.*\)/, '')) + '" target="_blank" rel="noopener">Gde ima u Srbiji?</a>' +
-      '</div></div>';
-
     /* ocene */
     if (!isGoal) {
       out += '<div class="sec"><div class="eps-h"><h3>Ocene ekipe</h3>' + (avg ? '<span>' + stars(Math.round(avg)) + ' <b>' + avg.toFixed(1) + '</b> (' + revs.length + ')</span>' : '<span class="muted">još nema</span>') + '</div>';
@@ -995,17 +981,24 @@ window.MM = window.MM || {};
   function streakSheet(ctx) {
     var st = ctx.streak;
     var days = ctx.logByDay;
-    var cells = '';
-    for (var i = 27; i >= 0; i--) {
-      var d = P.addDays(ctx.plan.today, -i);
+    // mini kalendar kao u Duolingu: 4 nedelje, ponedeljak prvi, dani sa gledanjem gore
+    var today = ctx.plan.today;
+    var start = P.addDays(today, -P.weekday(today) - 21);
+    var cells = UI.DOW.map(function (d) { return '<span class="sk-dow">' + d.slice(0, 2) + '</span>'; }).join('');
+    for (var i = 0; i < 28; i++) {
+      var d = P.addDays(start, i);
       var n = (days[d] || []).length;
-      cells += '<span class="hm' + (n ? (n > 2 ? ' l3' : n > 1 ? ' l2' : ' l1') : '') + '" title="' + d + '"></span>';
+      var cls = 'sk-day' + (n ? ' on' : '') + (d === today ? ' today' : '') + (d > today ? ' fut' : '');
+      // spoji uzastopne dane u traku
+      if (n && i % 7 && (days[P.addDays(d, -1)] || []).length) cls += ' joinL';
+      if (n && (i + 1) % 7 && (days[P.addDays(d, 1)] || []).length && P.addDays(d, 1) <= today) cls += ' joinR';
+      cells += '<span class="' + cls + '">' + (n ? ICON.flame : '') + '<b>' + P.parse(d).getDate() + '</b></span>';
     }
     return '<div class="pad-sheet center"><div class="big-flame">' + ICON.flame + '</div>' +
       '<h2>' + nDan(st.n) + ' zaredom</h2>' +
       '<p class="muted">' + (st.n ? (st.today ? 'Danas si već gledao. Svaka čast.' : 'Danas još nisi gledao — odgledaj bilo šta da niz ne pukne.') : 'Odgledaj nešto danas i kreće niz.') + '</p>' +
       '<p class="muted small">Najduži niz: <b>' + nDan(st.best) + '</b></p>' +
-      '<div class="heat">' + cells + '</div><p class="muted small">poslednje 4 nedelje</p></div>';
+      '<div class="sk-cal">' + cells + '</div><p class="muted small">poslednje 4 nedelje</p></div>';
   }
 
   /** Ko je ispred Dooma, a ko iza (bez tebe). */

@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.3.0';
+MM.VERSION = '2.4.0';
 
 (function () {
   'use strict';
@@ -301,6 +301,7 @@ MM.VERSION = '2.3.0';
     'item': function (el) { openItem(el.getAttribute('data-id'), UIS.tab === 'katalog' || UIS.tab === 'ekipa' ? 'lib' : 'plan'); },
     'sheet-close': function () { UI.closeTop(); },
     'doom': function () { openDoom(); },
+    'clock-toggle': function () { UIS.showClock = !UIS.showClock; UI.buzz(6); render(); },
     'streak': function () { UI.openSheet({ cls: 'small', render: function () { return V.streakSheet(ctx()); } }); },
 
     'toggle': function (el) {
