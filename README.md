@@ -21,13 +21,13 @@ ne gubi, a stari `plans` se sam pretvara u novi izbor („Šta gledam").
 Nivoi u `data.json` (`doom`): `must` (zeleno, baš obavezno), `good` (žuto),
 `skip` (sivo). `d15: true` = naslov je na zvaničnoj Disney+ listi.
 
-### Doom šetnja
+### Put do Doomsdaya (mapa)
 
-Tap na odbrojavanje: Doom kreće iz Latverije 17.8. i putem ide ka cilju
-„DOOMSDAY 18.12.". Doom se pomera po **vremenu**, a ti („TI") po **odgledanom
-delu svog plana**. Ako si bliže cilju od njega — stižeš. Sve je SVG, bez slika.
-
----
+Tap na odbrojavanje otvara dugu vodoravnu mapu (kao trophy road) koja se
+skroluje prstom: Latverija → Šuma senki → Pali grad → Inkurzija → Doomsday,
+sa stanicom za svaku nedelju. Doom stoji tamo gde je **danas** (vreme), a ti i
+ekipa tamo dokle ste stigli u **svom planu** (odgledano). Traka dole skače do
+Dooma, do tebe, do svakog iz ekipe i do cilja. Sve je SVG, bez slika.
 
 ## 1. Pokretanje lokalno
 
@@ -290,7 +290,7 @@ Dugme „Gde gledati u Srbiji?" otvara JustWatch pretragu za taj naslov.
 | `js/planner.js` | dnevni raspored, napredak, niz |
 | `js/views.js` | svi ekrani i listovi (HTML) |
 | `js/ui.js` | morph (osvežavanje bez treptanja), listovi, toast, vibracija |
-| `js/doom.js` | Doom šetnja (SVG) |
+| `js/doom.js` | Put do Doomsdaya — mapa i Doom (SVG) |
 | `js/main.js` | pokretanje, akcije, gestovi, notifikacije |
 | `js/posters.js` | posteri (TVMaze za serije — poster sezone, Wikipedia za filmove) |
 | `js/reviews.js` | ocene, ekipa, poruke |
