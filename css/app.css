@@ -867,32 +867,68 @@ body.has-sheet #toasts { bottom: calc(18px + var(--safeB)); }
 
 /* ---------------- DOOM SETNJA ---------------- */
 
-.doom-sheet .sheet { background: #030406; height: var(--appH); }
+.doom-sheet .sheet { background: #05060a; height: var(--appH); }
 .doom-sheet .grab { display: none; }
 .doom-sheet .sheet-in { padding: 0; overflow: hidden; }
-.doom-wrap { position: relative; height: var(--appH); overflow: hidden; }
-.doom-scene { position: absolute; inset: 0; }
-.dm-svg { width: 100%; height: 100%; display: block; }
-.doom-top {
-  position: absolute; left: 0; right: 0; top: 0; z-index: 2;
-  padding: calc(var(--safeT) + 18px) 20px 40px; text-align: center;
-  background: linear-gradient(rgba(3, 4, 6, .85), rgba(3, 4, 6, 0));
-  pointer-events: none;
-}
-.doom-top .close { position: absolute; top: calc(var(--safeT) + 12px); right: 12px; background: rgba(255, 255, 255, .1); pointer-events: auto; }
+.doom-wrap { position: relative; height: var(--appH); display: flex; flex-direction: column; background: #05060a; }
+.mp-top { flex: none; position: relative; text-align: center; padding: calc(var(--safeT) + 14px) 56px 10px; background: linear-gradient(#05060a, #0a0f18); }
+.mp-top .close { position: absolute; top: calc(var(--safeT) + 10px); right: 12px; background: rgba(255, 255, 255, .1); }
 .doom-k { font-size: 11px; font-weight: 900; letter-spacing: 3px; color: var(--doom); }
-.doom-d { font-size: 40px; font-weight: 900; letter-spacing: -1px; text-shadow: 0 0 30px rgba(57, 217, 122, .4); }
+.doom-d { font-size: 32px; font-weight: 900; letter-spacing: -1px; line-height: 1.1; text-shadow: 0 0 24px rgba(57, 217, 122, .45); }
 .doom-sub { font-size: 13px; color: var(--mu); }
 .doom-sub b { color: var(--tx); }
-.doom-bot {
-  position: absolute; left: 12px; right: 12px; bottom: calc(var(--safeB) + 14px); z-index: 2;
-  padding: 13px 15px; border-radius: 16px;
-  background: rgba(20, 8, 10, .82); border: 1px solid rgba(230, 36, 41, .5);
-  display: flex; flex-direction: column; gap: 3px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+.mp-scroll {
+  flex: 1; min-height: 0; overflow-x: auto; overflow-y: hidden;
+  overscroll-behavior: contain; scrollbar-width: none; touch-action: pan-x;
+  background: #0a1426; position: relative;
 }
-.doom-bot.ok { background: rgba(6, 22, 12, .82); border-color: rgba(57, 217, 122, .5); }
-.doom-bot b { font-size: 15px; }
-.doom-bot span { font-size: 12px; color: var(--mu); }
+.mp-scroll::-webkit-scrollbar { display: none; }
+.mp-svg { display: block; }
+.mp-bot { flex: none; padding: 10px 12px calc(var(--safeB) + 10px); background: #07080c; border-top: 1px solid var(--line); }
+.mp-msg { display: flex; flex-direction: column; gap: 2px; padding: 9px 12px; border-radius: 13px; background: rgba(230, 36, 41, .1); border: 1px solid rgba(230, 36, 41, .4); }
+.mp-msg.ok { background: rgba(34, 197, 94, .1); border-color: rgba(57, 217, 122, .45); }
+.mp-msg b { font-size: 14px; line-height: 1.3; }
+.mp-msg span { font-size: 12px; color: var(--mu); }
+.mp-jump { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-top: 10px; margin: 0 -12px; padding-left: 12px; padding-right: 12px; }
+.mp-jump::-webkit-scrollbar { display: none; }
+.mp-jb { flex: none; width: 58px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.mp-jb i { font-style: normal; font-size: 11px; font-weight: 800; color: var(--mu); max-width: 58px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-jb .av.mp-av, .mp-ic { width: 46px; height: 46px; border-radius: 50%; border: 3px solid #3d8bff; font-size: 19px; }
+.mp-jb.me .av.mp-av { border-color: var(--red); }
+.mp-ic { display: flex; align-items: center; justify-content: center; background: var(--s3); border-color: var(--line); font-size: 20px; }
+.mp-jb.doom .mp-ic { border-color: var(--doom); background: #0d2a17; box-shadow: 0 0 12px rgba(57, 217, 122, .4); }
+.mp-ic.goal { border-color: #ffd36b; background: #2a0c0c; }
+.mp-jb:active { transform: scale(.9); }
+
+/* zivi detalji mape */
+.mp-tw { animation: tw 3s ease-in-out infinite; }
+.mp-win { animation: blink 1.8s steps(2) infinite; }
+.mp-eyes { animation: mpEyes 5s steps(1) infinite; }
+@keyframes mpEyes { 0%, 86% { opacity: 1; } 88%, 92% { opacity: 0; } 94% { opacity: 1; } }
+.mp-smoke { animation: mpSmoke 9s ease-in-out infinite alternate; }
+@keyframes mpSmoke { to { transform: translateX(60px); opacity: .05; } }
+.mp-portal { animation: mpPortal 6s linear infinite; }
+@keyframes mpPortal { to { transform: rotate(360deg); } }
+.mp-float { animation: mpFloat 4s ease-in-out infinite alternate; }
+@keyframes mpFloat { to { transform: translateY(-14px); } }
+.mp-bolt { opacity: 0; animation: mpBolt 5s steps(1) infinite; }
+@keyframes mpBolt { 0%, 90% { opacity: 0; } 91% { opacity: 1; } 93% { opacity: .2; } 95% { opacity: .9; } 97% { opacity: 0; } }
+.mp-lava { animation: mpLava 2.4s ease-in-out infinite alternate; }
+@keyframes mpLava { from { opacity: .45; } to { opacity: 1; } }
+.mp-fire { animation: mpFire .45s ease-in-out infinite alternate; }
+@keyframes mpFire { to { transform: scaleY(1.15) scaleX(.92); } }
+.mp-ember { animation: mpEmber 5s linear infinite; }
+@keyframes mpEmber { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-260px); opacity: 0; } }
+.mp-bulb { animation: blink 1s steps(2) infinite; }
+.mp-say { pointer-events: none; }
+.mp-pin { cursor: pointer; }
+.mp-pin.me > circle:first-child { animation: youPulse 1.6s ease-in-out infinite; }
+#mpDoom { cursor: pointer; }
+.dm-aura { animation: mpAura 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes mpAura { 50% { opacity: .55; transform: scale(1.06); } }
+.dm-orb { animation: mpOrb 1.2s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+@keyframes mpOrb { to { transform: scale(1.35); opacity: .7; } }
+.arrived .mp-bolt { animation-duration: 2s; }
 
 .dm-shadow { fill: #000; opacity: .5; }
 .dm-body, .dm-leg, .dm-arm, .dm-cape, .dm-magic { transform-box: fill-box; }

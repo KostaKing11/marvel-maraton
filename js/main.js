@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.2.0';
+MM.VERSION = '2.3.0';
 
 (function () {
   'use strict';
@@ -242,14 +242,15 @@ MM.VERSION = '2.2.0';
   function openDoom() {
     var c = ctx();
     var s = c.s;
+    UIS.mapPeople = crewOnMap(c);
     UI.openSheet({
       id: 'doom', full: true, cls: 'doom-sheet',
       render: function () { return V.doomSheet(ctx()); },
       onOpen: function (el) {
-        var box = el.querySelector('#doomScene');
+        var box = el.querySelector('.doom-wrap');
         var time = P.timeRatio();
         var from = s.doomSeenP && s.doomSeenP < time ? s.doomSeenP : null;
-        MM.Doom.mount(box, { time: time, you: c.prog.ratio, from: from, people: crewOnMap(c) });
+        MM.Doom.mount(box, { time: time, from: from, people: UIS.mapPeople });
         if (Math.abs((s.doomSeenP || 0) - time) > 0.002) {
           setTimeout(function () { Store.mutate(function (st) { st.doomSeenP = Math.round(time * 1000) / 1000; }); }, 4500);
         }
@@ -419,6 +420,7 @@ MM.VERSION = '2.2.0';
       Object.assign(UIS.lib, { q: '', col: 'all', tier: 'all', status: 'all', sort: 'order' });
       UI.closeTop(); render();
     },
+    'map-jump': function (el) { MM.Doom.jump(el.getAttribute('data-v')); UI.buzz(6); },
     'rev-who': function (el) { UIS.rev.who = el.getAttribute('data-v'); render(); },
     'rev-sort': function (el) { UIS.rev.sort = el.getAttribute('data-v'); render(); },
     'lib-filters': function () { UI.openSheet({ id: 'filters', render: function () { return V.filterSheet(ctx()); } }); },

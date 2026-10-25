@@ -1029,15 +1029,25 @@ window.MM = window.MM || {};
     var msg = arrived ? (you >= 1 ? 'Stigao si pre njega. Spreman si.' : 'Doom je stigao. Vidimo se u bioskopu.')
       : diff >= 0 ? 'Ispred si Dooma ' + diff + '%. Samo tako.'
       : 'Doom je ispred tebe ' + (-diff) + '%. Fali ti ' + hm(behindMin) + ' da ga stigneš.';
+    var people = ctx.ui.mapPeople || [];
+    var jumps = '<button type="button" class="mp-jb" data-a="map-jump" data-v="start"><span class="mp-ic start">🏰</span><i>Start</i></button>' +
+      '<button type="button" class="mp-jb doom" data-a="map-jump" data-v="doom"><span class="mp-ic">' + MM.Doom.head(30) + '</span><i>Doom</i></button>';
+    people.forEach(function (p, i) {
+      jumps += '<button type="button" class="mp-jb' + (p.me ? ' me' : '') + '" data-a="map-jump" data-v="' + i + '">' +
+        avatar(p.name, p.photo, 'mp-av') + '<i>' + esc(p.me ? 'Ti' : p.label) + '</i></button>';
+    });
+    jumps += '<button type="button" class="mp-jb" data-a="map-jump" data-v="goal"><span class="mp-ic goal">🎬</span><i>Cilj</i></button>';
     return '<div class="doom-wrap">' +
-      '<div class="doom-scene" id="doomScene" data-keep></div>' +
-      '<div class="doom-top"><button type="button" class="ib close" data-a="sheet-close" aria-label="Zatvori">' + ICON.close + '</button>' +
-        '<div class="doom-k">' + (arrived ? 'DOOMSDAY' : 'DOOM STIŽE ZA') + '</div>' +
-        '<div class="doom-d">' + (arrived ? 'JE STIGAO' : c.d + ' ' + plural(c.d, 'dan', 'dana', 'dana')) + '</div>' +
-        '<div class="doom-sub">Doom je prešao <b>' + Math.round(time * 100) + '%</b> puta · ti <b>' + Math.round(you * 100) + '%</b> plana</div></div>' +
-      '<div class="doom-bot' + (diff >= 0 || arrived ? ' ok' : '') + '"><b>' + esc(msg) + '</b>' +
-        (crewLine(ctx, time) ? '<span class="crew-line">' + crewLine(ctx, time) + '</span>' : '') +
-        '<span>Doom ide po kalendaru, svi ostali po odgledanom. Tapni Dooma.</span></div>' +
+      '<div class="mp-top"><button type="button" class="ib close" data-a="sheet-close" aria-label="Zatvori">' + ICON.close + '</button>' +
+        '<div class="doom-k">PUT DO DOOMSDAYA</div>' +
+        '<div class="doom-d">' + (arrived ? 'DOOMSDAY JE TU' : c.d + ' ' + plural(c.d, 'dan', 'dana', 'dana')) + '</div>' +
+        '<div class="doom-sub">Doom <b>' + Math.round(time * 100) + '%</b> puta · ti <b>' + Math.round(you * 100) + '%</b> plana</div></div>' +
+      '<div class="mp-scroll no-drag" data-keep></div>' +
+      '<div class="mp-bot">' +
+        '<div class="mp-msg' + (diff >= 0 || arrived ? ' ok' : '') + '"><b>' + esc(msg) + '</b>' +
+          (crewLine(ctx, time) ? '<span class="crew-line">' + crewLine(ctx, time) + '</span>' : '') + '</div>' +
+        '<div class="mp-jump no-drag">' + jumps + '</div>' +
+      '</div>' +
       '</div>';
   }
 
