@@ -119,6 +119,50 @@ window.MM = window.MM || {};
       ICON.flame + '<b>' + st.n + '</b></button>';
   }
 
+  /** Svi na putu: ti prvi, pa ekipa iz profila. */
+  function crew(ctx) {
+    var me = ctx.user && ctx.user.uid;
+    var out = [{ me: true, name: ctx.s.displayName || 'Ti', photo: ctx.s.avatar, ratio: ctx.prog.ratio, label: 'TI' }];
+    MM.Reviews.people().forEach(function (p) {
+      if (me && p.uid === me) return;
+      out.push({ me: false, name: p.name, photo: p.photo, ratio: Math.min(1, (p.percent || 0) / 100),
+        label: (p.name || '?').split(' ')[0].slice(0, 10) });
+    });
+    return out;
+  }
+
+  /** Mini mapa na pocetnom ekranu: iste slike kao velika mapa, put, Doom, ti i ekipa. */
+  function roadMini(ctx, time) {
+    var ppl = crew(ctx), me = ppl[0];
+    function pos(r) { return (Math.max(0, Math.min(1, r)) * 100).toFixed(1) + '%'; }
+    var out = '<div class="rm" data-a="doom" role="button" aria-label="Otvori mapu puta do Doomsdaya">' +
+      '<span class="rm-chip">MAPA ›</span>' +
+      '<img class="rm-start" src="img/map/start.webp" alt="" draggable="false">' +
+      '<img class="rm-goal" src="img/map/goal.webp" alt="" draggable="false">' +
+      '<div class="rm-road"><i class="rm-done" style="width:' + pos(time) + '"></i>';
+    ppl.slice(1).forEach(function (p, i) {
+      out += '<span class="rm-p" data-k="rmp' + i + '" style="left:' + pos(p.ratio) + '">' + avatar(p.name, p.photo, 'rm-av') + '</span>';
+    });
+    out += '<span class="rm-doom" style="left:' + pos(time) + '">' + MM.Doom.head(34) + '</span>' +
+      '<span class="rm-p me' + (me.ratio >= time ? ' ahead' : '') + '" style="left:' + pos(me.ratio) + '">' + avatar(me.name, me.photo, 'rm-av') + '</span>' +
+      '</div></div>';
+    return out;
+  }
+
+  /** Odbrojavanje na sred ekrana (tap na dane). */
+  function countdownSheet() {
+    var c = countdownParts();
+    var arrived = P.today() >= P.DOOMSDAY_ISO;
+    function tile(id, v, l) { return '<div class="cdm-t"><b id="' + id + '">' + v + '</b><i>' + l + '</i></div>'; }
+    return '<div class="cdm" data-a="sheet-close">' +
+      '<div class="cdm-head">' + MM.Doom.head(64) + '</div>' +
+      '<div class="cdm-k">' + (arrived ? 'DOOMSDAY JE STIGAO' : 'DO DOOMSDAYA') + '</div>' +
+      '<div class="cdm-grid">' + tile('cdD', c.d, plural(c.d, 'dan', 'dana', 'dana')) + tile('cdH', pad(c.h), 'sati') +
+        tile('cdM', pad(c.m), 'min') + tile('cdS', pad(c.s), 'sek') + '</div>' +
+      '<p class="cdm-date"><b>Avengers: Doomsday</b><span>petak, 18. decembar · bioskop</span></p>' +
+      '<p class="cdm-hint">tapni bilo gde da zatvoriš</p></div>';
+  }
+
   function danas(ctx) {
     var s = ctx.s, plan = ctx.plan, prog = ctx.prog;
     var c = countdownParts();
@@ -129,15 +173,14 @@ window.MM = window.MM || {};
     var arrived = P.today() >= P.DOOMSDAY_ISO;
     out += '<section class="hero" data-k="hero">' +
       '<div class="hero-top">' +
-        '<button type="button" class="cd" data-a="clock-toggle">' +
+        '<button type="button" class="cd" data-a="countdown">' +
           '<span class="cd-k">' + (arrived ? 'DOOMSDAY JE STIGAO' : 'DO DOOMSDAYA') + '</span>' +
           '<span class="cd-d"><b>' + c.d + '</b><i>' + plural(c.d, 'dan', 'dana', 'dana') + '</i></span>' +
-          (arrived ? '<span class="cd-c">vidimo se u bioskopu 🎬</span>'
-            : (ctx.ui.showClock ? '<span class="cd-c" id="clock">' + clock() + '</span>' : '')) +
+          (arrived ? '<span class="cd-c">vidimo se u bioskopu</span>' : '') +
         '</button>' +
         streakChip(ctx.streak) +
       '</div>' +
-      MM.Doom.mini(time, prog.ratio) +
+      roadMini(ctx, time) +
       '</section>';
 
     var idle = idleDays(s);
@@ -477,8 +520,7 @@ window.MM = window.MM || {};
     }
     ppl.sort(function (a, b) { return (b.percent || 0) - (a.percent || 0); });
 
-    out += '<section class="card" data-k="lb"><div class="card-h"><h2>Dokle su stigli</h2>' +
-      '<span class="legend-doom">' + MM.Doom.head(14) + ' = Doom (vreme)</span></div><div class="people">';
+    out += '<section class="card" data-k="lb"><div class="card-h"><h2>Dokle su stigli</h2></div><div class="people">';
     ppl.forEach(function (p, i) {
       var mine = p.uid === me;
       var ahead = (p.percent || 0) / 100 >= time;
@@ -688,6 +730,14 @@ window.MM = window.MM || {};
     }
     out += '</section>';
 
+    /* novo u aplikaciji - dok ne procitas */
+    if (s.seenNews !== NEWS[0].id) {
+      out += '<button type="button" class="card news-card" data-k="newscard" data-a="news">' +
+        '<span class="nc-dot"></span><span class="nc-t"><em>NOVO · v' + esc(MM.VERSION) + '</em><b>' + esc(NEWS[0].title) + '</b>' +
+        '<span>' + esc(NEWS[0].items[0].replace(/<[^>]+>/g, '').split(' — ')[0]) + ' i još ' + (NEWS[0].items.length - 1) + ' novosti</span></span>' +
+        '<span class="nc-go">›</span></button>';
+    }
+
     /* sta gledam */
     var sc = Cat.scopeOf(s);
     var cur = Cat.presetIdOf(sc);
@@ -735,7 +785,7 @@ window.MM = window.MM || {};
 
     /* redosled */
     var ord = Cat.orderOf(s);
-    out += '<section class="card" data-k="order"><div class="card-h"><h2>Redosled</h2></div><div class="radios">';
+    out += '<section class="card" data-k="order" id="ja-order"><div class="card-h"><h2>Redosled</h2></div><div class="radios">';
     Cat.ORDERS.forEach(function (o) {
       out += '<button type="button" class="radio' + (ord === o.id ? ' on' : '') + '" data-a="order" data-v="' + o.id + '">' +
         '<span class="pr-radio"></span><span><b>' + esc(o.name) + '</b><em>' + esc(o.desc) + '</em></span></button>';
@@ -961,21 +1011,40 @@ window.MM = window.MM || {};
     return out + '</div>';
   }
 
-  function newsSheet(ctx) {
-    return '<div class="pad-sheet news">' +
-      '<div class="news-k">NOVO · v' + MM.VERSION + '</div>' +
-      '<h2>Marvel Maraton 2.0</h2>' +
-      '<p class="muted">Napravljeno od nule. Tvoje odgledano je sačuvano.</p>' +
-      '<ul class="news-list">' +
-        '<li><b>Biraš koliko duboko ideš</b> — samo obavezno za Doomsday, Doomsday+, ceo MCU ili Full Marvel (150 naslova).</li>' +
-        '<li><b>Zeleno = baš obavezno.</b> Zvanična Disney+ lista od 15 naslova + Brand New Day. Žuto = dobro za Doomsday, sivo = može skip.</li>' +
-        '<li><b>Doom šetnja</b> — tapni odbrojavanje: Doom ide iz Latverije ka tebi. Ako si ispred njega, stižeš.</li>' +
-        '<li><b>Novi kalendar</b> — mesec i dan po dan, slobodni dani u nedelji, „nemam vremena" za bilo koji dan.</li>' +
-        '<li><b>Tempo</b> — „stigni do Doomsdaya" ili tvoj tempo (plan može i posle 18.12.).</li>' +
-        '<li>Svi Spider-Man filmovi, Venom, Agents of S.H.I.E.L.D., Legion, X-Men \'97, Blade, Ghost Rider… VisionQuest epizode čekaju svoj datum izlaska.</li>' +
-      '</ul>' +
-      '<button type="button" class="btn primary wide" data-a="choose">Izaberi kako gledaš</button>' +
-      '<button type="button" class="btn ghost wide" data-a="sheet-close">Kasnije</button></div>';
+  /**
+   * Sta je novo. Najnovije prvo. Samo "big" iskace samo od sebe pri otvaranju;
+   * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
+   */
+  var NEWS = [
+    { id: '2.5', title: 'Nova mapa i odbrojavanje', big: false, items: [
+      '<b>Redosled gledanja</b> — biraš kako ideš: preporučeni maraton, po izlasku ili hronološki (po priči). Profil → Redosled.',
+      '<b>Mapa je sređena</b> — kameni put, bioskopski znak tačno na dan premijere, prave ikone, i dugmići dole idu redom kao na putu.',
+      '<b>Doom priča više</b> — i sam od sebe, i kad ga tapneš, i zna da li kasniš.',
+      '<b>Mini mapa na početnom</b> — ti, Doom i ekipa na istom putu. Tapni je i otvara se cela mapa.',
+      '<b>Odbrojavanje</b> — tapni broj dana i dobiješ tačno vreme: dani, sati, minuti, sekunde.',
+      '<b>Streak kalendar</b> — poslednje 4 nedelje, kao u Duolingu.',
+      '„Šta je novo" sad čeka ovde u profilu i ne iskače više pri otvaranju — osim za velike promene.'
+    ], cta: { a: 'news-order', label: 'Promeni redosled' } },
+    { id: '2.0-rebuild', title: 'Marvel Maraton 2.0', big: true, items: [
+      '<b>Biraš koliko duboko ideš</b> — samo obavezno za Doomsday, Doomsday+, ceo MCU ili Full Marvel (150 naslova).',
+      '<b>Zeleno = baš obavezno.</b> Zvanična Disney+ lista od 15 naslova + Brand New Day. Žuto = dobro za Doomsday, sivo = može skip.',
+      '<b>Novi kalendar</b> — mesec i dan po dan, slobodni dani u nedelji, „nemam vremena" za bilo koji dan.',
+      '<b>Tempo</b> — „stigni do Doomsdaya" ili tvoj tempo (plan može i posle 18.12.).'
+    ], cta: { a: 'choose', label: 'Izaberi kako gledaš' } }
+  ];
+
+  /** focus: id novosti koja je iskocila sama (velika promena) - ona ide prva. */
+  function newsSheet(ctx, focus) {
+    var n = NEWS.filter(function (o) { return o.id === focus; })[0] || NEWS[0];
+    var out = '<div class="pad-sheet news">' +
+      '<div class="news-k">NOVO' + (n === NEWS[0] ? ' · v' + MM.VERSION : '') + '</div>' +
+      '<h2>' + esc(n.title) + '</h2>' +
+      '<ul class="news-list">' + n.items.map(function (t, i) { return '<li' + (i === 0 && n.cta ? ' class="hot"' : '') + '>' + t + '</li>'; }).join('') + '</ul>';
+    if (n.cta) out += '<button type="button" class="btn primary wide" data-a="' + n.cta.a + '">' + esc(n.cta.label) + '</button>';
+    NEWS.filter(function (o) { return o !== n; }).forEach(function (o) {
+      out += '<h3>Ranije · ' + esc(o.title) + '</h3><ul class="news-list old">' + o.items.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ul>';
+    });
+    return out + '<button type="button" class="btn ghost wide" data-a="sheet-close">' + (focus ? 'Kasnije' : 'Zatvori') + '</button></div>';
   }
 
   function streakSheet(ctx) {
@@ -1023,13 +1092,19 @@ window.MM = window.MM || {};
       : diff >= 0 ? 'Ispred si Dooma ' + diff + '%. Samo tako.'
       : 'Doom je ispred tebe ' + (-diff) + '%. Fali ti ' + hm(behindMin) + ' da ga stigneš.';
     var people = ctx.ui.mapPeople || [];
-    var jumps = '<button type="button" class="mp-jb" data-a="map-jump" data-v="start"><span class="mp-ic start">🏰</span><i>Start</i></button>' +
-      '<button type="button" class="mp-jb doom" data-a="map-jump" data-v="doom"><span class="mp-ic">' + MM.Doom.head(30) + '</span><i>Doom</i></button>';
-    people.forEach(function (p, i) {
-      jumps += '<button type="button" class="mp-jb' + (p.me ? ' me' : '') + '" data-a="map-jump" data-v="' + i + '">' +
-        avatar(p.name, p.photo, 'mp-av') + '<i>' + esc(p.me ? 'Ti' : p.label) + '</i></button>';
+    // dugmici idu redom kao na mapi: start, pa ko je gde na putu (Doom po vremenu), pa cilj
+    var marks = [{ doom: true, r: time }].concat(people.map(function (p, i) { return { p: p, i: i, r: p.ratio }; }));
+    marks.sort(function (a, b) { return (a.r - b.r) || (a.doom ? -1 : b.doom ? 1 : 0); });
+    var jumps = '<button type="button" class="mp-jb" data-a="map-jump" data-v="start"><span class="mp-ic start"><img src="img/map/start.webp" alt=""></span><i>Start</i></button>';
+    marks.forEach(function (m) {
+      if (m.doom) {
+        jumps += '<button type="button" class="mp-jb doom" data-a="map-jump" data-v="doom"><span class="mp-ic">' + MM.Doom.head(40) + '</span><i>Doom</i></button>';
+        return;
+      }
+      jumps += '<button type="button" class="mp-jb' + (m.p.me ? ' me' : '') + '" data-a="map-jump" data-v="' + m.i + '">' +
+        avatar(m.p.name, m.p.photo, 'mp-av') + '<i>' + esc(m.p.me ? 'Ti' : m.p.label) + '</i></button>';
     });
-    jumps += '<button type="button" class="mp-jb" data-a="map-jump" data-v="goal"><span class="mp-ic goal">🎬</span><i>Cilj</i></button>';
+    jumps += '<button type="button" class="mp-jb" data-a="map-jump" data-v="goal"><span class="mp-ic goal"><img src="img/map/goal.webp" alt=""></span><i>Cilj</i></button>';
     return '<div class="doom-wrap">' +
       '<div class="mp-top"><button type="button" class="ib close" data-a="sheet-close" aria-label="Zatvori">' + ICON.close + '</button>' +
         '<div class="doom-k">PUT DO DOOMSDAYA</div>' +
@@ -1047,7 +1122,7 @@ window.MM = window.MM || {};
   MM.Views = {
     danas: danas, plan: planView, ekipa: ekipa, katalog: katalog, ja: ja,
     itemSheet: itemSheet, customSheet: customSheet, filterSheet: filterSheet, rateSheet: rateSheet, profileSheet: profileSheet,
-    welcomeSheet: welcomeSheet, chooseSheet: chooseSheet, newsSheet: newsSheet, streakSheet: streakSheet, doomSheet: doomSheet,
+    welcomeSheet: welcomeSheet, chooseSheet: chooseSheet, newsSheet: newsSheet, countdownSheet: countdownSheet, crew: crew, NEWS: NEWS, streakSheet: streakSheet, doomSheet: doomSheet,
     clock: clock, countdownParts: countdownParts, ICON: ICON, scopeName: scopeName
   };
 })();

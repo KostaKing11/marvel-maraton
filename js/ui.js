@@ -172,7 +172,7 @@ window.MM = window.MM || {};
    */
   function openSheet(opts) {
     var el = document.createElement('div');
-    el.className = 'sheet-wrap' + (opts.full ? ' full' : '') + (opts.cls ? ' ' + opts.cls : '');
+    el.className = 'sheet-wrap' + (opts.full ? ' full' : '') + (opts.center ? ' center' : '') + (opts.cls ? ' ' + opts.cls : '');
     el.innerHTML = '<div class="scrim"></div><div class="sheet" role="dialog" aria-modal="true">' +
       '<div class="grab"><i></i></div><div class="sheet-in"></div></div>';
     $('#sheets').appendChild(el);
@@ -183,7 +183,7 @@ window.MM = window.MM || {};
     history.pushState({ mm: 'sheet', n: stack.length }, '');
     requestAnimationFrame(function () { requestAnimationFrame(function () { el.classList.add('in'); }); });
     el.querySelector('.scrim').addEventListener('click', function () { closeTop(); });
-    bindDrag(el, entry);
+    if (!opts.center) bindDrag(el, entry);
     if (opts.onOpen) setTimeout(function () { opts.onOpen(el); }, 30);
     return entry;
   }

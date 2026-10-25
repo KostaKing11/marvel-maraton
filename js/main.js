@@ -6,14 +6,13 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.4.0';
+MM.VERSION = '2.5.0';
 
 (function () {
   'use strict';
 
   var UI = MM.UI, Cat = MM.Cat, P = MM.Plan, Store = MM.Store, V = MM.Views;
   var $ = UI.$, esc = UI.esc;
-  var NEWS_ID = '2.0-rebuild';
   var TABS = ['danas', 'plan', 'ekipa', 'katalog', 'ja'];
 
   var UIS = {
@@ -80,7 +79,7 @@ MM.VERSION = '2.4.0';
     var s = state(), u = Store.user();
     var el = $('#me-av');
     var warn = u && (syncStatus === 'error' || syncStatus === 'offline');
-    el.className = 'me-av' + (UIS.tab === 'ja' ? ' on' : '') + (warn ? ' warn' : '');
+    el.className = 'me-av' + (UIS.tab === 'ja' ? ' on' : '') + (warn ? ' warn' : '') + (s.seenNews !== V.NEWS[0].id ? ' news' : '');
     var key = (s.avatar || '') + '|' + (s.displayName || '') + '|' + !!u;
     if (key === pillKey) return;
     pillKey = key;
@@ -242,7 +241,7 @@ MM.VERSION = '2.4.0';
   function openDoom() {
     var c = ctx();
     var s = c.s;
-    UIS.mapPeople = crewOnMap(c);
+    UIS.mapPeople = V.crew(c);
     UI.openSheet({
       id: 'doom', full: true, cls: 'doom-sheet',
       render: function () { return V.doomSheet(ctx()); },
@@ -259,24 +258,13 @@ MM.VERSION = '2.4.0';
     });
   }
 
-  /** Svi na mapi: ti (uzivo) + ekipa iz profila. */
-  function crewOnMap(c) {
-    var me = Store.uid();
-    var out = [{ me: true, name: c.s.displayName || 'Ti', photo: c.s.avatar, ratio: c.prog.ratio, label: 'TI' }];
-    MM.Reviews.people().forEach(function (p) {
-      if (me && p.uid === me) return;
-      var n = (p.name || '?').split(' ')[0].slice(0, 10);
-      out.push({ me: false, name: p.name, photo: p.photo, ratio: Math.min(1, (p.percent || 0) / 100), label: n });
-    });
-    return out;
-  }
-
   function openChoose() {
     UI.openSheet({ id: 'choose', render: function () { return V.chooseSheet(ctx()); } });
   }
 
-  function openNews() {
-    UI.openSheet({ id: 'news', render: function () { return V.newsSheet(ctx()); }, onClose: function () { setTimeout(checkNotice, 400); } });
+  function openNews(focus) {
+    if (state().seenNews !== V.NEWS[0].id) Store.mutate(function (st) { st.seenNews = V.NEWS[0].id; });
+    UI.openSheet({ id: 'news', render: function () { return V.newsSheet(ctx(), focus); }, onClose: function () { setTimeout(checkNotice, 400); } });
   }
 
   /* ============================================================
@@ -301,7 +289,14 @@ MM.VERSION = '2.4.0';
     'item': function (el) { openItem(el.getAttribute('data-id'), UIS.tab === 'katalog' || UIS.tab === 'ekipa' ? 'lib' : 'plan'); },
     'sheet-close': function () { UI.closeTop(); },
     'doom': function () { openDoom(); },
-    'clock-toggle': function () { UIS.showClock = !UIS.showClock; UI.buzz(6); render(); },
+    'countdown': function () {
+      UI.buzz(6);
+      UI.openSheet({ id: 'countdown', center: true, cls: 'cd-sheet', render: function () { return V.countdownSheet(); } });
+    },
+    'news-order': function () {
+      UI.closeAll();
+      setTimeout(function () { setTab('ja', 'ja-order'); }, 300);
+    },
     'streak': function () { UI.openSheet({ cls: 'small', render: function () { return V.streakSheet(ctx()); } }); },
 
     'toggle': function (el) {
@@ -844,8 +839,11 @@ MM.VERSION = '2.4.0';
     });
 
     setInterval(function () {
-      var c = $('#clock');
-      if (c) c.textContent = V.clock();
+      var sec = $('#cdS');
+      if (sec) {
+        var c = V.countdownParts(), pad = function (n) { return (n < 10 ? '0' : '') + n; };
+        $('#cdD').textContent = c.d; $('#cdH').textContent = pad(c.h); $('#cdM').textContent = pad(c.m); sec.textContent = pad(c.s);
+      }
     }, 1000);
     var lastDay = P.today();
     setInterval(function () {
@@ -1044,7 +1042,7 @@ MM.VERSION = '2.4.0';
           UI.openSheet({ id: 'welcome', render: function () { return V.welcomeSheet(ctx()); },
             onClose: function () { Store.markOnboarded(); } });
         }, 350);
-        Store.mutate(function (s) { s.seenNews = NEWS_ID; });
+        Store.mutate(function (s) { s.seenNews = V.NEWS[0].id; });
       } else {
         setTimeout(maybeNews, 900);
       }
@@ -1065,9 +1063,12 @@ MM.VERSION = '2.4.0';
 
   function maybeNews() {
     var s = state();
-    if (s.seenNews === NEWS_ID || UI.topSheet()) return;
-    Store.mutate(function (st) { st.seenNews = NEWS_ID; });
-    openNews();
+    if (UI.topSheet()) return;
+    // samo velike promene iskacu same; ostalo ceka u profilu (tackica gore desno)
+    var seen = V.NEWS.map(function (n) { return n.id; }).indexOf(s.seenNews);
+    var unseen = seen === -1 ? V.NEWS : V.NEWS.slice(0, seen);
+    var big = unseen.filter(function (n) { return n.big; })[0];
+    if (big) openNews(big.id);
   }
 
   MM.App = { render: schedule, setTab: setTab, ui: UIS, openItem: openItem };

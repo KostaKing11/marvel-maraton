@@ -23,11 +23,21 @@ Nivoi u `data.json` (`doom`): `must` (zeleno, baš obavezno), `good` (žuto),
 
 ### Put do Doomsdaya (mapa)
 
-Tap na odbrojavanje otvara dugu vodoravnu mapu (kao trophy road) koja se
-skroluje prstom: Latverija → Šuma senki → Pali grad → Inkurzija → Doomsday,
-sa stanicom za svaku nedelju. Doom stoji tamo gde je **danas** (vreme), a ti i
-ekipa tamo dokle ste stigli u **svom planu** (odgledano). Traka dole skače do
-Dooma, do tebe, do svakog iz ekipe i do cilja. Sve je SVG, bez slika.
+Tap na mini mapu na početnom ekranu otvara dugu vodoravnu mapu (kao trophy
+road) koja se skroluje prstom: Latverija → Šuma senki → Pali grad → Inkurzija →
+Doomsday, sa stanicom za svaku nedelju i bioskopskim znakom na dan premijere.
+Doom stoji tamo gde je **danas** (vreme), a ti i ekipa tamo dokle ste stigli u
+**svom planu** (odgledano). Dugmići dole idu redom kao na putu i skaču do
+Dooma, do svakog iz ekipe i do cilja. Tap na broj dana otvara tačno
+odbrojavanje (dani, sati, minuti, sekunde).
+
+Slike su u `img/map/` (oslikane u Figmi): pozadine zona `z1`–`z5`, Doom
+(`doom.webp`, glava `doomhead.jpg`), tekstura puta `road.jpg`, znak
+`sign.webp`, ikone `start.webp` / `goal.webp` i `mini.jpg` za mini mapu.
+
+„Šta je novo" (`NEWS` u `js/views.js`) iskače samo za velike promene
+(`big: true`); ostalo čeka u profilu, a slika gore desno ima tačkicu dok ne
+pročitaš.
 
 ## 1. Pokretanje lokalno
 
@@ -290,7 +300,7 @@ Dugme „Gde gledati u Srbiji?" otvara JustWatch pretragu za taj naslov.
 | `js/planner.js` | dnevni raspored, napredak, niz |
 | `js/views.js` | svi ekrani i listovi (HTML) |
 | `js/ui.js` | morph (osvežavanje bez treptanja), listovi, toast, vibracija |
-| `js/doom.js` | Put do Doomsdaya — mapa i Doom (SVG) |
+| `js/doom.js` | Put do Doomsdaya — mapa (slike + SVG put, stanice, Doom) |
 | `js/main.js` | pokretanje, akcije, gestovi, notifikacije |
 | `js/posters.js` | posteri (TVMaze za serije — poster sezone, Wikipedia za filmove) |
 | `js/reviews.js` | ocene, ekipa, poruke |
