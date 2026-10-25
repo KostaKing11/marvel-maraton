@@ -475,13 +475,17 @@ window.MM = window.MM || {};
     FLOAT[id] = [Math.round(80 + Math.cos(a) * 54), Math.round(96 + Math.sin(a) * 54)];
   });
 
+  var gtSeq = 0;
+
   /** Rukavica (SVG 160x200). Ako postoji slika iz Figme, koristi se ona + kamenje preko. */
   function gauntletSvg(gs, cls, float) {
     if (float == null) float = !gs.full;
-    var gold = 'url(#gtGold)', edge = '#6b4a10';
+    // svaka rukavica ima svoj gradijent: isti id u vise SVG-ova na telefonu ostavi samo obris
+    var gid = 'gtGold' + (++gtSeq);
+    var gold = 'url(#' + gid + ') #e2b33b', edge = '#6b4a10';
     var out = '<svg class="gt ' + (cls || '') + (gs.full ? ' full' : '') + (float ? ' float' : '') + '" viewBox="0 0 160 200" aria-hidden="true">' +
-      '<defs><linearGradient id="gtGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9a0"/><stop offset=".45" stop-color="#e2b33b"/><stop offset="1" stop-color="#9a6a12"/></linearGradient>' +
-      '<radialGradient id="gtGlow"><stop offset="0" stop-color="#fff"/><stop offset=".4" stop-color="#fff" stop-opacity=".6"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>' +
+      '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9a0"/><stop offset=".45" stop-color="#e2b33b"/><stop offset="1" stop-color="#9a6a12"/></linearGradient>' +
+      '</defs>' +
       '<g class="gt-glove" stroke="' + edge + '" stroke-width="3" stroke-linejoin="round">' +
       // prsti
       '<rect x="62" y="14" width="17" height="52" rx="8.5" fill="' + gold + '"/>' +
