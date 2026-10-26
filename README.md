@@ -50,6 +50,14 @@ dopuni i kamenje koje fali. Dostignuća (`ACH`) se pamte u `s.ach` kad se otklju
 
 Scene posle špice su u `data.json` kao `pc: [usred špice, na samom kraju]`.
 
+### Izgled: Puno ili Minimalno
+
+Profil → Izgled. **Minimalno** (`s.look = 'mini'`): na početnom ekranu je
+samo koliko dana je ostalo i veliki poster onoga što je na redu. Poster
+se prevuče desno kad odgledaš, levo da vratiš prethodno; tap otvara
+detalje. Novi predmet samo kratko iskoči gore (ceo ekran slavlja ostaje
+samo za Endgame i Doomsday).
+
 „Šta je novo" (`NEWS` u `js/views.js`) iskače samo za velike promene
 (`big: true`); ostalo čeka u profilu, a slika gore desno ima tačkicu dok ne
 pročitaš.

@@ -801,7 +801,23 @@ window.MM = window.MM || {};
     return true;
   }
 
+  /** Minimalni izgled: predmet samo kratko iskoci iznad postera, bez celog ekrana. */
+  function pop(before, after, ach) {
+    var items = gains(before, after);
+    var it = items[0];
+    if (!it && !(ach && ach.length)) return;
+    var el = document.createElement('div');
+    el.className = 'bd-pop';
+    el.innerHTML = it ? tile(it, { size: 'sm' }) + '<span><em>' + (items.length > 1 ? '+' + items.length + ' PREDMETA' : 'NOVI PREDMET') + '</em><b>' + esc(spec(it).name) + '</b></span>'
+      : achTile(ach[0], true) + '<span><em>DOSTIGNUĆE</em><b>' + esc(ach[0].name) + '</b></span>';
+    el.setAttribute('data-a', 'collection');
+    document.body.appendChild(el);
+    requestAnimationFrame(function () { el.classList.add('in'); });
+    setTimeout(function () { el.classList.remove('in'); setTimeout(function () { el.remove(); }, 400); }, 2600);
+  }
+
   MM.Badges = {
+    pop: pop,
     ITEMS: ITEMS, STONES: STONES, ACH: ACH, RARITY: RARITY,
     spec: spec, tile: tile, rarityOf: rarityOf, doneMap: doneMap, gauntletState: gauntletState, gauntletSvg: gauntletSvg, stoneSvg: stoneSvg,
     checkAch: checkAch, collectionSheet: collectionSheet, itemSheet: itemSheet, poke: poke, celebrate: celebrate,

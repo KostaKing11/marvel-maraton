@@ -56,6 +56,7 @@ window.MM = window.MM || {};
       doomSeenP: 0,         // dokle je Doom stigao kad si poslednji put gledao setnju
       ach: null,            // dostignuca: { id: vreme otkljucavanja } (null = jos nije provereno)
       recapSeen: '',        // ponedeljak nedelje ciji je pregled vec otvoren/sakriven
+      look: 'full',         // izgled: 'full' (sve) | 'mini' (samo dani i poster koji se prevlaci)
       updatedAt: 0
     };
   }

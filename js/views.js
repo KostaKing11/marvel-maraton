@@ -283,7 +283,34 @@ window.MM = window.MM || {};
       '</section>';
   }
 
+  /** Minimalni izgled: samo koliko dana i poster sledeceg naslova (prevlaci se). */
+  function danasMini(ctx) {
+    var plan = ctx.plan, u = plan.next, c = countdownParts();
+    var today = P.today();
+    var out = '<section class="mini-home" data-k="mini">' +
+      '<button type="button" class="mn-cd" data-a="countdown">' +
+        (today === P.DOOMSDAY_ISO ? '<b class="mn-big">DANAS</b><i>Doomsday je u bioskopu</i>'
+          : today > P.DOOMSDAY_ISO ? '<b class="mn-big">✓</b><i>Doomsday je stigao</i>'
+          : '<b>' + c.d + '</b><i>' + plural(c.d, 'dan', 'dana', 'dana') + ' do Doomsdaya</i>') +
+      '</button>';
+    if (!u) {
+      return out + '<div class="mn-done"><b>Sve je odgledano.</b><span>Vidimo se u bioskopu.</span></div></section>';
+    }
+    var it = u.item, sub = [it.year, TYPE[it.type] || ''];
+    if (u.ep) sub.push('ep ' + u.ep + ' / ' + it.episodes);
+    sub.push(hm(u.min));
+    out += '<div class="mn-card" id="mncard" data-id="' + esc(it.id) + '" data-key="' + esc(u.key) + '" role="button">' +
+        UI.poster(it, 'mn-art') +
+        '<span class="mn-stamp yes">ODGLEDANO</span><span class="mn-stamp back">NAZAD</span>' +
+      '</div>' +
+      '<div class="mn-t"><h1>' + esc(Cat.cleanTitle(it)) + '</h1><span>' + esc(sub.join(' · ')) + '</span></div>' +
+      '<p class="mn-hint"><span>‹ nazad</span><span>odgledano ›</span></p>' +
+      '</section>';
+    return out;
+  }
+
   function danas(ctx) {
+    if (ctx.s.look === 'mini') return danasMini(ctx);
     var s = ctx.s, plan = ctx.plan, prog = ctx.prog;
     var c = countdownParts();
     var time = P.timeRatio();
@@ -865,6 +892,15 @@ window.MM = window.MM || {};
     }
     out += '</section>';
 
+    /* izgled */
+    var look = s.look === 'mini' ? 'mini' : 'full';
+    out += '<section class="card" data-k="look" id="ja-look"><div class="card-h"><h2>Izgled</h2></div><div class="look-opts">' +
+      '<button type="button" class="look-o' + (look === 'full' ? ' on' : '') + '" data-a="look" data-v="full">' +
+        '<span class="lk-prev full"><i></i><i></i><i></i><i></i></span><b>Puno</b><em>mapa, lista za danas, predmeti</em></button>' +
+      '<button type="button" class="look-o' + (look === 'mini' ? ' on' : '') + '" data-a="look" data-v="mini">' +
+        '<span class="lk-prev mini"><i></i><i></i></span><b>Minimalno</b><em>samo dani i poster, prevlačiš</em></button>' +
+      '</div></section>';
+
     /* novo u aplikaciji - dok ne procitas */
     if (s.seenNews !== NEWS[0].id) {
       out += '<button type="button" class="card news-card" data-k="newscard" data-a="news">' +
@@ -1177,6 +1213,11 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.7', title: 'Minimalni izgled', big: true, items: [
+      '<b>Previše svega na početnom?</b> Uključi <b>Minimalno</b>: samo koliko dana je ostalo i veliki poster onoga što je na redu.',
+      'Poster <b>prevučeš desno</b> kad odgledaš, <b>levo</b> da vratiš prethodno. Tap na poster otvara detalje.',
+      'Sve ostalo (mapa, predmeti, ekipa) je i dalje tu, samo se ne gura na početnom. Menja se u Profil → Izgled.'
+    ], cta: { a: 'look-mini', label: 'Probaj Minimalno' } },
     { id: '2.6', title: 'Predmeti, Gauntlet i nedeljni pregled', big: true, items: [
       '<b>Predmet za svaki naslov</b> — odgledaš Thora, dobiješ Mjolnir. Guardians? Awesome Mix kaseta. Svih 150, od običnih do legendarnih. Tapni predmet i nešto uradi.',
       '<b>Infinity Gauntlet</b> — kamenje skupljaš iz filmova u kojima se pojavljuje i ono lebdi. Na Endgame dobiješ rukavicu, kamenje uleti u nju — i pucanj prstima.',

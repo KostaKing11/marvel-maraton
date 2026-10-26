@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.6.4';
+MM.VERSION = '2.7.0';
 
 (function () {
   'use strict';
@@ -70,6 +70,8 @@ MM.VERSION = '2.6.4';
     }
     UI.refreshSheets();
     pill();
+    document.body.classList.toggle('look-mini', state().look === 'mini');
+    bindMini();
     document.body.classList.toggle('selecting', UIS.tab === 'katalog' && UIS.lib.selecting);
   }
 
@@ -183,6 +185,11 @@ MM.VERSION = '2.6.4';
   function celebrateAfter(before, fromR) {
     var s = state(), prog = P.progress(s);
     var ach = MM.Badges.checkAch(s, prog, P.streak(s));
+    var after = MM.Badges.doneMap(state());
+    if (s.look === 'mini' && !(after.endgame && !before.endgame) && !(after[Cat.GOAL_ID] && !before[Cat.GOAL_ID])) {
+      MM.Badges.pop(before, after, ach);
+      return;
+    }
     MM.Badges.celebrate({
       before: before, after: MM.Badges.doneMap(state()), ach: ach,
       from: fromR, to: prog.ratio, time: P.timeRatio(),
@@ -371,6 +378,17 @@ MM.VERSION = '2.6.4';
     'countdown': function () {
       UI.buzz(6);
       UI.openSheet({ id: 'countdown', center: true, cls: 'cd-sheet', render: function () { return V.countdownSheet(); } });
+    },
+    'look': function (el) {
+      var v = el.getAttribute('data-v') === 'mini' ? 'mini' : 'full';
+      Store.mutate(function (s) { s.look = v; });
+      UI.buzz(8);
+      UI.toast(v === 'mini' ? 'Minimalno: prevuci poster desno kad odgledaš.' : 'Pun izgled.');
+    },
+    'look-mini': function () {
+      Store.mutate(function (s) { s.look = 'mini'; });
+      UI.closeAll();
+      setTimeout(function () { setTab('danas'); }, 300);
     },
     'collection-news': function () {
       UI.closeAll();
@@ -769,6 +787,66 @@ MM.VERSION = '2.6.4';
         setTimeout(next, 150);
       }).catch(function () { setTimeout(next, 150); });
     })();
+  }
+
+  /* ============================================================
+     minimalni izgled: poster se prevlaci (desno = odgledano, levo = nazad)
+     ============================================================ */
+
+  var miniBusy = false;
+  function bindMini() {
+    var card = $('#mncard');
+    if (!card || card._bound) return;
+    card._bound = true;
+    var x0 = 0, y0 = 0, dx = 0, drag = false, lock = null, moved = false;
+    var TH = 90;
+    card.addEventListener('pointerdown', function (e) {
+      if (miniBusy || e.button > 0) return;
+      drag = true; lock = null; dx = 0; moved = false;
+      x0 = e.clientX; y0 = e.clientY;
+      card.style.transition = 'none';
+    });
+    card.addEventListener('pointermove', function (e) {
+      if (!drag) return;
+      var mx = e.clientX - x0, my = e.clientY - y0;
+      if (lock === null) {
+        if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
+        lock = Math.abs(mx) > Math.abs(my) * 1.1 ? 'x' : 'none';
+        if (lock === 'x') { try { card.setPointerCapture(e.pointerId); } catch (er) { /* */ } }
+      }
+      if (lock !== 'x') return;
+      moved = true;
+      dx = mx;
+      card.style.transform = 'translateX(' + dx + 'px) rotate(' + (dx / 20) + 'deg)';
+      card.classList.toggle('to-yes', dx > 40);
+      card.classList.toggle('to-back', dx < -40);
+    });
+    function release() {
+      if (!drag) return;
+      drag = false;
+      card.style.transition = '';
+      var dir = lock === 'x' && dx > TH ? 'yes' : lock === 'x' && dx < -TH ? 'back' : null;
+      if (!dir) { card.style.transform = ''; card.classList.remove('to-yes', 'to-back'); return; }
+      miniBusy = true;
+      UI.buzz(dir === 'yes' ? 18 : 8);
+      var w = window.innerWidth + 200;
+      card.classList.add('fly');
+      card.style.transform = 'translateX(' + (dir === 'yes' ? w : -w) + 'px) rotate(' + (dir === 'yes' ? 24 : -24) + 'deg)';
+      setTimeout(function () {
+        miniBusy = false;
+        card.classList.remove('fly', 'to-yes', 'to-back');
+        card.style.transition = 'none';
+        card.style.transform = '';
+        deckDo(dir, dir === 'yes' ? card.getAttribute('data-key') : null);
+        requestAnimationFrame(function () { card.style.transition = ''; card.classList.add('enter'); setTimeout(function () { card.classList.remove('enter'); }, 400); });
+      }, 220);
+    }
+    card.addEventListener('pointerup', release);
+    card.addEventListener('pointercancel', release);
+    card.addEventListener('click', function () {
+      if (moved) { moved = false; return; }
+      openItem(card.getAttribute('data-id'), 'plan');
+    });
   }
 
   function flip(arr, v) { var i = arr.indexOf(v); if (i === -1) arr.push(v); else arr.splice(i, 1); }
