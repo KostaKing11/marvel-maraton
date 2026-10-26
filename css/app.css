@@ -1097,17 +1097,17 @@ body.has-sheet #toasts { bottom: calc(18px + var(--safeB)); }
 /* rukavica */
 .gt { display: block; overflow: visible; }
 .gt-st.on .gt-glow { animation: gtGlow 2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-.gt-st { transition: transform 1s cubic-bezier(.5, -.3, .3, 1.2); }
+.gt-st { transition: transform 1s cubic-bezier(.5, -.3, .3, 1.2); transform-box: fill-box; transform-origin: center; }
 .gt.float .gt-st { transform: var(--ft); }
 .gt.float .gt-bob { animation: gtBob 2.6s ease-in-out infinite; }
-.gt-glove { transition: opacity .7s ease, transform .9s cubic-bezier(.3, 1.4, .5, 1); transform-box: view-box; transform-origin: 80px 110px; }
+.gt-glove { transition: opacity .7s ease, transform .9s cubic-bezier(.3, 1.4, .5, 1); transform-box: fill-box; transform-origin: center; }
 .gt.float .gt-glove { opacity: 0; transform: scale(.7); }
 .gt-ghost { animation: gtBob 2.6s ease-in-out infinite; }
 @keyframes gtBob { 50% { transform: translateY(-5px); } }
 .cel.snapped .cel-rays { opacity: 0; transition: opacity 1.6s ease 1s; }
 .cel.snapped .cel-road, .cel.snapped .cel-say { opacity: .25; filter: blur(1px); transition: opacity 1.4s ease 1.2s, filter 1.4s ease 1.2s; }
 @keyframes gtGlow { 50% { opacity: .1; transform: scale(.8); } }
-.gt.full { filter: drop-shadow(0 0 18px rgba(255, 200, 80, .45)); }
+.gt.full .gt-glove { filter: drop-shadow(0 0 10px rgba(255, 200, 80, .45)); }
 .gt-big { width: 112px; height: 140px; flex: none; }
 .gt-mini { width: 46px; height: 58px; }
 .gt-sm { width: 44px; height: 54px; }

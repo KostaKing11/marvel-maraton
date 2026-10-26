@@ -25,6 +25,7 @@ window.MM = window.MM || {};
      ============================================================ */
 
   var A = 'var(--a)', B = 'var(--b)', C = 'var(--c)';
+  var IMG = 'img/map/';
   var HL = ' fill="#fff" fill-opacity=".4" stroke="none"';
 
   function f(c) { return ' fill="' + c + '"'; }
@@ -465,9 +466,9 @@ window.MM = window.MM || {};
       n: STONES.filter(function (st) { return stones[st.id]; }).length };
   }
 
-  // utori za kamenje na rukavici (palac, 4 prsta, sredina sake)
-  var SOCKETS = { soul: [54, 60], space: [70, 33], reality: [84, 30], power: [98, 34], mind: [112, 44], time: [86, 80] };
-  // gde kamenje lebdi dok nije u rukavici (oko sake)
+  // utori na oslikanoj rukavici (img/map/gauntlet.webp, viewBox 160x200) i sirina kamena u utoru
+  var SOCKETS = { space: [55.9, 76.6], reality: [78.7, 72.1], power: [104.1, 75.2], mind: [125.5, 84.4], time: [87.9, 107.8], soul: [27.7, 111.7] };
+  var SIZE = { space: 13, reality: 13, power: 13, mind: 12, time: 21, soul: 9 };
   // bez rukavice kamenje lebdi u krugu (pocinje gore, ide u krug)
   var FLOAT = {};
   ['space', 'mind', 'reality', 'power', 'time', 'soul'].forEach(function (id, i) {
@@ -475,63 +476,35 @@ window.MM = window.MM || {};
     FLOAT[id] = [Math.round(80 + Math.cos(a) * 54), Math.round(96 + Math.sin(a) * 54)];
   });
 
-  var gtSeq = 0;
-
-  /** Rukavica (SVG 160x200). Ako postoji slika iz Figme, koristi se ona + kamenje preko. */
+  /**
+   * Rukavica (oslikana u Figmi) + kamenje. float = kamenje lebdi u krugu
+   * (pre Endgamea rukavice nema, posle animacija skida float i kamenje uleti).
+   */
   function gauntletSvg(gs, cls, float) {
     if (float == null) float = !gs.full;
-    // svaka rukavica ima svoj gradijent: isti id u vise SVG-ova na telefonu ostavi samo obris
-    var gid = 'gtGold' + (++gtSeq);
-    var gold = 'url(#' + gid + ') #e2b33b', edge = '#6b4a10';
     var out = '<svg class="gt ' + (cls || '') + (gs.full ? ' full' : '') + (float ? ' float' : '') + '" viewBox="0 0 160 200" aria-hidden="true">' +
-      '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9a0"/><stop offset=".45" stop-color="#e2b33b"/><stop offset="1" stop-color="#9a6a12"/></linearGradient>' +
-      '</defs>' +
-      '<g class="gt-glove" stroke="' + edge + '" stroke-width="3" stroke-linejoin="round">' +
-      // prsti
-      '<rect x="62" y="14" width="17" height="52" rx="8.5" fill="' + gold + '"/>' +
-      '<rect x="77" y="8" width="17" height="56" rx="8.5" fill="' + gold + '"/>' +
-      '<rect x="92" y="12" width="17" height="54" rx="8.5" fill="' + gold + '"/>' +
-      '<rect x="106" y="24" width="15" height="44" rx="7.5" fill="' + gold + '"/>' +
-      // palac
-      '<path d="M60 92C46 86 38 72 40 58c2-8 10-10 16-4l14 26z" fill="' + gold + '"/>' +
-      // saka i zglob
-      '<path d="M58 60h64c4 0 6 3 6 7v40c0 18-14 30-34 30h-8c-18 0-30-12-30-28V64c0-2 1-4 2-4z" fill="' + gold + '"/>' +
-      '<path d="M60 134h56l6 56H54z" fill="' + gold + '"/>' +
-      '<path d="M58 150h62M57 170h66" fill="none" stroke-width="2.5"/>' +
-      '<path d="M66 70l10 10M110 70l-10 10" fill="none" stroke-width="2"/>';
-    // utori (deo rukavice)
-    STONES.forEach(function (st) {
-      var p = SOCKETS[st.id], r = st.id === 'time' ? 10 : 6.5;
-      out += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (r + 3) + '" fill="#2b2014" stroke="' + edge + '" stroke-width="2"/>' +
-        '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + r + '" fill="#15121b" stroke="none"/>';
-    });
-    out += '</g>';
+      '<image class="gt-glove" href="' + IMG + 'gauntlet.webp" x="0" y="0" width="160" height="200"/>';
     // kamenje koje jos fali: bledi krugovi u praznom
     if (float) STONES.forEach(function (st) {
       if (gs.stones[st.id]) return;
       var f = FLOAT[st.id];
-      out += '<circle class="gt-ghost" cx="' + f[0] + '" cy="' + f[1] + '" r="7.5" fill="none" stroke="' + st.c + '" stroke-opacity=".35" stroke-width="1.6" stroke-dasharray="2.5 3"/>';
+      out += '<circle class="gt-ghost" cx="' + f[0] + '" cy="' + f[1] + '" r="9" fill="none" stroke="' + st.c + '" stroke-opacity=".4" stroke-width="1.6" stroke-dasharray="2.5 3"/>';
     });
-    // kamenje: dok nema Endgamea lebdi oko rukavice, posle je u utorima
     STONES.forEach(function (st, i) {
       if (!gs.stones[st.id]) return;
-      var p = SOCKETS[st.id], f = FLOAT[st.id], r = st.id === 'time' ? 10 : 6.5;
-      out += '<g class="gt-st on" data-stone="' + st.id + '" style="--ft:translate(' + (f[0] - p[0]) + 'px,' + (f[1] - p[1]) + 'px);transition-delay:' + (i * 0.18).toFixed(2) + 's">' +
+      var p = SOCKETS[st.id], f = FLOAT[st.id], w = SIZE[st.id], h = w * 96 / 77, k = (18 / w).toFixed(2);
+      out += '<g class="gt-st on" data-stone="' + st.id + '" style="--ft:translate(' + (f[0] - p[0]).toFixed(1) + 'px,' + (f[1] - p[1]).toFixed(1) + 'px) scale(' + k + ');transition-delay:' + (i * 0.18).toFixed(2) + 's">' +
         '<g class="gt-bob" style="animation-delay:-' + (i * 0.45).toFixed(2) + 's">' +
-        '<circle class="gt-glow" cx="' + p[0] + '" cy="' + p[1] + '" r="' + (r * 2.6) + '" fill="' + st.c + '" opacity=".35"/>' +
-        '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + r + '" fill="' + st.c + '" stroke="#15121b" stroke-width="1.5"/>' +
-        '<circle cx="' + (p[0] - r * .35) + '" cy="' + (p[1] - r * .35) + '" r="' + (r * .35) + '" fill="#fff" opacity=".8"/>' +
+        '<circle class="gt-glow" cx="' + p[0] + '" cy="' + p[1] + '" r="' + (w * 1.1).toFixed(1) + '" fill="' + st.c + '" opacity=".4"/>' +
+        '<image href="' + IMG + 'stone-' + st.id + '.webp" x="' + (p[0] - w / 2).toFixed(1) + '" y="' + (p[1] - h / 2).toFixed(1) + '" width="' + w + '" height="' + h.toFixed(1) + '"/>' +
         '</g></g>';
     });
     return out + '</svg>';
   }
 
   function stoneSvg(st, size) {
-    return '<svg class="stone" viewBox="0 0 40 40" width="' + (size || 40) + '" height="' + (size || 40) + '" aria-hidden="true">' +
-      '<circle cx="20" cy="20" r="18" fill="' + st.c + '" opacity=".25"/>' +
-      '<path d="M20 4l12 8v16l-12 8-12-8V12z" fill="' + st.c + '" stroke="#15121b" stroke-width="2" stroke-linejoin="round"/>' +
-      '<path d="M20 4v32M8 12l24 16M32 12L8 28" stroke="#fff" stroke-opacity=".25" stroke-width="1.2"/>' +
-      '<path d="M14 11l6-4 5 3" fill="none" stroke="#fff" stroke-opacity=".8" stroke-width="2" stroke-linecap="round"/></svg>';
+    size = size || 40;
+    return '<img class="stone" src="' + IMG + 'stone-' + st.id + '.webp" width="' + Math.round(size * 77 / 96) + '" height="' + size + '" alt="" draggable="false">';
   }
 
   /* ---------------- crtanje predmeta ---------------- */
