@@ -58,7 +58,9 @@ se prevuče desno kad odgledaš, levo da vratiš prethodno; tap otvara
 detalje. Novi predmet samo kratko iskoči gore (ceo ekran slavlja ostaje
 samo za Endgame i Doomsday).
 
-**Stil** (`s.skin`): Tamno ili **Retro strip** (žuti papir sa tačkicama,
+**Stil** (`s.skin`): Tamno, **OG** (izgled prve verzije: crveno odbrojavanje
+do sekunde, plamen niza, „Dnevno / Ove nedelje“, poster koji se prevlači
+desno/levo/gore, plutajući tab bar sa 5 tabova) ili **Retro strip** (žuti papir sa tačkicama,
 crni obrisi, tvrde senke, „POW!“ kad odgledaš). Stil ide uz oba rasporeda.
 Fontovi su lokalno u `fonts/` (Bangers i Patrick Hand, SIL Open Font License,
 preuzeti iz paketa @fontsource).

@@ -309,7 +309,76 @@ window.MM = window.MM || {};
     return out;
   }
 
+  /* ============================================================
+     OG izgled: pocetni ekran kao u prvoj verziji aplikacije
+     ============================================================ */
+
+  function ogCountdown() {
+    var c = countdownParts();
+    function unit(v, lbl) { return '<span class="og-cu"><b>' + v + '</b><i>' + lbl + '</i></span>'; }
+    return unit(c.d, 'dana') + '<span class="og-csep">:</span>' + unit(pad(c.h), 'sati') + '<span class="og-csep">:</span>' +
+      unit(pad(c.m), 'min') + '<span class="og-csep">:</span>' + unit(pad(c.s), 'sek');
+  }
+
+  function ogStreak(st) {
+    if (!st.n) return '<div class="og-streak dead"><span class="og-st-in"><b>0</b></span></div>';
+    var tier = st.n >= 30 ? 'legend' : st.n >= 14 ? 'violet' : st.n >= 7 ? 'blue' : st.n >= 3 ? 'fire' : 'ember';
+    return '<button type="button" class="og-streak s-' + tier + (st.today ? '' : ' pending') + '" data-a="streak">' +
+      '<span class="og-st-ring"></span><span class="og-st-ring two"></span>' +
+      '<span class="og-st-in"><b>' + st.n + '</b></span><span class="og-st-flame">🔥</span></button>';
+  }
+
+  function hShort(min) { return (Math.round(min / 6) / 10).toFixed(1) + 'h'; }
+
+  function danasOG(ctx) {
+    var s = ctx.s, plan = ctx.plan, u = plan.next;
+    var out = '<section class="og-deck" data-k="og">' +
+      '<div class="og-top"><div class="og-cdown" id="ogcd">' + ogCountdown() + '</div>' + ogStreak(ctx.streak) + '</div>';
+
+    var idle = idleDays(s);
+    if (idle >= 1 && u) {
+      out += '<div class="og-alarm' + (idle >= 3 ? ' hard' : '') + '"><span class="og-alarm-dot"></span>' +
+        '<span class="og-alarm-txt"><b>' + (idle === 1 ? '24 sata' : nDan(idle)) + '</b> bez Marvela</span>' +
+        '<span class="og-alarm-cta">prevuci desno →</span></div>';
+    }
+
+    if (u) {
+      // dnevna norma + ova nedelja (odgledano / plan)
+      var tone = plan.target <= 90 ? 'ok' : plan.target <= 180 ? 'warn' : 'hot';
+      var mon = mondayOf(plan.today), sun = P.addDays(mon, 6), done = 0, need = 0;
+      for (var i = 0; i < 7; i++) (ctx.logByDay[P.addDays(mon, i)] || []).forEach(function (x) { done += x.min; });
+      plan.days.forEach(function (d) { if (d.iso >= plan.today && d.iso <= sun) need += d.minutes; });
+      var total = done + need, pct = total ? Math.min(100, Math.round(done / total * 100)) : 0;
+      var daysLeft = Math.max(1, P.daysBetween(plan.today, P.DOOMSDAY_ISO));
+      out += '<div class="og-hstrip hs-' + tone + '">' +
+        '<div class="og-hs-cell"><span class="og-hs-lbl">Dnevno</span><span class="og-hs-num">' + hm(plan.target) + '</span>' +
+          '<span class="og-hs-fine">' + plan.titlesLeft + ' naslova · ' + daysLeft + ' dana</span></div>' +
+        '<div class="og-hs-cell right"><span class="og-hs-lbl">Ove nedelje</span>' +
+          '<span class="og-hs-num sm"><b>' + hShort(done) + '</b> / ' + hShort(total) + '</span>' +
+          '<div class="og-bar"><i style="width:' + pct + '%"></i></div></div>' +
+        '</div>';
+
+      var it = u.item, nxt = plan.queue[1];
+      var sub = u.ep ? 'Epizoda ' + u.ep + ' od ' + it.episodes : (TYPE[it.type] || it.type).toUpperCase();
+      out += '<div class="og-swipe">' +
+        (nxt ? '<div class="og-dcard peek">' + UI.poster(nxt.item, 'og-art') + '<div class="og-dscrim"></div></div>' : '') +
+        '<div class="og-dcard cur" id="ogcard" data-key="' + esc(u.key) + '" data-id="' + esc(it.id) + '">' +
+          UI.poster(it, 'og-art') + '<div class="og-dscrim"></div>' +
+          '<div class="og-dstamp yes">ODGLEDANO</div><div class="og-dstamp back">NAZAD</div><div class="og-dstamp skip">PRESKAČEM</div>' +
+          '<div class="og-dinfo"><div class="og-dnum">#' + it.order + '</div>' +
+            '<h1 class="og-dtitle">' + esc(Cat.cleanTitle(it)) + (u.ep ? '' : '') + '</h1>' +
+            '<div class="og-dmeta">' + it.year + ' · ' + esc(sub) + ' · ' + u.min + ' min</div>' +
+            (it.note ? '<p class="og-ddesc">' + esc(it.note) + '</p>' : '') +
+          '</div></div></div>';
+    } else {
+      out += '<div class="og-dcard done"><div class="og-dinfo center"><div class="og-dnum">✓</div>' +
+        '<h1 class="og-dtitle">Nema više ničega</h1><p class="og-ddesc">Sve iz plana je odgledano. Ostaje ti samo bioskop 18.12.</p></div></div>';
+    }
+    return out + '</section>';
+  }
+
   function danas(ctx) {
+    if (ctx.s.skin === 'og') return danasOG(ctx);
     if (ctx.s.look === 'mini') return danasMini(ctx);
     var s = ctx.s, plan = ctx.plan, prog = ctx.prog;
     var c = countdownParts();
@@ -900,11 +969,13 @@ window.MM = window.MM || {};
       '<button type="button" class="look-o' + (look === 'mini' ? ' on' : '') + '" data-a="look" data-v="mini">' +
         '<span class="lk-prev mini"><i></i><i></i></span><b>Minimalno</b><em>samo dani i poster, prevlačiš</em></button>' +
       '</div><div class="skin-opts">' +
-      '<button type="button" class="look-o' + (s.skin !== 'retro' ? ' on' : '') + '" data-a="skin" data-v="dark">' +
+      '<button type="button" class="look-o' + (s.skin !== 'retro' && s.skin !== 'og' ? ' on' : '') + '" data-a="skin" data-v="dark">' +
         '<span class="lk-prev dark full"><i></i><i></i><i></i></span><b>Tamno</b><em>moderno, tamna tema</em></button>' +
       '<button type="button" class="look-o' + (s.skin === 'retro' ? ' on' : '') + '" data-a="skin" data-v="retro">' +
         '<span class="lk-prev retro"><i></i><i></i><i></i></span><b>Retro strip</b><em>stari stripovi, papir, POW!</em></button>' +
-      '</div></section>';
+      '<button type="button" class="look-o og-o' + (s.skin === 'og' ? ' on' : '') + '" data-a="skin" data-v="og">' +
+        '<span class="lk-prev og"><i></i><i></i><i></i></span><b>OG</b><em>kao prva verzija aplikacije: odbrojavanje do sekunde, poster koji prevlačiš</em></button>' +
+      '</div>' + (s.skin === 'og' ? '<p class="muted small">OG ima svoj početni ekran, pa Puno/Minimalno tad ne menja Danas.</p>' : '') + '</section>';
 
     /* novo u aplikaciji - dok ne procitas */
     if (s.seenNews !== NEWS[0].id) {
@@ -1218,6 +1289,11 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.9', title: 'OG izgled', big: false, items: [
+      '<b>OG</b> — aplikacija izgleda kao prva verzija: crveno odbrojavanje do sekunde, plamen niza, „Dnevno / Ove nedelje“ i veliki poster koji prevlačiš (desno odgledano, levo nazad, gore preskoči).',
+      'Pet tabova kao nekad: Danas, Kalendar, Ekipa, Biblioteka, Ja. Sve novo (150 naslova, plan, predmeti) je i dalje tu.',
+      'Menja se u Profil → Izgled → Stil.'
+    ], cta: { a: 'skin-og', label: 'Uključi OG' } },
     { id: '2.8', title: 'Retro strip', big: false, items: [
       '<b>Novi stil: Retro strip</b> — žuti papir sa tačkicama, crni obrisi, slova kao u starim stripovima i „POW!“ kad odgledaš.',
       'Ide uz oba rasporeda: Puno ili Minimalno. Menja se u Profil → Izgled.'
@@ -1326,7 +1402,7 @@ window.MM = window.MM || {};
   MM.Views = {
     danas: danas, plan: planView, ekipa: ekipa, katalog: katalog, ja: ja,
     itemSheet: itemSheet, customSheet: customSheet, filterSheet: filterSheet, rateSheet: rateSheet, profileSheet: profileSheet,
-    welcomeSheet: welcomeSheet, chooseSheet: chooseSheet, newsSheet: newsSheet, countdownSheet: countdownSheet, crew: crew, NEWS: NEWS, recapSheet: recapSheet, mondayOf: mondayOf, streakSheet: streakSheet, doomSheet: doomSheet,
+    welcomeSheet: welcomeSheet, chooseSheet: chooseSheet, newsSheet: newsSheet, countdownSheet: countdownSheet, ogCountdown: ogCountdown, crew: crew, NEWS: NEWS, recapSheet: recapSheet, mondayOf: mondayOf, streakSheet: streakSheet, doomSheet: doomSheet,
     clock: clock, countdownParts: countdownParts, ICON: ICON, scopeName: scopeName
   };
 })();

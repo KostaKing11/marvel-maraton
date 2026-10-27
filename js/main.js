@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.8.0';
+MM.VERSION = '2.9.0';
 
 (function () {
   'use strict';
@@ -73,6 +73,7 @@ MM.VERSION = '2.8.0';
     document.body.classList.toggle('look-mini', state().look === 'mini');
     applySkin();
     bindMini();
+    bindOG();
     document.body.classList.toggle('selecting', UIS.tab === 'katalog' && UIS.lib.selecting);
   }
 
@@ -83,9 +84,13 @@ MM.VERSION = '2.8.0';
     var el = $('#me-av');
     var warn = u && (syncStatus === 'error' || syncStatus === 'offline');
     el.className = 'me-av' + (UIS.tab === 'ja' ? ' on' : '') + (warn ? ' warn' : '') + (s.seenNews !== V.NEWS[0].id ? ' news' : '');
-    var key = (s.avatar || '') + '|' + (s.displayName || '') + '|' + !!u;
+    var key = (s.avatar || '') + '|' + (s.displayName || '') + '|' + !!u + '|' + s.skin + '|' + syncStatus;
     if (key === pillKey) return;
     pillKey = key;
+    if (s.skin === 'og') {
+      el.innerHTML = '<span class="og-dot s-' + (u ? syncStatus : 'local') + '"></span>' + esc(u ? (s.displayName || 'Ja') : 'lokalno');
+      return;
+    }
     el.innerHTML = s.avatar
       ? '<img src="' + esc(s.avatar) + '" alt="" referrerpolicy="no-referrer" draggable="false" onerror="this.remove()">'
       : (s.displayName ? '<b>' + esc(s.displayName.slice(0, 1).toUpperCase()) + '</b>'
@@ -188,7 +193,7 @@ MM.VERSION = '2.8.0';
     var s = state(), prog = P.progress(s);
     var ach = MM.Badges.checkAch(s, prog, P.streak(s));
     var after = MM.Badges.doneMap(state());
-    if (s.look === 'mini' && !(after.endgame && !before.endgame) && !(after[Cat.GOAL_ID] && !before[Cat.GOAL_ID])) {
+    if ((s.look === 'mini' || s.skin === 'og') && !(after.endgame && !before.endgame) && !(after[Cat.GOAL_ID] && !before[Cat.GOAL_ID])) {
       MM.Badges.pop(before, after, ach);
       return;
     }
@@ -388,10 +393,15 @@ MM.VERSION = '2.8.0';
       UI.toast(v === 'mini' ? 'Minimalno: prevuci poster desno kad odgledaš.' : 'Pun izgled.');
     },
     'skin': function (el) {
-      var v = el.getAttribute('data-v') === 'retro' ? 'retro' : 'dark';
+      var v = { retro: 'retro', og: 'og' }[el.getAttribute('data-v')] || 'dark';
       Store.mutate(function (s) { s.skin = v; });
       UI.buzz(8);
       if (v === 'retro') setTimeout(pow, 200);
+    },
+    'skin-og': function () {
+      Store.mutate(function (s) { s.skin = 'og'; });
+      UI.closeAll();
+      setTimeout(function () { setTab('danas'); }, 300);
     },
     'skin-retro': function () {
       Store.mutate(function (s) { s.skin = 'retro'; });
@@ -808,10 +818,18 @@ MM.VERSION = '2.8.0';
 
   var skinNow = '';
   function applySkin() {
-    var sk = state().skin === 'retro' ? 'retro' : 'dark';
+    var sk = state().skin === 'retro' || state().skin === 'og' ? state().skin : 'dark';
     if (sk === skinNow) return;
     skinNow = sk;
     document.body.classList.toggle('skin-retro', sk === 'retro');
+    document.body.classList.toggle('skin-og', sk === 'og');
+    // OG: stari nazivi tabova (Kalendar, Biblioteka) i peti tab "Ja"
+    var names = sk === 'og' ? { plan: 'Kalendar', katalog: 'Biblioteka' } : { plan: 'Plan', katalog: 'Katalog' };
+    Object.keys(names).forEach(function (t) {
+      var sp = document.querySelector('#tabs .tab[data-tab="' + t + '"] span');
+      if (sp) sp.textContent = names[t];
+    });
+    pillKey = '';
     var m = document.querySelector('meta[name="theme-color"]');
     if (m) m.setAttribute('content', sk === 'retro' ? '#f3d98f' : '#09090c');
   }
@@ -883,6 +901,59 @@ MM.VERSION = '2.8.0';
         card.style.transform = '';
         deckDo(dir, dir === 'yes' ? card.getAttribute('data-key') : null);
         requestAnimationFrame(function () { card.style.transition = ''; card.classList.add('enter'); setTimeout(function () { card.classList.remove('enter'); }, 400); });
+      }, 220);
+    }
+    card.addEventListener('pointerup', release);
+    card.addEventListener('pointercancel', release);
+    card.addEventListener('click', function () {
+      if (moved) { moved = false; return; }
+      openItem(card.getAttribute('data-id'), 'plan');
+    });
+  }
+
+  /* OG: prevlacenje kao u prvoj verziji - desno odgledano, levo nazad, gore preskoci */
+  var ogBusy = false;
+  function bindOG() {
+    var card = $('#ogcard');
+    if (!card || card._bound) return;
+    card._bound = true;
+    var x0 = 0, y0 = 0, dx = 0, dy = 0, drag = false, moved = false;
+    var TH = 110;
+    card.addEventListener('pointerdown', function (e) {
+      if (ogBusy || e.button > 0) return;
+      drag = true; dx = dy = 0; moved = false;
+      x0 = e.clientX; y0 = e.clientY;
+      card.style.transition = 'none';
+      try { card.setPointerCapture(e.pointerId); } catch (er) { /* */ }
+    });
+    card.addEventListener('pointermove', function (e) {
+      if (!drag) return;
+      dx = e.clientX - x0; dy = e.clientY - y0;
+      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) moved = true;
+      card.style.transform = 'translate(' + dx + 'px,' + Math.min(0, dy) + 'px) rotate(' + (dx / 18) + 'deg)';
+      var up = -dy > Math.abs(dx) && -dy > 40;
+      card.classList.toggle('to-skip', up);
+      card.classList.toggle('to-yes', !up && dx > 40);
+      card.classList.toggle('to-back', !up && dx < -40);
+    });
+    function release() {
+      if (!drag) return;
+      drag = false;
+      card.style.transition = '';
+      var dir = -dy > TH && -dy > Math.abs(dx) ? 'skip' : dx > TH ? 'yes' : dx < -TH ? 'back' : null;
+      if (!dir) { card.style.transform = ''; card.classList.remove('to-yes', 'to-back', 'to-skip'); return; }
+      ogBusy = true;
+      UI.buzz(dir === 'yes' ? 18 : 8);
+      var w = window.innerWidth + 200;
+      card.classList.add('flying');
+      card.style.transform = dir === 'skip' ? 'translateY(-' + window.innerHeight + 'px) scale(.8)'
+        : 'translateX(' + (dir === 'yes' ? w : -w) + 'px) rotate(' + (dir === 'yes' ? 24 : -24) + 'deg)';
+      setTimeout(function () {
+        ogBusy = false;
+        card.classList.remove('flying', 'to-yes', 'to-back', 'to-skip');
+        card.style.transition = 'none'; card.style.transform = '';
+        requestAnimationFrame(function () { card.style.transition = ''; });
+        deckDo(dir, dir === 'yes' ? card.getAttribute('data-key') : null, dir === 'skip' ? card.getAttribute('data-id') : null);
       }, 220);
     }
     card.addEventListener('pointerup', release);
@@ -1050,6 +1121,8 @@ MM.VERSION = '2.8.0';
     });
 
     setInterval(function () {
+      var og = $('#ogcd');
+      if (og) og.innerHTML = V.ogCountdown();
       var sec = $('#cdS');
       if (sec) {
         var c = V.countdownParts(), pad = function (n) { return (n < 10 ? '0' : '') + n; };
