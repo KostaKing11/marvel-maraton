@@ -58,6 +58,11 @@ se prevuče desno kad odgledaš, levo da vratiš prethodno; tap otvara
 detalje. Novi predmet samo kratko iskoči gore (ceo ekran slavlja ostaje
 samo za Endgame i Doomsday).
 
+**Stil** (`s.skin`): Tamno ili **Retro strip** (žuti papir sa tačkicama,
+crni obrisi, tvrde senke, „POW!“ kad odgledaš). Stil ide uz oba rasporeda.
+Fontovi su lokalno u `fonts/` (Bangers i Patrick Hand, SIL Open Font License,
+preuzeti iz paketa @fontsource).
+
 „Šta je novo" (`NEWS` u `js/views.js`) iskače samo za velike promene
 (`big: true`); ostalo čeka u profilu, a slika gore desno ima tačkicu dok ne
 pročitaš.

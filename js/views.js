@@ -899,6 +899,11 @@ window.MM = window.MM || {};
         '<span class="lk-prev full"><i></i><i></i><i></i><i></i></span><b>Puno</b><em>mapa, lista za danas, predmeti</em></button>' +
       '<button type="button" class="look-o' + (look === 'mini' ? ' on' : '') + '" data-a="look" data-v="mini">' +
         '<span class="lk-prev mini"><i></i><i></i></span><b>Minimalno</b><em>samo dani i poster, prevlačiš</em></button>' +
+      '</div><div class="skin-opts">' +
+      '<button type="button" class="look-o' + (s.skin !== 'retro' ? ' on' : '') + '" data-a="skin" data-v="dark">' +
+        '<span class="lk-prev dark full"><i></i><i></i><i></i></span><b>Tamno</b><em>moderno, tamna tema</em></button>' +
+      '<button type="button" class="look-o' + (s.skin === 'retro' ? ' on' : '') + '" data-a="skin" data-v="retro">' +
+        '<span class="lk-prev retro"><i></i><i></i><i></i></span><b>Retro strip</b><em>stari stripovi, papir, POW!</em></button>' +
       '</div></section>';
 
     /* novo u aplikaciji - dok ne procitas */
@@ -1213,6 +1218,10 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.8', title: 'Retro strip', big: false, items: [
+      '<b>Novi stil: Retro strip</b> — žuti papir sa tačkicama, crni obrisi, slova kao u starim stripovima i „POW!“ kad odgledaš.',
+      'Ide uz oba rasporeda: Puno ili Minimalno. Menja se u Profil → Izgled.'
+    ], cta: { a: 'skin-retro', label: 'Probaj Retro' } },
     { id: '2.7', title: 'Minimalni izgled', big: true, items: [
       '<b>Previše svega na početnom?</b> Uključi <b>Minimalno</b>: samo koliko dana je ostalo i veliki poster onoga što je na redu.',
       'Poster <b>prevučeš desno</b> kad odgledaš, <b>levo</b> da vratiš prethodno. Tap na poster otvara detalje.',

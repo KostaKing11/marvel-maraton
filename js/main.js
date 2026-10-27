@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.7.0';
+MM.VERSION = '2.8.0';
 
 (function () {
   'use strict';
@@ -71,6 +71,7 @@ MM.VERSION = '2.7.0';
     UI.refreshSheets();
     pill();
     document.body.classList.toggle('look-mini', state().look === 'mini');
+    applySkin();
     bindMini();
     document.body.classList.toggle('selecting', UIS.tab === 'katalog' && UIS.lib.selecting);
   }
@@ -164,6 +165,7 @@ MM.VERSION = '2.7.0';
       });
       if (on) { st.lastWatchAt = now; if (!st.firstWatchAt) st.firstWatchAt = now; }
     });
+    if (on && s.skin === 'retro') pow();
     if (on) celebrateAfter(before, fromR);
     return function undo() {
       Store.mutate(function (st) {
@@ -384,6 +386,17 @@ MM.VERSION = '2.7.0';
       Store.mutate(function (s) { s.look = v; });
       UI.buzz(8);
       UI.toast(v === 'mini' ? 'Minimalno: prevuci poster desno kad odgledaš.' : 'Pun izgled.');
+    },
+    'skin': function (el) {
+      var v = el.getAttribute('data-v') === 'retro' ? 'retro' : 'dark';
+      Store.mutate(function (s) { s.skin = v; });
+      UI.buzz(8);
+      if (v === 'retro') setTimeout(pow, 200);
+    },
+    'skin-retro': function () {
+      Store.mutate(function (s) { s.skin = 'retro'; });
+      UI.closeAll();
+      setTimeout(pow, 450);
     },
     'look-mini': function () {
       Store.mutate(function (s) { s.look = 'mini'; });
@@ -787,6 +800,37 @@ MM.VERSION = '2.7.0';
         setTimeout(next, 150);
       }).catch(function () { setTimeout(next, 150); });
     })();
+  }
+
+  /* ============================================================
+     retro stil (strip)
+     ============================================================ */
+
+  var skinNow = '';
+  function applySkin() {
+    var sk = state().skin === 'retro' ? 'retro' : 'dark';
+    if (sk === skinNow) return;
+    skinNow = sk;
+    document.body.classList.toggle('skin-retro', sk === 'retro');
+    var m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.setAttribute('content', sk === 'retro' ? '#f3d98f' : '#09090c');
+  }
+
+  var POW = ['POW!', 'BAM!', 'WHAM!', 'KAPOW!', 'BOOM!', 'ZAP!', 'KRAK!', 'BUM!'];
+  /** Oblak "POW!" kao u stripu (samo u retro stilu). */
+  function pow() {
+    var el = document.createElement('div');
+    el.className = 'pow';
+    var pts = [];
+    for (var i = 0; i < 28; i++) {
+      var a = Math.PI * 2 * i / 28, r = i % 2 ? 62 : 92 + (i % 4 ? 0 : 10);
+      pts.push((120 + Math.cos(a) * r * 1.25).toFixed(1) + ',' + (95 + Math.sin(a) * r * .95).toFixed(1));
+    }
+    el.innerHTML = '<svg viewBox="0 0 240 190"><polygon points="' + pts.join(' ') + '" fill="#ffd23f" stroke="#1b1410" stroke-width="5" stroke-linejoin="round"/>' +
+      '<polygon points="' + pts.join(' ') + '" fill="#e3261c" transform="translate(120 95) scale(.62) translate(-120 -95)"/></svg>' +
+      '<b>' + POW[Math.floor(Math.random() * POW.length)] + '</b>';
+    document.body.appendChild(el);
+    setTimeout(function () { el.remove(); }, 1100);
   }
 
   /* ============================================================

@@ -5,6 +5,16 @@
    bez zumiranja, bez plavog bljeska na tap.
    ============================================================ */
 
+/* retro stil: strip fontovi (OFL, fontsource), ucitavaju se tek kad zatrebaju */
+@font-face { font-family: 'Bangers'; font-style: normal; font-weight: 400; font-display: swap; src: url(../fonts/bangers-latin-400-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Bangers'; font-style: normal; font-weight: 400; font-display: swap; src: url(../fonts/bangers-latin-ext-400-normal.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Patrick Hand'; font-style: normal; font-weight: 400; font-display: swap; src: url(../fonts/patrick-hand-latin-400-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Patrick Hand'; font-style: normal; font-weight: 400; font-display: swap; src: url(../fonts/patrick-hand-latin-ext-400-normal.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+
 :root {
   --bg: #08080b;
   --s1: #111116;
@@ -1335,6 +1345,139 @@ body.has-sheet #toasts { bottom: calc(18px + var(--safeB)); }
 .lk-prev.full i:first-child { height: 12px; background: rgba(57, 217, 122, .4); }
 .lk-prev.mini i:first-child { width: 30%; height: 10px; }
 .lk-prev.mini i:last-child { width: 28%; flex: 1; background: linear-gradient(160deg, #6b2a2a, #2a1414); }
+
+/* ============================================================
+   RETRO STIL (strip): papir, crni obrisi, tvrde senke, POW!
+   body.skin-retro - menja boje i oblike, raspored ostaje isti
+   ============================================================ */
+body.skin-retro {
+  --bg: #f3d98f; --s1: #fff7e2; --s2: #fdeec4; --s3: #f5e0a3; --line: #1b1410;
+  --tx: #1b1410; --mu: #5b4630; --mu2: #8b7356;
+  --red: #e3261c; --red2: #d81e14; --green: #1f9d4a; --green2: #2cb35a; --amber: #f2b705; --doom: #11843a; --violet: #6b3fd6;
+  --r: 10px; --ink: #1b1410;
+  color-scheme: light;
+  font-family: 'Patrick Hand', 'Comic Sans MS', system-ui, sans-serif; font-size: 16.5px;
+}
+html:has(body.skin-retro), body.skin-retro {
+  background: radial-gradient(rgba(190, 90, 20, .2) 1.2px, transparent 1.6px) 0 0 / 10px 10px, #f3d98f;
+}
+/* tamni paneli (poster, mapa, slavlje) ostaju tamni */
+.skin-retro .dcard, .skin-retro .item-hero, .skin-retro .doom-sheet, .skin-retro .cel-sheet, .skin-retro .mp-top, .skin-retro .mp-bot {
+  --tx: #fff7e2; --mu: #d9c9a8; --mu2: #a8977a; --line: #3a2f25; --s1: #1b1410; --s2: #2a2018; --s3: #3a2c20; color: var(--tx);
+}
+
+/* naslovi i brojevi: Bangers */
+.skin-retro h1, .skin-retro h2, .skin-retro .cd-d b, .skin-retro .mn-cd b, .skin-retro .cdm-t b, .skin-retro .doom-d, .skin-retro .logo, .skin-retro .logo-sub,
+.skin-retro .rc-stats b, .skin-retro .pnum b, .skin-retro .streak b, .skin-retro .pm-t, .skin-retro .tab span, .skin-retro .cd-k, .skin-retro .deck-k,
+.skin-retro .news-k, .skin-retro .cdm-k, .skin-retro .cel-k, .skin-retro .bdm-r, .skin-retro .col-h h2 {
+  font-family: 'Bangers', Impact, sans-serif; font-weight: 400 !important; letter-spacing: 1.2px;
+}
+.skin-retro h2 { font-size: 26px; }
+.skin-retro .cd-d b { font-size: 64px; letter-spacing: 1px; }
+.skin-retro .cd-d i { font-family: 'Bangers', Impact, sans-serif; font-size: 24px; color: var(--red); letter-spacing: 1px; }
+.skin-retro .cd-k { color: var(--red); font-size: 15px; letter-spacing: 2px; }
+.skin-retro b, .skin-retro strong { font-weight: 400; }
+
+/* zaglavlje i tabovi */
+.skin-retro #top { background: linear-gradient(#f3d98f 75%, rgba(243, 217, 143, 0)); }
+.skin-retro .logo { background: var(--red); color: #fff; border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); font-size: 22px; padding: 1px 8px 0; transform: rotate(-2deg); }
+.skin-retro .logo-sub { color: var(--ink); font-size: 20px; letter-spacing: 3px; }
+.skin-retro .me-av { background: var(--s1); border: 3px solid var(--ink); color: var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+.skin-retro #tabs { background: #fff7e2; border-top: 3px solid var(--ink); }
+.skin-retro .tab { color: var(--mu); }
+.skin-retro .tab span { font-size: 15px; }
+.skin-retro .tab.on { color: var(--red); }
+.skin-retro .tab.on::before { height: 5px; background: var(--red); }
+
+/* paneli: debeo obris + tvrda senka kao u stripu */
+.skin-retro .card, .skin-retro .hero, .skin-retro .dcard, .skin-retro .recap-card, .skin-retro .look-o, .skin-retro .gt-card, .skin-retro .item-bd,
+.skin-retro .rc-stats div, .skin-retro .preset, .skin-retro .radio, .skin-retro .tgl, .skin-retro .dbtn, .skin-retro .rb, .skin-retro .toast,
+.skin-retro .mn-card, .skin-retro .cdm-t, .skin-retro .alarm, .skin-retro .streak, .skin-retro .pc-line, .skin-retro .rc-doom, .skin-retro .news-list li.hot {
+  border: 3px solid var(--ink) !important; border-radius: 10px; box-shadow: 4px 4px 0 var(--ink);
+}
+.skin-retro .card, .skin-retro .hero, .skin-retro .look-o, .skin-retro .preset, .skin-retro .radio { background: var(--s1); }
+.skin-retro .hero { background: #fff7e2; }
+.skin-retro .look-o.on, .skin-retro .preset.on, .skin-retro .radio.on { background: #ffe58a; }
+.skin-retro .sheet { background: var(--s1); border: 3px solid var(--ink); border-bottom: 0; box-shadow: 0 -4px 0 var(--ink); }
+.skin-retro .sheet-wrap.center .sheet { border: 3px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); background: var(--s1); }
+.skin-retro .scrim { background: rgba(27, 20, 16, .55); }
+.skin-retro .grab i { background: rgba(27, 20, 16, .35); }
+
+/* dugmad */
+.skin-retro .btn { border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); border-radius: 10px; background: var(--s3); font-family: 'Bangers', Impact, sans-serif; font-weight: 400; letter-spacing: 1.2px; font-size: 18px; }
+.skin-retro .btn.primary { background: var(--red); color: #fff; }
+.skin-retro .btn.ghost { background: var(--s1); }
+.skin-retro .btn:active, .skin-retro .dbtn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--ink); }
+.skin-retro .dbtn { background: var(--s1); font-family: 'Bangers', Impact, sans-serif; letter-spacing: 1px; font-size: 18px; }
+.skin-retro .dbtn.main { background: var(--green); color: #fff; }
+.skin-retro .ib { background: var(--s1); border: 2px solid var(--ink); }
+.skin-retro .chip { border: 2px solid var(--ink); background: var(--s1); color: var(--ink); }
+.skin-retro .chip.on { background: var(--ink); color: #fff7e2; }
+.skin-retro .seg, .skin-retro .tseg { border: 2px solid var(--ink); background: var(--s1); }
+.skin-retro .seg button.on, .skin-retro .tseg button.on { background: var(--ink); color: #fff7e2; box-shadow: none; }
+.skin-retro .ctab.on, .skin-retro .fbtn.on, .skin-retro .person.me .pname, .skin-retro .sb-h b, .skin-retro .news-list b { color: var(--ink); }
+.skin-retro .news-list, .skin-retro .rev-b p, .skin-retro .rev-mini p, .skin-retro .item-body .item-note, .skin-retro .crew-line { color: var(--ink) !important; }
+.skin-retro .sw { background: #cdb88a; border: 2px solid var(--ink); }
+.skin-retro .toast { background: var(--ink); color: #fff7e2; box-shadow: 4px 4px 0 var(--red); }
+.skin-retro .toast-act { color: #ffd23f; }
+.skin-retro .rb { background: var(--s1); }
+.skin-retro .rb-s button, .skin-retro .stars, .skin-retro .sp { color: #cdb88a; }
+.skin-retro .stars i.on, .skin-retro .sp.on, .skin-retro .rb-s button:active { color: #f2a500; text-shadow: 1px 1px 0 var(--ink); }
+
+/* trake, linije, sitnice */
+.skin-retro .pbar, .skin-retro .pbar2 { background: rgba(27, 20, 16, .12); border: 2px solid var(--ink); }
+.skin-retro .person, .skin-retro .rev, .skin-retro .row { border-top-color: rgba(27, 20, 16, .18); }
+.skin-retro .rm-track { background: repeating-linear-gradient(90deg, rgba(27, 20, 16, .12) 0 2px, transparent 2px 12px), #fff7e2; border: 3px solid var(--ink); box-shadow: none; height: 20px; }
+.skin-retro .rm-done { background: repeating-linear-gradient(-45deg, #2cb35a 0 6px, #1f9d4a 6px 12px); box-shadow: none; border-right: 3px solid var(--ink); }
+.skin-retro .rm-p .av.rm-av, .skin-retro .rm-doom .dm-head { box-shadow: 2px 2px 0 var(--ink) !important; }
+.skin-retro .rm-p.me .av.rm-av { border: 3px solid var(--ink); background: var(--red); color: #fff; }
+.skin-retro .t-skip.tier, .skin-retro .cdm-t { background: rgba(27, 20, 16, .08); }
+.skin-retro .cdm-t:first-child { background: #ffe58a; }
+.skin-retro .sk-day.today::after { border-color: var(--ink); }
+.skin-retro .cell.sel { border-color: var(--ink); box-shadow: 0 0 0 2px var(--ink); }
+.skin-retro .art.big, .skin-retro .art.thumb, .skin-retro .rc-p .art { border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+.skin-retro .bd { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .5), 3px 3px 0 var(--ink); border: 2px solid var(--ink); }
+.skin-retro .bd.locked { background: #d9c79a; }
+.skin-retro .spoil { background: rgba(27, 20, 16, .06); border-color: rgba(27, 20, 16, .35); }
+.skin-retro .rx { border: 2px solid var(--ink); background: var(--s1); }
+.skin-retro .rx.on { background: #ffe58a; }
+.skin-retro .mn-card { border-radius: 14px; box-shadow: 7px 7px 0 var(--ink); }
+.skin-retro .mn-cd b { font-size: 96px; color: var(--red); -webkit-text-stroke: 3px var(--ink); text-shadow: 5px 5px 0 var(--ink); letter-spacing: 2px; }
+.skin-retro .mn-cd i { font-family: 'Bangers', Impact, sans-serif; font-size: 20px; color: var(--ink); letter-spacing: 2px; }
+.skin-retro .mn-stamp { font-family: 'Bangers', Impact, sans-serif; font-weight: 400; font-size: 30px; }
+.skin-retro .bd-pop { background: var(--s1); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); }
+
+/* natpisi koji su bili svetli za tamnu temu */
+.skin-retro .pc-line { background: #ffe58a; color: var(--ink); }
+.skin-retro .pc-line.none { background: var(--s2); color: var(--mu); }
+.skin-retro .dcard-pc { color: #ffd23f; }
+.skin-retro .cc-t em, .skin-retro .gt-info em, .skin-retro .rb-t b, .skin-retro .nc-t em, .skin-retro .item-bd em { color: var(--red); }
+.skin-retro .wk-t em, .skin-retro .rc-t em { color: var(--violet); }
+.skin-retro .recap-card { background: #efe2ff; }
+.skin-retro .wk-dots i { background: rgba(27, 20, 16, .15); }
+.skin-retro .wk-dots i.on { background: var(--violet); box-shadow: none; }
+.skin-retro .tier-why b { filter: brightness(.6) saturate(1.4); }
+.skin-retro .tier-why { background: var(--s2); }
+.skin-retro .news-card { background: #dff5e6; }
+.skin-retro .col-card { background: #fff1c9; }
+.skin-retro .cdm-k, .skin-retro .doom-k { color: var(--doom); }
+.skin-retro .person:first-child .rank { color: #c98a00; }
+
+/* POW! oblak kad odgledas */
+.pow { position: fixed; left: 50%; top: 38%; z-index: 95; pointer-events: none; transform: translate(-50%, -50%) scale(.2) rotate(-14deg); opacity: 0;
+  animation: pow 1s cubic-bezier(.2, 1.6, .4, 1) forwards; }
+.pow svg { display: block; width: 240px; height: 190px; }
+.pow b { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Bangers', Impact, sans-serif; font-weight: 400;
+  font-size: 58px; letter-spacing: 2px; color: #fff; -webkit-text-stroke: 3px #1b1410; text-shadow: 4px 4px 0 #1b1410; transform: rotate(-6deg); }
+@keyframes pow { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.2) rotate(-14deg); } 25% { opacity: 1; transform: translate(-50%, -50%) scale(1.08) rotate(-6deg); }
+  70% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-6deg); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.15) rotate(-6deg); } }
+
+/* izbor stila */
+.skin-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.lk-prev.dark { background: #0b0b10; }
+.lk-prev.retro { background: radial-gradient(rgba(190, 90, 20, .3) 1px, transparent 1.4px) 0 0 / 6px 6px, #f3d98f; border: 2px solid #1b1410; }
+.lk-prev.retro i { background: #fff7e2; border: 2px solid #1b1410; box-shadow: 2px 2px 0 #1b1410; width: 80%; height: 14px; }
+.lk-prev.retro i:first-child { background: #e3261c; width: 40%; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }

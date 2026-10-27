@@ -4,10 +4,10 @@
    VAZNO: podigni CACHE verziju na svaki deploy, inace se
    korisnik zaglavi na staroj verziji app-a.
    ============================================================ */
-const CACHE = 'marvel-maraton-v64';
+const CACHE = 'marvel-maraton-v65';
 
 // App shell — cache-first. Isti ?v= broj kao u index.html.
-const V = '214';
+const V = '215';
 const SHELL = [
   './',
   './index.html',
@@ -26,6 +26,7 @@ const SHELL = [
   './js/main.js?v=' + V,
   './data.json',
   './img/map/z1.jpg', './img/map/z2.jpg', './img/map/z3.jpg', './img/map/z4.jpg', './img/map/z5.jpg', './img/map/doom.webp',
+  './fonts/bangers-latin-400-normal.woff2', './fonts/bangers-latin-ext-400-normal.woff2', './fonts/patrick-hand-latin-400-normal.woff2', './fonts/patrick-hand-latin-ext-400-normal.woff2',
   './img/map/doomhead.jpg', './img/map/road.jpg', './img/map/sign.webp', './img/map/start.webp', './img/map/goal.webp', './img/map/gauntlet.webp',
   './img/map/stone-space.webp', './img/map/stone-mind.webp', './img/map/stone-reality.webp', './img/map/stone-power.webp', './img/map/stone-time.webp', './img/map/stone-soul.webp',
   './manifest.json',

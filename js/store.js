@@ -57,6 +57,7 @@ window.MM = window.MM || {};
       ach: null,            // dostignuca: { id: vreme otkljucavanja } (null = jos nije provereno)
       recapSeen: '',        // ponedeljak nedelje ciji je pregled vec otvoren/sakriven
       look: 'full',         // izgled: 'full' (sve) | 'mini' (samo dani i poster koji se prevlaci)
+      skin: 'dark',         // stil: 'dark' | 'retro' (strip: papir, crni obrisi, POW!)
       updatedAt: 0
     };
   }
