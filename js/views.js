@@ -1303,7 +1303,21 @@ window.MM = window.MM || {};
     'Dosadniji si od reklama pre filma.', 'Vićovac gleda Marvel na 0.5x.', 'Groot je rekao više zanimljivih stvari od tebe.',
     'Vićovac, preskoči sebe.', 'Odgledano: ništa zanimljivo. — Vićovac', 'Kraven the Hunter ima bolje ocene od tvog humora.',
     'Ovo je poruka broj ∞. Dosadan si.', 'Vićovac, ni Loki ne bi lagao da si zanimljiv.', 'Morbius time? Ne, Vićovac time. Isto dosadno.',
-    'Vidimo te, Vićovac. Sa svakog uređaja.', 'Vićovac, Ultron je imao više emocija.', 'Spojler: i dalje si dosadan.'
+    'Vidimo te, Vićovac. Sa svakog uređaja.', 'Vićovac, Ultron je imao više emocija.', 'Spojler: i dalje si dosadan.',
+    'Vićovac, Hulk je pametniji kad je ljut nego ti inače.', 'Ni post-credits scena ne bi čekala tebe.', 'Vićovac, Captain America bi te zamrzao još 70 godina.',
+    'Doctor Strange je video 14 miliona budućnosti. U svim si dosadan.', 'Vićovac, ti si filler epizoda.', 'Dosadniji si od Inhumans.',
+    'Vićovac, čak ti je i Venom pobegao.', 'Tony Stark je napravio odelo u pećini. Ti ne možeš rečenicu.', 'Vićovac, ti si Iron Man 2 među ljudima.',
+    'Black Widow je umrla za kamen. Šta si ti uradio danas?', 'Vićovac, Wakanda ne prima dosadne.', 'Ant-Man je mali. Tvoja harizma je manja.',
+    'Vićovac, Thor bi bacio čekić na tebe da te razbudi.', 'Peter Parker zaboravljen od celog sveta. Ti, nažalost, nisi.', 'Vićovac, ti si skip naslov.',
+    'Hawkeye ima više uzbuđenja sa lukom nego ti sa životom.', 'Vićovac, Groot ima veći rečnik.', 'Rocket bi te prodao za bateriju.',
+    'Vićovac, Nick Fury je zatvorio i drugo oko da te ne gleda.', 'Kang zna sve vremenske linije. Ni u jednoj nisi zabavan.',
+    'Vićovac, Deadpool je probio četvrti zid samo da ne priča sa tobom.', 'Wolverine se regeneriše brže nego što ti dođeš do poente.',
+    'Vićovac, tvoj streak je kao Eternals: niko ne priča o tome.', 'Doom je prešao celu mapu dok si ti pričao jednu priču.',
+    'Vićovac, Madame Web je bila zanimljivija. Razmisli o tome.', 'Ovo nije bug. Ovo je feature: dosadan si.', 'Vićovac, ni Mjolnir te ne bi podigao.',
+    'Multiverzum ima beskonačno Vićovaca. Svi su dosadni.', 'Vićovac, Quicksilver bi zaspao dok pričaš.', 'Galactus bi te vratio u restoran.',
+    'Vićovac, ti si razlog zašto su izmislili dugme za preskakanje uvoda.', 'Bucky je imao težak život. Ti si mu ga otežao.',
+    'Vićovac, Jarvis je ugasio sebe kad si ušao.', 'Ovde ni Loki nema šta da laže. Sve je istina: dosadan si.',
+    'Vićovac, Shang-Chi ima deset prstenova. Ti ni jednu šalu.', 'Gledaš Marvel, a i dalje si DC.', 'Vićovac, ovo je poruka 50+. Nisi se promenio.'
   ];
   function dosadanLine() { return DOSADAN[Math.floor(Math.random() * DOSADAN.length)]; }
   function dosadanSheet() {
