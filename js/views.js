@@ -414,6 +414,8 @@ window.MM = window.MM || {};
       roadMini(ctx, time) +
       '</section>';
 
+    if (MM.Finale) out += MM.Finale.card('danas');
+
     /* --- nedeljni pregled (pon-sre, za proslu nedelju) --- */
     var lastMon = P.addDays(mondayOf(plan.today), -7);
     if (P.weekday(plan.today) <= 2 && s.recapSeen !== lastMon) {
@@ -1045,6 +1047,8 @@ window.MM = window.MM || {};
     var s = ctx.s, user = ctx.user;
     var out = '';
 
+    if (MM.Finale) out += MM.Finale.card('ja');
+
     /* nalog */
     out += '<section class="card acct" data-k="acct">';
     if (user) {
@@ -1069,6 +1073,10 @@ window.MM = window.MM || {};
       '</section>';
 
     /* tab Igre */
+    out += '<section class="card snd-card" data-k="sndtog"><button type="button" class="tgl' + (s.sound !== false ? ' on' : '') + '" data-a="sound-toggle">' +
+      '<span class="sw"></span><span class="tg-t"><b>Zvukovi</b><em>Klikovi, kviz, nagrade i zvuci u igrama.</em></span></button>' +
+      '<button type="button" class="tgl' + (s.music !== false ? ' on' : '') + '" data-a="music-toggle">' +
+      '<span class="sw"></span><span class="tg-t"><b>Muzika</b><em>U Marvel Runneru, borbi i mini igrama.</em></span></button></section>';
     out += '<section class="card" data-k="gtog"><button type="button" class="tgl' + (s.gamesOff ? '' : ' on') + '" data-a="games-toggle">' +
       '<span class="sw"></span><span class="tg-t"><b>Tab Igre</b><em>' + (s.gamesOff ? 'Sakriven — aplikacija je samo za gledanje.' : 'Mini igre, Marvel Runner i rang lista. Isključi i tab nestaje.') + '</em></span></button></section>';
 
@@ -1302,6 +1310,13 @@ window.MM = window.MM || {};
       }
     }
 
+    /* kviz o naslovu */
+    if (!isGoal && done && MM.Quiz && MM.Quiz.has(id)) {
+      var qr = MM.Quiz.result(id);
+      out += qr ? '<div class="qz-line done"><img src="img/ui/target.webp" alt=""><span><b>Kviz: ' + qr.c + ' / ' + qr.n + '</b><i>' + (qr.c === qr.n ? 'sve tačno' : 'urađen') + '</i></span></div>'
+        : '<button type="button" class="qz-line" data-a="quiz" data-id="' + esc(id) + '"><img src="img/ui/target.webp" alt=""><span><b>Kviz o ' + (Cat.isSeries(it) ? 'sezoni' : 'filmu') + '</b><i>do ' + (Math.min(5, MM.QUIZ[id].length) * 40) + ' novčića i kutija za sve tačno</i></span><em>Kreni</em></button>';
+    }
+
     /* ocene */
     if (!isGoal) {
       out += '<div class="sec"><div class="eps-h"><h3>Ocene ekipe</h3>' + (avg ? '<span>' + stars(Math.round(avg)) + ' <b>' + avg.toFixed(1) + '</b> (' + revs.length + ')</span>' : '<span class="muted">još nema</span>') + '</div>';
@@ -1423,6 +1438,13 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.24', title: 'Kviz posle filma + zvuk', big: true, items: [
+      '<b>Kviz posle filma</b> — kad odgledaš film ili celu sezonu, dobiješ do 5 pitanja o njemu (15 sekundi po pitanju). Ima ih za preko 120 naslova.',
+      'Svaki tačan odgovor = <b>40 novčića + 50 Pass poena</b> u Marvel Runneru. Sve tačno = <b>misteriozna kutija</b>. Kviz se radi jednom, a možeš i kasnije iz stranice filma.',
+      '<b>Zvukovi</b> — dugmići, „Odgledano“, nagrade, kutije, kviz i ceo Runner (skok, novčići, udarci, power-upovi).',
+      '<b>Muzika</b> — svoja muzika za meni Runnera, trku, borbu sa ekipom i mini igre. Sve smo sami napravili.',
+      'Zvuk i muziku isključuješ posebno u <b>Ja</b>.'
+    ] },
     { id: '2.23', title: 'Borba sa ekipom', big: true, items: [
       '<b>Borba sa ekipom</b> — u Runneru klikni „Borba sa ekipom“, napravi borbu i javi ekipi. Ko uđe, čeka; ti klikneš KRENI. Svi trče <b>istu stazu</b>, a pobeđuje ko <b>poslednji padne</b>.',
       'U borbi nema novčića, moći likova ni nastavka — fer za sve. Uživo vidiš ko je još živ i ko je dokle stigao.',

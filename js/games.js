@@ -389,12 +389,12 @@ window.MM = window.MM || {};
           if (answered) return;
           answered = true;
           if (b.getAttribute('data-ok') !== '1') {
-            b.classList.add('bad'); UI.buzz([20, 40, 20]);
+            b.classList.add('bad'); UI.buzz([20, 40, 20]); if (MM.Sfx) MM.Sfx.play('bad');
             var g = box.querySelector('.gm-o[data-ok="1"]'); if (g) g.classList.add('good');
             later(function () { fail('Netačno — tačno je „' + q[1][q[2]] + '“.'); }, 1100);
             return;
           }
-          b.classList.add('good'); UI.buzz(8);
+          b.classList.add('good'); UI.buzz(8); if (MM.Sfx) MM.Sfx.play('ok');
           k++;
           later(k === total ? win : ask, 450);
         });
@@ -513,7 +513,7 @@ window.MM = window.MM || {};
   function first() { intro(only ? REG[only].fn : game1); }
 
   function fail(why) {
-    clearAll();
+    clearAll(); if (MM.Sfx) MM.Sfx.play('lose');
     if (endless) {
       var res = menuInfo.onEndless ? menuInfo.onEndless(streak) : null;
       box.innerHTML = '<div class="gm-end"><div class="gm-emo">♾️</div><h2>' + streak + ' ' + (streak === 1 ? 'nivo' : 'nivoa') + '</h2><p class="muted">' + esc(why) + '</p>' +
@@ -540,7 +540,7 @@ window.MM = window.MM || {};
   }
 
   function win() {
-    clearAll();
+    clearAll(); if (MM.Sfx) MM.Sfx.play(endless ? 'ok' : 'win');
     if (endless) {
       // beskonacno: odmah sledeci nivo, sve teze
       streak++; UI.buzz([10, 30]);
@@ -604,10 +604,10 @@ window.MM = window.MM || {};
           '<div class="gm no-drag" id="gmBox" data-keep></div>';
       },
       onOpen: function (el) {
-        box = el.querySelector('#gmBox');
+        box = el.querySelector('#gmBox'); if (MM.Sfx) MM.Sfx.music('menu');
         if (opts.direct) first(); else menuView();
       },
-      onClose: function () { clearAll(); box = null; }
+      onClose: function () { clearAll(); box = null; if (MM.Sfx) MM.Sfx.music(null); }
     });
   }
 
@@ -629,7 +629,7 @@ window.MM = window.MM || {};
     el.innerHTML = '<div class="lu-rays"></div><div class="lu-box"><em>NOVI NIVO</em><div class="lu-badge"><b>' + n + '</b></div><h2>' + esc(title) + '</h2>' +
       '<p>' + (TITLES[n] && TITLES[n] !== title ? 'Sledeća titula: ' + esc(TITLES[n]) : 'Nastavi da igraš.') + '</p><button type="button" class="btn primary wide">Super!</button></div>';
     document.body.appendChild(el);
-    confetti(); UI.buzz([20, 60, 30, 60, 40]);
+    confetti(); UI.buzz([20, 60, 30, 60, 40]); if (MM.Sfx) MM.Sfx.play('levelup');
     var close = function () { el.classList.add('out'); setTimeout(function () { el.remove(); }, 300); };
     el.querySelector('button').onclick = close;
     el.addEventListener('click', function (e) { if (e.target === el) close(); });

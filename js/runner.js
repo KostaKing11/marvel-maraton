@@ -22,6 +22,8 @@ window.MM = window.MM || {};
 
   var UI = MM.UI, esc = UI.esc;
   function fmt(n) { return Math.round(n || 0).toLocaleString('sr-RS'); }
+  function sfx(n, o) { if (MM.Sfx) MM.Sfx.play(n, o); }
+  function music(n) { if (MM.Sfx) MM.Sfx.music(n); }
   function ico(name, cls) { return '<img class="ri ' + (cls || '') + '" src="' + (name === 'coin' ? 'img/run/coin.webp' : 'img/ui/' + name + '.webp') + '" alt="">'; }
   var SVG = {
     back: '<svg viewBox="0 0 24 24"><path d="M15.4 4.6 8 12l7.4 7.4-1.4 1.4L5.2 12 14 3.2z"/></svg>',
@@ -453,9 +455,9 @@ window.MM = window.MM || {};
     var el = document.createElement('div'); el.className = 'r3-box-open';
     el.innerHTML = '<div class="bo-chest">' + ico('chest', 'huge') + '</div>';
     (host.closest('.sheet') || document.body).appendChild(el);
-    UI.buzz([10, 40, 10, 40, 10]);
+    UI.buzz([10, 40, 10, 40, 10]); sfx('box');
     setTimeout(function () {
-      el.classList.add('pop');
+      el.classList.add('pop'); sfx(got.rar === 'Legendarno' || got.pack ? 'win' : 'reward');
       el.innerHTML = '<div class="bo-card ' + got.rar.toLowerCase() + '"><em>' + got.rar + '</em>' + (x.board ? '<span class="r3-deck" style="--b1:' + x.board.c1 + ';--b2:' + x.board.c2 + '"></span>' : ico(x.ic, 'huge')) +
         '<b>' + esc(x.t) + '</b><span>' + esc(x.sub) + '</span><button type="button" class="r3-go">Super</button></div>';
       UI.buzz(got.rar === 'Legendarno' ? [30, 60, 30, 60, 80] : [20, 40, 20]);
@@ -475,9 +477,10 @@ window.MM = window.MM || {};
       if (t === 'keys') r2.keys += n;
       if (t === 'htok') r2.htok += n;
       if (t === 'btok') r2.btok += n;
+      if (t === 'pts') r2.pass.pts += n;
     });
     msg = { stanlee: 'Otključan tajni junak: Stan Lee!', strip: 'Otključan tajni board: Strip!', pack: 'Excelsior! Stan Lee, Strip board i 3 kutije!',
-      box: n + ' misteriozne kutije (Runner → Moći)', coins: n + ' novčića', keys: n + ' ključeva', htok: n + ' tokena junaka', btok: n + ' board tokena' }[t] || 'Nagrada je tvoja.';
+      box: n + ' misteriozne kutije (Runner → Moći)', coins: n + ' novčića', keys: n + ' ključeva', htok: n + ' tokena junaka', btok: n + ' board tokena', pts: n + ' poena za Pass' }[t] || 'Nagrada je tvoja.';
     return msg;
   }
 
@@ -549,7 +552,7 @@ window.MM = window.MM || {};
   /** Nagrada preko ekrana. */
   function reward(x, ms) {
     ms = ms || 1400;
-    UI.buzz([15, 40, 25]);
+    UI.buzz([15, 40, 25]); sfx('reward');
     var el = document.createElement('div'); el.className = 'r3-rew';
     el.innerHTML = '<div>' + (x.board ? '<span class="r3-deck" style="--b1:' + x.board.c1 + ';--b2:' + x.board.c2 + '"></span>' : ico(x.ic, 'huge')) + '<b>' + esc(x.t) + '</b><span>' + esc(x.sub) + '</span></div>';
     (host && host.closest('.sheet') || document.body).appendChild(el);
@@ -591,6 +594,7 @@ window.MM = window.MM || {};
           up: r.up, perk: c.p, board: { c1: b.c1, c2: b.c2, comic: b.comic }, boardPerk: b.pp, startShield: !!c.p.startShield, tutorial: tutorial,
           onHud: hud, onEvent: onEvent, onEnd: crashed, onHidden: pause };
       game = MM.Run3D.create(host.querySelector('#r3G'), o);
+      music(battle ? 'battle' : 'run'); if (MM.Sfx) MM.Sfx.duck(false);
       if (battle) host.querySelector('.r3-hud .r3-cur').style.display = 'none';
       host.querySelector('#r3P').onclick = pause;
       host.querySelector('#r3B').onclick = function () { if (game) game.useBoard(); };
@@ -670,11 +674,11 @@ window.MM = window.MM || {};
       ov.querySelector('#r3Quit').onclick = function () { ov.remove(); var res = game.result(); res.why = 'Odustao si'; battleDead(res); };
       return;
     }
-    game.pause();
+    game.pause(); if (MM.Sfx) MM.Sfx.duck(true);
     var g = host.querySelector('#r3G'), o = document.createElement('div');
     o.className = 'r3-over'; o.innerHTML = '<div class="r3-box"><h2>Pauza</h2><button type="button" class="r3-go" id="r3Res">NASTAVI</button><button type="button" class="r3-ghost" id="r3Quit">Završi trku</button></div>';
     g.appendChild(o);
-    o.querySelector('#r3Res').onclick = function () { o.remove(); game.resume(); };
+    o.querySelector('#r3Res').onclick = function () { o.remove(); game.resume(); if (MM.Sfx) MM.Sfx.duck(false); };
     o.querySelector('#r3Quit').onclick = function () { o.remove(); var res = game.result(); res.why = 'Završio si trku'; game.stop(); game = null; finish(res); };
   }
 
@@ -696,13 +700,13 @@ window.MM = window.MM || {};
     o.querySelector('#r3Rev').onclick = function () {
       clearTimeout(tm);
       if (!free) save(function (r2) { r2.keys = Math.max(0, r2.keys - cost); });
-      run.revives++; o.remove(); game.revive(); UI.buzz(20);
+      run.revives++; o.remove(); game.revive(); UI.buzz(20); sfx('revive');
     };
   }
 
   function finish(res) {
     if (!host) return;
-    view = 'end';
+    view = 'end'; music('menu'); if (MM.Sfx) MM.Sfx.duck(false);
     var coinsWon = res.coins + run.msCoins, pts = Math.floor(res.dist / 12), before = 0, after = 0, done = [], st = res.stats;
     save(function (r) {
       before = tierOf(r.pass.pts);
@@ -736,6 +740,7 @@ window.MM = window.MM || {};
       '</div></div>';
     host.querySelector('#r3Again').onclick = function () { start(false); };
     wire();
+    if (gx.rec) setTimeout(function () { sfx('levelup'); }, 300);
     if (gx.up && MM.Games.levelUp) setTimeout(function () { MM.Games.levelUp(gx.lvl, gx.title); }, 500);
   }
 
@@ -800,9 +805,9 @@ window.MM = window.MM || {};
     host.innerHTML = '<div class="r3-load r3-count"><b id="r3Cnt">3</b><span>Borba počinje</span></div>';
     (function tick() {
       if (!host) return;
-      if (n === 0) { start(false, { seed: room.seed, id: room.id }); return; }
+      if (n === 0) { sfx('start'); start(false, { seed: room.seed, id: room.id }); return; }
       var el = host.querySelector('#r3Cnt'); if (el) el.textContent = n;
-      UI.buzz(8); n--; setTimeout(tick, 800);
+      UI.buzz(8); sfx('count'); n--; setTimeout(tick, 800);
     })();
   }
 
@@ -830,7 +835,7 @@ window.MM = window.MM || {};
   /** Pao si u borbi: nema nastavka, gledas poredak dok ostali trce. */
   function battleDead(res) {
     if (game) { game.stop(); game = null; }
-    view = 'bdead';
+    view = 'bdead'; if (MM.Sfx) MM.Sfx.duck(true);
     MM.Battle.report(run.battle.id, { alive: false, dist: res.dist, score: res.score });
     run.myDist = res.dist;
     host.innerHTML = '<div class="r3-screen">' + top('Borba') + '<div class="r3-body"><div class="r3-bwrap">' +
@@ -857,7 +862,7 @@ window.MM = window.MM || {};
       '<button type="button" class="r3-go" id="r3BAgain">NOVA BORBA</button><button type="button" class="r3-ghost" data-v="home">Meni</button></div></div></div>';
     wire();
     host.querySelector('#r3BAgain').onclick = battleView;
-    UI.buzz(iWon ? [30, 60, 30, 60, 80] : [20, 40]);
+    UI.buzz(iWon ? [30, 60, 30, 60, 80] : [20, 40]); sfx(iWon ? 'win' : 'lose'); music('menu'); if (MM.Sfx) MM.Sfx.duck(false);
   }
 
   /** cb({score, coins, dist}) -> { xp, rec, up, lvl, title } */
@@ -868,6 +873,7 @@ window.MM = window.MM || {};
       render: function () { return '<div class="r3 no-drag" id="r3Box" data-keep></div>'; },
       onOpen: function (el) {
         host = el.querySelector('#r3Box');
+        music('menu'); if (MM.Sfx) MM.Sfx.preload(['coin', 'jump', 'roll', 'lane', 'land', 'crash', 'power', 'board', 'token', 'box', 'reward', 'revive', 'count', 'start', 'levelup', 'win', 'lose']);
         var s0 = MM.Store.get(), r0 = R(s0);
         if (!r0.gift) {
           var gf = oldGift(s0);
@@ -877,7 +883,7 @@ window.MM = window.MM || {};
         home();
       },
       onBack: function () { return back(); },
-      onClose: function () { stopPreview(); if (game) game.stop(); game = null; if (bId) { if (view === 'game') MM.Battle.report(bId, { alive: false }); leaveLobby(); } stopWatch(); host = null; }
+      onClose: function () { music(null); if (MM.Sfx) MM.Sfx.duck(false); stopPreview(); if (game) game.stop(); game = null; if (bId) { if (view === 'game') MM.Battle.report(bId, { alive: false }); leaveLobby(); } stopWatch(); host = null; }
     });
   }
 

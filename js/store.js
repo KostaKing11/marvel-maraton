@@ -218,6 +218,7 @@ window.MM = window.MM || {};
         streak: data.streak | 0,
         gxp: data.gxp | 0,                    // igre: ukupno XP
         gbest: data.gbest || {},              // igre: najvisi predjeni nivo po igri
+        st: data.st || {},                    // kratka statistika (za poredjenje u ekipi)
         at: Date.now()
       }), 12000);
     } catch (e) {

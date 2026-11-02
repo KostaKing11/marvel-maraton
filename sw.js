@@ -4,10 +4,11 @@
    VAZNO: podigni CACHE verziju na svaki deploy, inace se
    korisnik zaglavi na staroj verziji app-a.
    ============================================================ */
-const CACHE = 'marvel-maraton-v95';
+const CACHE = 'marvel-maraton-v96';
+const MEDIA = 'mm-media-v1';
 
 // App shell — cache-first. Isti ?v= broj kao u index.html.
-const V = '245';
+const V = '246';
 const SHELL = [
   './',
   './index.html',
@@ -20,6 +21,7 @@ const SHELL = [
   './js/reviews.js?v=' + V,
   './js/ics.js?v=' + V,
   './js/ui.js?v=' + V,
+  './js/sfx.js?v=' + V,
   './js/doom.js?v=' + V,
   './js/badges.js?v=' + V,
   './js/games.js?v=' + V,
@@ -31,6 +33,9 @@ const SHELL = [
   './js/runner.js?v=' + V,
   './js/codes.js?v=' + V,
   './js/battle.js?v=' + V,
+  './js/quizbank.js?v=' + V,
+  './js/quiz.js?v=' + V,
+  './js/finale.js?v=' + V,
   './img/run/stanlee.webp',
   './js/vendor/three.min.js?v=149',
   './js/views.js?v=' + V,
@@ -71,7 +76,7 @@ self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
       .then((keys) => Promise.all(
-        keys.filter((k) => k !== CACHE && k !== 'mm-meta').map((k) => caches.delete(k))
+        keys.filter((k) => k !== CACHE && k !== 'mm-meta' && k !== MEDIA).map((k) => caches.delete(k))
       ))
       .then(() => self.clients.claim())
   );
@@ -101,6 +106,17 @@ self.addEventListener('fetch', (e) => {
           return res;
         })
         .catch(() => caches.match(req))
+    );
+    return;
+  }
+
+  // Zvukovi i muzika: poseban kes koji prezivi nove verzije (imena se menjaju sa ?a=).
+  if (url.pathname.indexOf('/audio/') !== -1) {
+    e.respondWith(
+      caches.open(MEDIA).then((c) => c.match(req).then((hit) => hit || fetch(req).then((res) => {
+        if (res && res.status === 200) c.put(req, res.clone());
+        return res;
+      })))
     );
     return;
   }

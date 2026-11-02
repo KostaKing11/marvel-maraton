@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.23.0';
+MM.VERSION = '2.24.0';
 
 (function () {
   'use strict';
@@ -173,6 +173,7 @@ MM.VERSION = '2.23.0';
       });
       if (on) { st.lastWatchAt = now; if (!st.firstWatchAt) st.firstWatchAt = now; }
     });
+    if (on && MM.Sfx) MM.Sfx.play('check');
     if (on && s.skin === 'retro') pow();
     if (on) celebrateAfter(before, fromR);
     return function undo() {
@@ -191,7 +192,16 @@ MM.VERSION = '2.23.0';
   function itemKeys(item) { return Cat.isSeries(item) ? allEps(item).map(function (e) { return item.id + '#' + e; }) : [item.id]; }
 
   /** Posle "Odgledano": novi predmeti, kamenje, dostignuca -> slavlje preko celog ekrana. */
-  var pendingRate = null;
+  var pendingRate = null, pendingQuiz = null;
+
+  /** Kviz o naslovu (ako postoji i nije radjen), pa traka za ocenu. */
+  function quizThenRate(id) {
+    var rate = function () { if (Store.uid() && !MM.Reviews.mine(id)) setTimeout(function () { rateBar(id); }, 200); };
+    var top = UI.topSheet(), busy = top && (top.id === 'celebrate' || top.id === 'quiz' || top.id === 'games' || top.id === 'finale');
+    if (MM.Quiz && MM.Quiz.has(id) && !MM.Quiz.done(id) && !busy) MM.Quiz.open(id, { onClose: rate });
+    else rate();
+  }
+
   function celebrateAfter(before, fromR) {
     var s = state(), prog = P.progress(s);
     var ach = MM.Badges.checkAch(s, prog, P.streak(s));
@@ -204,7 +214,10 @@ MM.VERSION = '2.23.0';
       before: before, after: MM.Badges.doneMap(state()), ach: ach,
       from: fromR, to: prog.ratio, time: P.timeRatio(),
       me: { name: s.displayName || 'Ti', photo: s.avatar },
-      onClose: function () { if (pendingRate) { var id = pendingRate; pendingRate = null; setTimeout(function () { rateBar(id); }, 300); } }
+      onClose: function () {
+        if (pendingQuiz) { var q = pendingQuiz; pendingQuiz = null; setTimeout(function () { quizThenRate(q); }, 300); return; }
+        if (pendingRate) { var id = pendingRate; pendingRate = null; setTimeout(function () { rateBar(id); }, 300); }
+      }
     });
   }
 
@@ -219,6 +232,12 @@ MM.VERSION = '2.23.0';
     if (!id && epKey && keys.length <= 3) {
       if (MM.Badges.busy()) pendingRate = epKey;
       else setTimeout(function () { rateBar(epKey); }, 500);
+      return;
+    }
+    if (id && MM.Quiz && MM.Quiz.has(id) && !MM.Quiz.done(id)) {
+      // kviz o filmu, pa ocena
+      if (MM.Badges.busy()) pendingQuiz = id;
+      else setTimeout(function () { quizThenRate(id); }, 500);
       return;
     }
     if (id && Store.uid() && !MM.Reviews.mine(id)) {
@@ -697,6 +716,8 @@ MM.VERSION = '2.23.0';
 
     /* --- ocene / ekipa --- */
     'rate': function (el) { openRate(el.getAttribute('data-id'), 0); },
+    'quiz': function (el) { MM.Quiz.open(el.getAttribute('data-id')); },
+    'finale': function () { if (MM.Finale) MM.Finale.open(); },
     'runner': function () {
       MM.Runner.open(function (res) {
         // XP: 1 na svakih 120 m, najvise 40 po trci
@@ -743,6 +764,16 @@ MM.VERSION = '2.23.0';
     },
     'code-del': function (el) {
       MM.Codes.remove(el.getAttribute('data-c')).then(function () { UIS.codeList = null; loadCodes(); });
+    },
+    'sound-toggle': function () {
+      var off = state().sound !== false;
+      Store.mutate(function (s) { s.sound = !off; });
+      if (MM.Sfx) MM.Sfx.play('toggle');
+    },
+    'music-toggle': function () {
+      var off = state().music !== false;
+      Store.mutate(function (s) { s.music = !off; });
+      if (MM.Sfx) MM.Sfx.refresh();
     },
     'games-toggle': function () {
       var off = !state().gamesOff;
@@ -1325,7 +1356,7 @@ MM.VERSION = '2.23.0';
       var s = state(), p = P.progress(s);
       var g = V.gamesOf(s);
       Store.publishProfile({ watched: p.watched, total: p.total, minutes: p.watchedMin, percent: p.percent, streak: P.streak(s).n,
-        gxp: g.xp, gbest: Object.assign({ _v: 3 }, g.best) });
+        gxp: g.xp, gbest: Object.assign({ _v: 3 }, g.best), st: MM.Finale ? MM.Finale.brief(s) : null });
     }, 2500);
   }
 
@@ -1501,6 +1532,12 @@ MM.VERSION = '2.23.0';
       setTimeout(refreshSeasonPosters, 6000);
       setTimeout(function () { dailyNotification(); idleWarning(); writeMeta(); registerPeriodic(); }, 2500);
       setTimeout(function () { if (!UI.topSheet()) checkNotice(); }, 3500);
+      var fin0 = (function fin(n) {   // dan premijere: jednom se sam otvori
+        if (!MM.Finale || !MM.Finale.available() || state().finSeen || n > 20) return;
+        if (UI.topSheet() || document.hidden) { setTimeout(function () { fin(n + 1); }, 3000); return; }
+        MM.Finale.auto();
+      }).bind(null, 0);
+      setTimeout(fin0, 4200);
     }).catch(function (e) {
       console.error(e);
       var b = $('#boot');

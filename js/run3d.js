@@ -572,6 +572,7 @@ window.MM = window.MM || {};
 
     /* ---------- kontrole ---------- */
     function ev(n, x) { if (opts.onEvent) opts.onEvent(n, x); }
+    function snd(n, o) { if (MM.Sfx && !S.paused) MM.Sfx.play(n, o); }
     function act(dir) {
       if (S.over || S.paused) return;
       var fz = S.freeze;
@@ -585,23 +586,23 @@ window.MM = window.MM || {};
         var nl = Math.max(0, Math.min(2, S.lane + (dir === 'left' ? -1 : 1)));
         if (nl !== S.lane) {
           if (trainBeside(nl)) { S.bump = dir === 'left' ? -1 : 1; S.bumpT = .25; stumble(); }
-          else S.lane = nl;
+          else { S.lane = nl; snd('lane'); }
         }
       }
       var onG = S.y <= S.ground + .06;
       if (dir === 'up' && onG && S.pw.jet <= 0) {
         S.vy = S.pw.jump > 0 || (BP === 'jump' && S.board > 0) ? 20 : 14.2; S.roll = 0; S.stats.jumps++;
-        hero.play('Jump_Start', { once: true, ts: 2.4, fade: .06, restart: true }); S.anim = 'jump'; S.animT = .3;
+        hero.play('Jump_Start', { once: true, ts: 2.4, fade: .06, restart: true }); S.anim = 'jump'; S.animT = .3; snd('jump');
       }
       if (dir === 'down' && S.pw.jet <= 0) {
         S.roll = .72; S.stats.rolls++; if (!onG) S.vy = -28;
-        hero.play('Roll', { once: true, ts: 1.75, fade: .04, restart: true, at: .08 }); S.anim = 'roll';
+        hero.play('Roll', { once: true, ts: 1.75, fade: .04, restart: true, at: .08 }); S.anim = 'roll'; snd('roll');
       }
       ev('move');
     }
     function useBoard() {
       if (S.over || S.paused || S.board > 0 || S.meter < METER) return;
-      S.meter = 0; S.board = dur('board'); S.boardHits = BP === 'hits' ? 2 : 1; board.visible = true; ev('board');
+      S.meter = 0; S.board = dur('board'); S.boardHits = BP === 'hits' ? 2 : 1; board.visible = true; ev('board'); snd('board');
     }
     var sx = 0, sy = 0, swiped = false;
     function onDown(e) { sx = e.clientX; sy = e.clientY; swiped = false; }
@@ -630,7 +631,7 @@ window.MM = window.MM || {};
       S.stumbleT = .45;
       hero.play('Hit_Chest', { once: true, ts: 1.8, fade: .05, restart: true }); S.anim = 'hit'; S.animT = .4;
       if (S.t - S.stumbleAt < 8 && S.doomT > 0) { crash('Doom te je uhvatio!'); return; }
-      S.stumbleAt = S.t; S.doomT = 5; S.invuln = .5; ev('stumble');
+      S.stumbleAt = S.t; S.doomT = 5; S.invuln = .5; ev('stumble'); snd('land', { vol: 2.5, rate: .8 });
     }
     function clearNear() {
       // skloni prepreke ispred; novcici sa krova sklonjenog voza idu sa njim (inace lebde)
@@ -645,10 +646,10 @@ window.MM = window.MM || {};
     /** Udarac spreda: stit, board ili Hulk ga upiju, inace pad. */
     function crash(why, obj) {
       if (S.over) return;
-      if (S.shield) { S.shield = 0; S.invuln = 1.4; bubble.visible = false; clearNear(); ev('shield'); return; }
-      if (S.board > 0) { S.boardHits = (S.boardHits || 1) - 1; if (S.boardHits <= 0) { S.board = 0; board.visible = false; } S.invuln = 1.4; clearNear(); ev('boardbreak'); return; }
-      if (S.smash && obj && (obj.t === 'low' || obj.t === 'high')) { S.smash = false; scene.remove(obj.m); obj.gone = true; ev('smash'); S.invuln = 0; stumble(); return; }
-      S.over = true; S.why = why || 'Udario si!'; S.doomT = 3; ev('crash');
+      if (S.shield) { S.shield = 0; S.invuln = 1.4; bubble.visible = false; clearNear(); ev('shield'); snd('crash', { vol: .5, rate: 1.3 }); return; }
+      if (S.board > 0) { S.boardHits = (S.boardHits || 1) - 1; if (S.boardHits <= 0) { S.board = 0; board.visible = false; } S.invuln = 1.4; clearNear(); ev('boardbreak'); snd('crash', { vol: .5, rate: 1.3 }); return; }
+      if (S.smash && obj && (obj.t === 'low' || obj.t === 'high')) { S.smash = false; scene.remove(obj.m); obj.gone = true; ev('smash'); snd('crash', { vol: .6, rate: .8 }); S.invuln = 0; stumble(); return; }
+      S.over = true; S.why = why || 'Udario si!'; S.doomT = 3; ev('crash'); snd('crash');
       hero.play('Death01', { once: true, ts: 1.4, fade: .08, restart: true }); S.anim = 'dead';
       shake = .45;
       clearTimeout(endTimer);
@@ -660,15 +661,15 @@ window.MM = window.MM || {};
     function take(kind, val) {
       if (kind === 'btok') {
         S.stats.btok++;
-        if (S.board > 0) { S.board = Math.min(dur('board'), S.board + 2); ev('btokplus'); return; }
-        if (S.meter < METER) { S.meter = Math.min(METER, S.meter + (val || 1)); ev(S.meter === METER ? 'boardready' : 'btok'); }
+        if (S.board > 0) { S.board = Math.min(dur('board'), S.board + 2); ev('btokplus'); snd('token'); return; }
+        if (S.meter < METER) { S.meter = Math.min(METER, S.meter + (val || 1)); ev(S.meter === METER ? 'boardready' : 'btok'); snd(S.meter === METER ? 'power' : 'token'); }
         return;
       }
       S.stats.powerups++;
       if (kind === 'shield') { S.shield = 1; bubble.visible = true; }
       else S.pw[kind] = dur(kind);
       if (kind === 'jet') { S.vy = 0; S.jetLane = S.lane; S.jetAcc = 0; S.jetN = 0; }
-      ev('pw:' + kind);
+      ev('pw:' + kind); snd('power');
     }
 
     /* ---------- korak fizike ---------- */
@@ -750,7 +751,7 @@ window.MM = window.MM || {};
       if (S.pw.jet > 0) { S.y += (JET_Y - S.y) * Math.min(1, dt * 3); S.vy = 0; }
       else {
         S.vy -= 40 * dt; S.y += S.vy * dt;
-        if (S.y <= support + .001 && support - S.y < 1.1) { S.y = support; if (S.vy < 0) S.vy = 0; if (wasAir) S.landT = .14; }
+        if (S.y <= support + .001 && support - S.y < 1.1) { S.y = support; if (S.vy < 0) S.vy = 0; if (wasAir) { S.landT = .14; if (S.pw.jet <= 0) snd('land'); } }
       }
       if (S.y < 0) { S.y = 0; S.vy = Math.max(0, S.vy); }
       S.ground = support;
@@ -783,7 +784,7 @@ window.MM = window.MM || {};
             scene.remove(o.m);
             if (o.t === 'coin') {
               S.coinAcc += (x2 ? 2 : 1) * ((BP === 'coins' || BP === 'strip') && S.board > 0 ? 2 : 1) * (opts.coinMul || 1); var whole = Math.floor(S.coinAcc); S.coins += whole; S.coinAcc -= whole;
-              S.stats.coins++; S.score += 5 * mul; pop(p.x, p.y, p.z);
+              S.stats.coins++; S.score += 5 * mul; pop(p.x, p.y, p.z); snd('coin');
             } else { take(o.kind, o.val); pop(p.x, p.y, p.z, PW_COL[o.kind]); }
             return false;
           }

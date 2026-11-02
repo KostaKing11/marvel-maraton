@@ -181,6 +181,7 @@ window.MM = window.MM || {};
     renderSheet(entry);
     document.body.classList.add('has-sheet');
     history.pushState({ mm: 'sheet', n: stack.length }, '');
+    if (MM.Sfx && !opts.silent) MM.Sfx.play('open');
     requestAnimationFrame(function () { requestAnimationFrame(function () { el.classList.add('in'); }); });
     el.querySelector('.scrim').addEventListener('click', function () { closeTop(); });
     if (!opts.center) bindDrag(el, entry);
@@ -200,6 +201,7 @@ window.MM = window.MM || {};
     if (i !== -1) stack.splice(i, 1);
     entry.el.classList.remove('in');
     entry.el.classList.add('out');
+    if (MM.Sfx) MM.Sfx.play('close');
     setTimeout(function () { if (entry.el.parentNode) entry.el.parentNode.removeChild(entry.el); }, 260);
     if (!stack.length) document.body.classList.remove('has-sheet');
     if (entry.onClose) { try { entry.onClose(); } catch (e) { console.error(e); } }

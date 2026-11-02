@@ -800,7 +800,7 @@ window.MM = window.MM || {};
       onOpen: function (el) {
         var p = el.querySelector('.cel-me');
         if (p) setTimeout(function () { p.style.left = p.getAttribute('data-to'); }, 350);
-        UI.buzz([16, 50, 24]);
+        UI.buzz([16, 50, 24]); if (MM.Sfx) MM.Sfx.play('win');
         if (queue && queue.full) {
           // kamenje uleti u utore, pa pucanj prstima i sve se raspadne u prah
           var mine = queue;
@@ -822,7 +822,7 @@ window.MM = window.MM || {};
     var items = gains(before, after);
     var it = items[0];
     if (!it && !(ach && ach.length)) return;
-    var el = document.createElement('div');
+    var el = document.createElement('div'); if (MM.Sfx) MM.Sfx.play('reward');
     el.className = 'bd-pop';
     el.innerHTML = it ? tile(it, { size: 'sm' }) + '<span><em>' + (items.length > 1 ? '+' + items.length + ' PREDMETA' : 'NOVI PREDMET') + '</em><b>' + esc(spec(it).name) + '</b></span>'
       : achTile(ach[0], true) + '<span><em>DOSTIGNUĆE</em><b>' + esc(ach[0].name) + '</b></span>';
