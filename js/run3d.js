@@ -367,8 +367,9 @@ window.MM = window.MM || {};
     };
     var up = opts.up || {}, perk = opts.perk || {};
     var BP = opts.boardPerk || '';           // mala moc boarda
-    var BASE = { magnet: 10, jet: 7, x2: 12, jump: 10, board: BP === 'time' ? 35 : 30 }, METER = BP === 'meter' ? 11 : 15;
-    if (BP === 'start') S.meter = METER;
+    var BASE = { magnet: 10, jet: 7, x2: 12, jump: 10, board: BP === 'time' ? 35 : BP === 'strip' ? 40 : 30 }, METER = BP === 'meter' ? 11 : 15;
+    if (BP === 'start' || BP === 'strip') S.meter = METER;
+    if (opts.startShield) S.shield = 1;
     function dur(k) { return BASE[k] * (1 + .2 * (up[k] || 0)) * (perk[k] || 1); }
 
     /* ---------- objekti ---------- */
@@ -691,7 +692,7 @@ window.MM = window.MM || {};
       if (S.roll > 0) S.roll -= dt;
       if (S.landT > 0) S.landT -= dt;
 
-      var magnetOn = S.pw.magnet > 0 || S.pw.jet > 0 || (BP === 'magnet' && S.board > 0);
+      var magnetOn = S.pw.magnet > 0 || S.pw.jet > 0 || ((BP === 'magnet' || BP === 'strip') && S.board > 0);
       S.objs = S.objs.filter(function (o) {
         if (o.gone) return false;
         o.m.position.z += dz + (o.v ? o.v * dt : 0);
@@ -709,7 +710,7 @@ window.MM = window.MM || {};
           if (Math.abs(p.z) < .9 && Math.abs(p.x - S.x) < 1 && Math.abs(p.y - (S.y + 1)) < 1.4) {
             scene.remove(o.m);
             if (o.t === 'coin') {
-              S.coinAcc += (x2 ? 2 : 1) * (BP === 'coins' && S.board > 0 ? 2 : 1) * (opts.coinMul || 1); var whole = Math.floor(S.coinAcc); S.coins += whole; S.coinAcc -= whole;
+              S.coinAcc += (x2 ? 2 : 1) * ((BP === 'coins' || BP === 'strip') && S.board > 0 ? 2 : 1) * (opts.coinMul || 1); var whole = Math.floor(S.coinAcc); S.coins += whole; S.coinAcc -= whole;
               S.stats.coins++; S.score += 5 * mul; pop(p.x, p.y, p.z);
             } else { take(o.kind, o.val); pop(p.x, p.y, p.z, PW_COL[o.kind]); }
             return false;

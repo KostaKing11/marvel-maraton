@@ -754,6 +754,24 @@ body.selecting #toasts { bottom: calc(var(--tabH) + var(--safeB) + 128px); }
 .confirm > * + * { margin-top: 12px; }
 .sheet-wrap.full .sheet { top: 0; max-height: none; border-radius: 0; border: 0; }
 
+/* kodovi */
+.code-row { display: flex; gap: 8px; }
+.code-row input { flex: 1; min-width: 0; padding: 12px 14px; border-radius: 14px; background: var(--s2); border: 1px solid var(--line); color: var(--tx); font: 800 16px/1 ui-monospace, monospace; letter-spacing: 1.5px; text-transform: uppercase; }
+.code-card > * + * { margin-top: 10px; }
+.code-adm select { width: 100%; padding: 11px 12px; border-radius: 12px; background: var(--s2); border: 1px solid var(--line); color: var(--tx); font-size: 15px; }
+.code-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.code-new { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-radius: 14px; background: rgba(34, 197, 94, .12); border: 1px solid var(--green); }
+.code-new b { font: 900 18px/1 ui-monospace, monospace; letter-spacing: 1.5px; }
+.code-list { display: flex; flex-direction: column; gap: 8px; }
+.code-it { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px; background: var(--s2); }
+.code-it > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.code-it b { font: 800 14px/1.2 ui-monospace, monospace; letter-spacing: 1px; }
+.code-it span, .code-it i { font-size: 11.5px; color: var(--mu); font-style: normal; }
+.code-ok { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 26px 20px 20px; text-align: center; }
+.code-ok img { height: 150px; filter: drop-shadow(0 10px 24px rgba(245, 184, 61, .45)); animation: r3Pop .5s cubic-bezier(.2, 1.6, .4, 1); }
+.code-ok em { font-style: normal; font-size: 13px; font-weight: 900; letter-spacing: 2.5px; color: var(--amber); }
+.code-ok h2 { font-size: 20px; font-weight: 900; margin-bottom: 8px; }
+
 /* detalji naslova */
 .item-hero { position: relative; overflow: hidden; border-radius: 24px 24px 0 0; padding: 26px 16px 16px; min-height: 200px; }
 .item-bg { position: absolute; inset: 0; }
@@ -1842,6 +1860,7 @@ body.no-games #tabs .tab[data-tab="igre"] { display: none !important; }
 .r3-upa svg { width: 16px; height: 16px; fill: #04210f; }
 .r3-card > b { padding: 0 10px; font-size: 14px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .r3-bp { padding: 0 10px; font-size: 11px; line-height: 1.25; color: var(--amber); min-height: 28px; }
+.r3-dl .r3-bpk { font-size: 13.5px; }
 .r3-bpk { display: block; color: var(--amber); font-weight: 800; margin-bottom: 3px; }
 .r3-lb { display: flex; align-items: center; gap: 6px; padding: 0 10px; font-size: 11.5px; color: var(--mu); min-width: 0; }
 .r3-lb > i { font-style: normal; font-weight: 900; color: var(--tx); flex: none; }
@@ -1856,6 +1875,24 @@ body.no-games #tabs .tab[data-tab="igre"] { display: none !important; }
   background: linear-gradient(90deg, var(--b1), var(--b1) 38%, var(--b2) 38% 62%, var(--b1) 62%); box-shadow: 0 0 24px var(--b2), inset 0 -5px 0 rgba(0, 0, 0, .3); }
 .r3-deck.big { position: absolute; left: 50%; top: 50%; width: 200px; height: 48px; margin: -24px 0 0 -100px; }
 .r3-deck.sm { width: 46px; height: 13px; margin: 0; flex: none; }
+/* tajne kartice, strip board, kutije */
+.r3-card.secret .r3-ci { background: radial-gradient(70% 60% at 50% 60%, rgba(245, 184, 61, .22), transparent), var(--s2); align-items: center; }
+.r3-q { font-size: 64px; font-weight: 900; color: var(--amber); text-shadow: 0 0 22px rgba(245, 184, 61, .6); }
+.r3-deck.comic { background: radial-gradient(circle, #e62429 1.6px, transparent 2px) 0 0 / 7px 7px, linear-gradient(90deg, #ffd23f, #ffe680, #ffd23f); box-shadow: 0 0 0 3px #1b1410, 0 0 24px #e62429; }
+.r3-row.box { border-color: rgba(245, 184, 61, .45); background: linear-gradient(100deg, rgba(245, 184, 61, .12), transparent), var(--s1); }
+.r3-bx { display: flex; flex-direction: column; gap: 6px; }
+.r3-buy.open { background: var(--amber); color: #2a1a00; }
+.r3-box-open { position: absolute; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(5, 6, 10, .75); backdrop-filter: blur(4px); padding: 24px; }
+.bo-chest { animation: boShake .18s ease-in-out infinite; }
+.bo-chest .ri { width: 140px; height: 140px; filter: drop-shadow(0 0 30px rgba(245, 184, 61, .7)); }
+@keyframes boShake { 0%, 100% { transform: rotate(-6deg) scale(1); } 50% { transform: rotate(6deg) scale(1.06); } }
+.bo-card { width: 100%; max-width: 300px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 22px; border-radius: 26px; background: var(--s1); border: 2px solid var(--line); text-align: center; animation: r3Pop .5s cubic-bezier(.2, 1.6, .4, 1); }
+.bo-card em { font-style: normal; font-size: 12px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: var(--mu); }
+.bo-card b { font-size: 28px; font-weight: 900; } .bo-card > span { font-size: 13px; color: var(--mu); }
+.bo-card .r3-go { align-self: stretch; margin-top: 6px; }
+.bo-card.retko { border-color: #3b8bff; box-shadow: 0 0 30px rgba(59, 139, 255, .45); } .bo-card.retko em { color: #6fb2ff; }
+.bo-card.epsko { border-color: #a855f7; box-shadow: 0 0 34px rgba(168, 85, 247, .55); } .bo-card.epsko em { color: #c084fc; }
+.bo-card.legendarno { border-color: var(--amber); box-shadow: 0 0 44px rgba(245, 184, 61, .75); } .bo-card.legendarno em { color: var(--amber); }
 /* detalj */
 .r3-det { display: flex; flex-direction: column; gap: 12px; }
 .r3-dl { display: flex; align-items: center; gap: 12px; }

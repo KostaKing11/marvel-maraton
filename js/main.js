@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.20.2';
+MM.VERSION = '2.21.0';
 
 (function () {
   'use strict';
@@ -343,6 +343,34 @@ MM.VERSION = '2.20.2';
 
   function openChoose() {
     UI.openSheet({ id: 'choose', render: function () { return V.chooseSheet(ctx()); } });
+  }
+
+  /* ---------------- kodovi (admin) ---------------- */
+  function loadCodes() {
+    MM.Codes.list().then(function (l) { UIS.codeList = l; UI.refreshSheets(); }).catch(function () { UIS.codeList = []; UI.refreshSheets(); });
+  }
+  function openCodeAdmin() {
+    UIS.codeList = null; UIS.codeNew = '';
+    loadCodes();
+    UI.openSheet({ id: 'codes', render: function () {
+      var T = MM.Codes.TYPES, l = UIS.codeList;
+      return '<div class="pad-sheet code-adm"><h2>Napravi kod</h2>' +
+        '<label class="field"><span>Nagrada</span><select id="cgType">' + T.map(function (x) { return '<option value="' + x.t + '">' + UI.esc(x.name) + '</option>'; }).join('') + '</select></label>' +
+        '<div class="code-2"><label class="field"><span>Količina (za novčiće, kutije…)</span><input id="cgN" type="number" min="1" max="100000" value="3"></label>' +
+        '<label class="field"><span>Koliko ljudi</span><select id="cgMax"><option value="1">1 osoba</option><option value="5">5 ljudi</option><option value="10">10 ljudi</option><option value="0">svi (neograničeno)</option></select></label></div>' +
+        '<label class="field"><span>Beleška (za koga je)</span><input id="cgNote" type="text" maxlength="60" placeholder="npr. Vićovac"></label>' +
+        '<button type="button" class="btn primary wide" data-a="code-gen">Napravi kod</button>' +
+        (UIS.codeNew ? '<div class="code-new"><b>' + UIS.codeNew + '</b><button type="button" class="btn ghost sm" data-a="code-copy" data-c="' + UIS.codeNew + '">Podeli</button></div>' : '') +
+        '<h3>Moji kodovi</h3>' +
+        (l === null ? '<p class="muted">Učitavam…</p>' : !l.length ? '<p class="muted">Još nema kodova.</p>' :
+          '<div class="code-list">' + l.map(function (c) {
+            return '<div class="code-it"><div><b>' + c.code + '</b><span>' + UI.esc(MM.Codes.label(c.r || {})) + (c.note ? ' · ' + UI.esc(c.note) : '') + '</span>' +
+              '<i>' + (c.used | 0) + ' / ' + (c.max ? c.max : '∞') + ' iskorišćeno</i></div>' +
+              '<button type="button" class="btn ghost sm" data-a="code-copy" data-c="' + c.code + '">Podeli</button>' +
+              '<button type="button" class="btn danger sm" data-a="code-del" data-c="' + c.code + '">Obriši</button></div>';
+          }).join('') + '</div>') +
+        '<p class="muted small">Kodovi rade tek kad u Firebase dodaš pravila iz docs/firestore-kodovi.md.</p></div>';
+    } });
   }
 
   function openNews(focus) {
@@ -682,6 +710,39 @@ MM.VERSION = '2.20.2';
         publishProgress();
         return { xp: xp, rec: rec, up: after.n > before.n, lvl: after.n, title: after.title };
       });
+    },
+    /* --- kodovi za nagrade --- */
+    'code-redeem': function (el) {
+      var inp = $('#codeIn'); if (!inp) return;
+      var v = inp.value; el.disabled = true;
+      MM.Codes.redeem(v).then(function (r) {
+        el.disabled = false;
+        if (!r.ok) { UI.toast(r.msg); UI.buzz([30, 40, 30]); return; }
+        inp.value = ''; UI.buzz([20, 60, 40]);
+        UI.openSheet({ id: 'code-ok', center: true, render: function () {
+          var stan = r.reward && (r.reward.t === 'stanlee' || r.reward.t === 'pack');
+          return '<div class="code-ok">' + (stan ? '<img src="img/run/stanlee.webp" alt="">' : '<img src="img/ui/gift.webp" alt="">') +
+            '<em>' + (stan ? 'EXCELSIOR!' : 'KOD PRIHVAĆEN') + '</em><h2>' + UI.esc(r.msg) + '</h2>' +
+            '<button type="button" class="btn primary wide" data-a="runner">Otvori Runner</button></div>';
+        } });
+      }).catch(function () { el.disabled = false; UI.toast('Greška. Probaj ponovo.'); });
+    },
+    'code-admin': function () { openCodeAdmin(); },
+    'code-gen': function (el) {
+      var t = $('#cgType').value, n = +($('#cgN').value || 0), max = +$('#cgMax').value, note = $('#cgNote').value;
+      el.disabled = true;
+      MM.Codes.generate({ t: t, n: n || undefined }, max, note).then(function (code) {
+        el.disabled = false; UIS.codeNew = code; UIS.codeList = null; UI.refreshSheets(); loadCodes();
+        if (navigator.clipboard) navigator.clipboard.writeText(code).then(function () { UI.toast('Kod kopiran: ' + code); }, function () {});
+      }).catch(function (e) { el.disabled = false; UI.toast(e && e.message && /permission/i.test(e.message) ? 'Baza ne dozvoljava — dodaj pravila za kodove.' : 'Nije napravljen kod.'); });
+    },
+    'code-copy': function (el) {
+      var c = el.getAttribute('data-c');
+      if (navigator.share) navigator.share({ text: 'Kod za Marvel Maraton: ' + c }).catch(function () {});
+      else if (navigator.clipboard) navigator.clipboard.writeText(c).then(function () { UI.toast('Kopirano'); });
+    },
+    'code-del': function (el) {
+      MM.Codes.remove(el.getAttribute('data-c')).then(function () { UIS.codeList = null; loadCodes(); });
     },
     'games-toggle': function () {
       var off = !state().gamesOff;

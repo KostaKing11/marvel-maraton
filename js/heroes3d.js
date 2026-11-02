@@ -47,6 +47,8 @@ window.MM = window.MM || {};
       acc: { hair: '#e7c35a', tail: '#e7c35a', eyes: 1 } },
     deadpool: { head: '#a8141b', torso: '#a8141b', waist: '#1a1a1a', armU: '#a8141b', armL: '#1a1a1a', hand: '#1a1a1a', legU: '#a8141b', legL: '#a8141b', foot: '#1a1a1a', joint: '#1a1a1a',
       acc: { swords: 1, lenses: '#ffffff', patches: '#1a1a1a' } },
+    stanlee: { head: '#e8b896', torso: '#22305a', waist: '#3a2e24', armU: '#22305a', armL: '#22305a', hand: '#e8b896', legU: '#9c875c', legL: '#9c875c', foot: '#5a3420', joint: '#22305a',
+      acc: { hair: '#e6e6e6', backHair: 1, shades: '#3a2a1a', stache: '#eeeeee', pocket: '#c8202b', eyes: 1 } },
     doom: { head: '#9aa3ad', torso: '#5c636e', waist: '#2e5a2e', armU: '#5c636e', armL: '#5c636e', hand: '#5c636e', legU: '#5c636e', legL: '#5c636e', foot: '#3a3f48', joint: '#2e5a2e',
       acc: { hood: '#2e5a2e', cape: '#2e5a2e', doomeyes: 1 }, big: 1.05 }
   };
@@ -145,7 +147,7 @@ window.MM = window.MM || {};
       var o = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), m || mat(hex)); o.scale.set(sx, sy, sz); o.position.set(x, y, z); return put(o, boneName || 'Head');
     }
     var chest = bone.spine_03.getWorldPosition(new THREE.Vector3());
-    if (A.hair) { if (A.shortHair) sph(A.hair, R * .98, hs.y * .26, R * 1.0, hc.x, hc.y + hs.y * .26, hc.z + R * .08); else sph(A.hair, R * 1.08, hs.y * .42, R * 1.08, hc.x, hc.y + hs.y * .14, hc.z + R * .12); }
+    if (A.hair) { if (A.backHair) sph(A.hair, R * 1.02, hs.y * .34, R * .95, hc.x, hc.y + hs.y * .16, hc.z + R * .3); else if (A.shortHair) sph(A.hair, R * .98, hs.y * .26, R * 1.0, hc.x, hc.y + hs.y * .26, hc.z + R * .08); else sph(A.hair, R * 1.08, hs.y * .42, R * 1.08, hc.x, hc.y + hs.y * .14, hc.z + R * .12); }
     if (A.tail) { var t = sph(A.tail, R * .42, hs.y * .62, R * .42, hc.x, hc.y - hs.y * .15, hc.z + R * 1.05); t.rotation.x = .25; }
     if (A.helmet) sph(A.helmet, R * 1.07, hs.y * .4, R * 1.07, hc.x, hc.y + hs.y * .2, hc.z + R * .12);
     if (A.hood) sph(A.hood, R * 1.22, hs.y * .62, R * 1.2, hc.x, hc.y + hs.y * .06, hc.z + R * .2);
@@ -173,6 +175,13 @@ window.MM = window.MM || {};
     if (A.necklace) { var nk = new THREE.Mesh(new THREE.TorusGeometry(R * .75, R * .07, 6, 20), mat(A.necklace)); nk.rotation.x = Math.PI / 2 + .3; nk.position.set(chest.x, chest.y + hs.y * .32, chest.z - R * .1); put(nk, 'spine_03'); }
     if (A.discs) [-1, 1].forEach(function (s) { var d = new THREE.Mesh(new THREE.CylinderGeometry(R * .28, R * .28, R * .08, 14), mat(A.discs)); d.rotation.x = Math.PI / 2; d.position.set(chest.x + s * R * .55, chest.y, chest.z - R * 1.02); put(d, 'spine_03'); });
     if (A.tie) { var tie = new THREE.Mesh(new THREE.BoxGeometry(R * .22, hs.y * 1.1, R * .06), mat(A.tie)); tie.position.set(chest.x, chest.y - hs.y * .25, chest.z - R * 1.0); put(tie, 'spine_03'); }
+    if (A.shades) {
+      // naocare sa zatamnjenim staklima (Stan Lee)
+      [-1, 1].forEach(function (s2) { sph(A.shades, R * .3, R * .24, R * .07, hc.x + s2 * R * .36, hc.y + hs.y * .07, front + R * .06, 'Head', new THREE.MeshPhongMaterial({ color: '#4a3020', transparent: true, opacity: .85, shininess: 90 })); });
+      var br = new THREE.Mesh(new THREE.BoxGeometry(R * 1.5, R * .06, R * .06), mat('#c9a24a')); br.position.set(hc.x, hc.y + hs.y * .14, front + R * .05); put(br, 'Head');
+    }
+    if (A.stache) sph(A.stache, R * .42, R * .12, R * .1, hc.x, hc.y - hs.y * .12, front + R * .12);
+    if (A.pocket) { var pk = new THREE.Mesh(new THREE.BoxGeometry(R * .32, R * .2, R * .05), mat(A.pocket)); pk.position.set(chest.x + R * .45, chest.y + hs.y * .1, chest.z - R * 1.02); put(pk, 'spine_03'); }
     if (A.patches) [-1, 1].forEach(function (s) { sph(A.patches, R * .32, R * .34, R * .1, hc.x + s * R * .38, hc.y + hs.y * .06, front + R * .1); });
 
     // crtani stil: veca glava; krupniji Hulk
@@ -216,8 +225,9 @@ window.MM = window.MM || {};
   /** Hoverboard: zaobljena daska sa crtezom, svetla, plamen i trag iza. bc = { c1, c2 } */
   var BTEX = {};
   function deckTex(bc) {
-    var k = bc.c1 + bc.c2; if (BTEX[k]) return BTEX[k];
+    var k = bc.c1 + bc.c2 + (bc.comic ? 'c' : ''); if (BTEX[k]) return BTEX[k];
     var c = document.createElement('canvas'); c.width = 128; c.height = 320; var g = c.getContext('2d');
+    if (bc.comic) { comicDeck(g); var tc = new THREE.CanvasTexture(c); tc.encoding = THREE.sRGBEncoding; BTEX[k] = tc; return tc; }
     var gr = g.createLinearGradient(0, 0, 0, 320); gr.addColorStop(0, bc.c1); gr.addColorStop(1, shade(bc.c1, -40));
     g.fillStyle = gr; g.fillRect(0, 0, 128, 320);
     g.fillStyle = bc.c2;
@@ -230,6 +240,23 @@ window.MM = window.MM || {};
     // svetla na krajevima
     [40, 280].forEach(function (y) { g.fillStyle = '#fff6c0'; g.beginPath(); g.arc(64, y, 14, 0, 7); g.fill(); g.strokeStyle = '#555'; g.lineWidth = 4; g.stroke(); });
     var t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; BTEX[k] = t; return t;
+  }
+  /** Strip board: zuta pozadina, rasterske tackice, crveni prasak i POW! */
+  function comicDeck(g) {
+    g.fillStyle = '#ffd23f'; g.fillRect(0, 0, 128, 320);
+    g.fillStyle = 'rgba(230,36,41,.35)';
+    for (var y = 0; y < 320; y += 9) for (var x = (y / 9) % 2 ? 4 : 0; x < 128; x += 9) { g.beginPath(); g.arc(x, y, 2.4, 0, 7); g.fill(); }
+    function burst(cx, cy, r1, r2, n, col) {
+      g.beginPath(); for (var i = 0; i < n * 2; i++) { var a = i * Math.PI / n, rr = i % 2 ? r2 : r1; g.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); }
+      g.closePath(); g.fillStyle = col; g.fill(); g.lineWidth = 4; g.strokeStyle = '#1b1410'; g.stroke();
+    }
+    burst(64, 110, 58, 34, 12, '#e62429');
+    g.save(); g.translate(64, 120); g.rotate(-.18); g.font = 'bold 34px Bangers, Impact, sans-serif'; g.textAlign = 'center';
+    g.lineWidth = 6; g.strokeStyle = '#1b1410'; g.strokeText('POW!', 0, 0); g.fillStyle = '#fff'; g.fillText('POW!', 0, 0); g.restore();
+    burst(64, 238, 44, 26, 10, '#2b6fd6');
+    g.save(); g.translate(64, 246); g.rotate(.15); g.font = 'bold 26px Bangers, Impact, sans-serif'; g.textAlign = 'center';
+    g.lineWidth = 5; g.strokeStyle = '#1b1410'; g.strokeText('BAM!', 0, 0); g.fillStyle = '#ffd23f'; g.fillText('BAM!', 0, 0); g.restore();
+    g.lineWidth = 6; g.strokeStyle = '#1b1410'; g.strokeRect(3, 3, 122, 314);
   }
   function shade(hex, d) {
     var n = parseInt(hex.slice(1), 16), r = Math.max(0, Math.min(255, (n >> 16) + d)), g = Math.max(0, Math.min(255, ((n >> 8) & 255) + d)), b = Math.max(0, Math.min(255, (n & 255) + d));

@@ -154,7 +154,8 @@ window.MM = window.MM || {};
       app: app, db: db,
       doc: fsMod.doc, setDoc: fsMod.setDoc, getDoc: fsMod.getDoc, onSnapshot: fsMod.onSnapshot,
       collection: fsMod.collection, query: fsMod.query, orderBy: fsMod.orderBy,
-      limit: fsMod.limit, getDocs: fsMod.getDocs, deleteDoc: fsMod.deleteDoc
+      limit: fsMod.limit, getDocs: fsMod.getDocs, deleteDoc: fsMod.deleteDoc,
+      updateDoc: fsMod.updateDoc, where: fsMod.where, increment: fsMod.increment
     };
     return fb;
   }

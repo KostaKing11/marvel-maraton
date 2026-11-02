@@ -1060,6 +1060,14 @@ window.MM = window.MM || {};
     }
     out += '</section>';
 
+    /* kod za nagradu (svi) + pravljenje kodova (samo Kosta) */
+    out += '<section class="card code-card" data-k="codes"><div class="card-h"><h2>Kod za nagradu</h2></div>' +
+      '<div class="code-row"><input id="codeIn" type="text" placeholder="MM-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="16">' +
+      '<button type="button" class="btn primary" data-a="code-redeem">Iskoristi</button></div>' +
+      '<p class="muted small">Kodove deli Kosta. Neki daju tajne stvari u Marvel Runneru.</p>' +
+      (MM.Codes && MM.Codes.isAdmin() ? '<button type="button" class="btn ghost wide" data-a="code-admin">Napravi kodove (admin)</button>' : '') +
+      '</section>';
+
     /* tab Igre */
     out += '<section class="card" data-k="gtog"><button type="button" class="tgl' + (s.gamesOff ? '' : ' on') + '" data-a="games-toggle">' +
       '<span class="sw"></span><span class="tg-t"><b>Tab Igre</b><em>' + (s.gamesOff ? 'Sakriven — aplikacija je samo za gledanje.' : 'Mini igre, Marvel Runner i rang lista. Isključi i tab nestaje.') + '</em></span></button></section>';
@@ -1415,6 +1423,12 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.21', title: 'Kodovi, tajni junak i kutije', big: true, items: [
+      '<b>Kod za nagradu</b> — u profilu (Ja) unesi kod koji ti pošalje Kosta i dobijaš nagradu u Marvel Runneru.',
+      '<b>Tajni junak: Stan Lee</b> — samo iz posebnog koda. Excelsior: kreće sa štitom, sve moći traju 50% duže i češće se pojavljuju, +25% poena.',
+      '<b>Tajni board: Strip</b> — žut kao stripovi, sa POW! i BAM!. Magnet i dupli novčići dok voziš, traje 40 s i kreće pun.',
+      '<b>Misteriozne kutije</b> — nasumične nagrade (obično, retko, epsko, legendarno). Kupuješ ih u Moćima, dobijaš ih za sve tri misije i u Maraton passu.'
+    ], cta: { a: 'runner', label: 'Igraj' } },
     { id: '2.20.2', title: 'Board i tutorijal popravljeni', big: false, items: [
       '<b>Board</b> — treba 15 plavih tokena (dolaze u grupi od 8), svaki token dok voziš dodaje 2 s. Aktiviraš ga <b>jednim tapom bilo gde</b> na ekranu.',
       '<b>Tokeni</b> su sad mali plavi novčići, ne velike svetleće ikonice.',
