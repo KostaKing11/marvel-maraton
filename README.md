@@ -73,6 +73,11 @@ Portali) po 10 nivoa, plus Klasika (prve tri zaredom). Pređen nivo daje XP
 (`s.games`), nivo igrača ima titule, a rang lista ekipe čita `gxp`/`gbest`
 iz profila.
 
+**Marvel Runner** (`js/runner.js`): beskonačno trčanje u 3 trake (canvas,
+pseudo 3D). Likovi se otključavaju odgledanim filmom i imaju moći; svaki
+odgledan naslov daje +1% poena (do ×2). Rekord je `games.best.runner`.
+Tab Igre se gasi u profilu (`s.gamesOff`).
+
 „Šta je novo" (`NEWS` u `js/views.js`) iskače samo za velike promene
 (`big: true`); ostalo čeka u profilu, a slika gore desno ima tačkicu dok ne
 pročitaš.

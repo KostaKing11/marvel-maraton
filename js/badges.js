@@ -522,6 +522,22 @@ window.MM = window.MM || {};
       '<g stroke="#15121b" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round">' + ICONS[sp.icon] + '</g></svg>';
   }
 
+  /** Samostalna SVG slika predmeta (data URL) - za crtanje na canvasu. */
+  function dataUrl(item) {
+    var sp = spec(item);
+    if (!ICONS[sp.icon]) return 'img/map/doomhead.jpg';
+    var body = ICONS[sp.icon].replace(/var\(--a\)/g, sp.a).replace(/var\(--b\)/g, sp.b).replace(/var\(--c\)/g, sp.c);
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="128" height="128"><g stroke="#15121b" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round">' + body + '</g></svg>';
+    // HTML parser izbaci duple atribute (fill dvaput), pa je rezultat ispravan XML za <img>
+    if (dataUrl.cache[item.id]) return dataUrl.cache[item.id];
+    var tmp = document.createElement('div'); tmp.innerHTML = svg;
+    var url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(tmp.firstChild));
+    dataUrl.cache[item.id] = url;
+    return url;
+  }
+
+  dataUrl.cache = {};
+
   /** Plocica predmeta. opts: { locked, size: 'sm'|'md'|'lg', id } */
   function tile(item, opts) {
     opts = opts || {};
@@ -817,7 +833,7 @@ window.MM = window.MM || {};
   }
 
   MM.Badges = {
-    pop: pop,
+    pop: pop, dataUrl: dataUrl,
     ITEMS: ITEMS, STONES: STONES, ACH: ACH, RARITY: RARITY,
     spec: spec, tile: tile, rarityOf: rarityOf, doneMap: doneMap, gauntletState: gauntletState, gauntletSvg: gauntletSvg, stoneSvg: stoneSvg,
     checkAch: checkAch, collectionSheet: collectionSheet, itemSheet: itemSheet, poke: poke, celebrate: celebrate,

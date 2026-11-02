@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.15.0';
+MM.VERSION = '2.16.0';
 
 (function () {
   'use strict';
@@ -72,6 +72,9 @@ MM.VERSION = '2.15.0';
     pill();
     document.body.classList.toggle('look-mini', state().look === 'mini');
     applySkin();
+    var gOff = !!state().gamesOff;
+    document.body.classList.toggle('no-games', gOff);
+    if (gOff && UIS.tab === 'igre') { setTab('danas'); return; }
     bindMini();
     bindOG();
     document.body.classList.toggle('selecting', UIS.tab === 'katalog' && UIS.lib.selecting);
@@ -102,7 +105,7 @@ MM.VERSION = '2.15.0';
   var tabPushed = false, popIgnore = 0;
 
   function setTab(t, scrollTo, fromPop) {
-    if (TABS.indexOf(t) === -1) t = 'danas';
+    if (TABS.indexOf(t) === -1 || (t === 'igre' && state().gamesOff)) t = 'danas';
     var same = UIS.tab === t;
     if (t === 'ja' && UIS.tab !== 'ja') UIS.prevTab = UIS.tab;
     UIS.tab = t;
@@ -664,6 +667,25 @@ MM.VERSION = '2.15.0';
 
     /* --- ocene / ekipa --- */
     'rate': function (el) { openRate(el.getAttribute('data-id'), 0); },
+    'runner': function () {
+      MM.Runner.open(function (res) {
+        var before = MM.Games.lvlOf(V.gamesOf(state()).xp), xp = Math.min(300, Math.floor(res.score / 40)), rec = false;
+        Store.mutate(function (s) {
+          var gg = s.games = V.gamesOf(s);
+          gg.xp += xp; gg.runs = (gg.runs || 0) + 1;
+          if ((gg.best.runner || 0) < res.score) { gg.best.runner = res.score; rec = true; }
+        });
+        var after = MM.Games.lvlOf(V.gamesOf(state()).xp);
+        publishProgress();
+        return { xp: xp, rec: rec, up: after.n > before.n, lvl: after.n, title: after.title };
+      });
+    },
+    'games-toggle': function () {
+      var off = !state().gamesOff;
+      Store.mutate(function (s) { s.gamesOff = off; });
+      UI.buzz(8);
+      UI.toast(off ? 'Tab Igre je sakriven.' : 'Tab Igre je vraćen.');
+    },
     'play-game': function (el) {
       var id = el.getAttribute('data-g') || 'classic';
       var g = V.gamesOf(state()), lvl = Math.min(10, (g.best[id] || 0) + 1);

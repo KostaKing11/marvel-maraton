@@ -959,7 +959,7 @@ window.MM = window.MM || {};
   /** Stanje igara (stari gameBest g0..g3 se prevodi u nove id-jeve). */
   function gamesOf(s) {
     var g = s.games && typeof s.games === 'object' ? s.games : { xp: 0, wins: 0, best: {} };
-    g = { xp: g.xp | 0, wins: g.wins | 0, best: Object.assign({}, g.best || {}) };
+    g = { xp: g.xp | 0, wins: g.wins | 0, runs: g.runs | 0, best: Object.assign({}, g.best || {}) };
     var old = s.gameBest || {}, map = { g0: 'classic', g1: 'doom', g2: 'stones', g3: 'quiz' };
     Object.keys(map).forEach(function (k) { if ((old[k] || 0) > (g.best[map[k]] || 0)) g.best[map[k]] = old[k]; });
     return g;
@@ -972,6 +972,14 @@ window.MM = window.MM || {};
       '<div class="gx-t"><em>' + esc(lv.title.toUpperCase()) + '</em><b>' + g.xp + ' XP</b>' +
         '<div class="gx-bar"><i style="width:' + lv.pct + '%"></i></div>' +
         '<span>još ' + (lv.to - g.xp) + ' XP do nivoa ' + (lv.n + 1) + ' · ' + g.wins + ' ' + plural(g.wins, 'pobeda', 'pobede', 'pobeda') + '</span></div></section>';
+
+    // Marvel Runner
+    var R = MM.Runner, rc = R.charOf(s), fb = R.filmBonus(s), nUn = R.CHARS.filter(function (c) { return R.unlocked(c, s); }).length;
+    out += '<button type="button" class="card rn-card" data-k="rn" data-a="runner">' +
+      '<span class="rn-ic"><img src="' + MM.Badges.dataUrl(Cat.get(rc.icon)) + '" alt=""></span>' +
+      '<span class="rn-ct"><em>NOVO · MARVEL RUNNER</em><b>Trči do Doomsdaya</b>' +
+        '<span>' + nUn + '/' + R.CHARS.length + ' likova · bonus od filmova ×' + fb.mul.toFixed(2) + (g.best.runner ? ' · rekord ' + g.best.runner.toLocaleString('sr-RS') : '') + '</span></span>' +
+      '<span class="rn-play">▶</span></button>';
 
     // igre
     var ids = Object.keys(G.REG);
@@ -1001,11 +1009,12 @@ window.MM = window.MM || {};
     });
     out += '</div>';
     // rekordi po igri
-    var recs = ['classic'].concat(ids).map(function (id) {
+    var recs = ['runner', 'classic'].concat(ids).map(function (id) {
       var top = null;
       ppl.forEach(function (p) { var v = (p.gbest || {})[id] || 0; if (v && (!top || v > top.v)) top = { v: v, n: p.name || '?' }; });
-      var r = id === 'classic' ? { emo: '🏆', name: 'Klasika' } : G.REG[id];
-      return '<div class="gx-rec"><span>' + r.emo + '</span><b>' + esc(r.name) + '</b><i>' + (top ? esc(top.n) + ' · nivo ' + top.v : '—') + '</i></div>';
+      var r = id === 'classic' ? { emo: '🏆', name: 'Klasika' } : id === 'runner' ? { emo: '🏃', name: 'Marvel Runner' } : G.REG[id];
+      return '<div class="gx-rec' + (id === 'runner' ? ' wide' : '') + '"><span>' + r.emo + '</span><b>' + esc(r.name) + '</b><i>' +
+        (top ? esc(top.n) + ' · ' + (id === 'runner' ? top.v.toLocaleString('sr-RS') + ' poena' : 'nivo ' + top.v) : '—') + '</i></div>';
     });
     out += '<h3>Rekordi</h3><div class="gx-recs">' + recs.join('') + '</div>' +
       (ctx.user ? '' : '<p class="muted small">Prijavi se da te ekipa vidi na rang listi.</p>') + '</section>';
@@ -1034,6 +1043,10 @@ window.MM = window.MM || {};
         '<button type="button" class="btn primary" data-a="login">Prijavi se Google nalogom</button>';
     }
     out += '</section>';
+
+    /* tab Igre */
+    out += '<section class="card" data-k="gtog"><button type="button" class="tgl' + (s.gamesOff ? '' : ' on') + '" data-a="games-toggle">' +
+      '<span class="sw"></span><span class="tg-t"><b>Tab Igre</b><em>' + (s.gamesOff ? 'Sakriven — aplikacija je samo za gledanje.' : 'Mini igre, Marvel Runner i rang lista. Isključi i tab nestaje.') + '</em></span></button></section>';
 
     /* izgled */
     var look = s.look === 'mini' ? 'mini' : 'full';
@@ -1386,6 +1399,12 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.16', title: 'Marvel Runner', big: true, items: [
+      '<b>Marvel Runner</b> — trči ka Doomsdayu kao u Subway Surfersu: prevuci levo/desno, gore za skok, dole za klizanje. Preskači barijere, provlači se ispod greda, izbegavaj vozove, kupi novčiće.',
+      '<b>Likovi se otključavaju filmovima</b> — Iron Man, Cap, Thor, Hulk, Spider-Man, Black Panther, Doctor Strange, Deadpool… svaki ima svoju moć. Doom stiže sa Doomsdayem.',
+      '<b>Filmovi pomažu</b> — svaki odgledan naslov je +1% poena (do ×2).',
+      'Ne igraš? Profil → <b>Tab Igre</b> → isključi, i tab nestaje.'
+    ], cta: { a: 'runner', label: 'Trči' } },
     { id: '2.15', title: '10 igara', big: false, items: [
       '<b>Tri nove igre</b> — Čiji je predmet? (predmet → film), Hulk razbija (brzi prsti) i Portali (pazi na Dormammua).',
       '<b>Bolje stare igre</b> — odbrojavanje 3-2-1 pre početka, „+1“ kad pogodiš Dooma, kviz i kamenje pokažu tačan odgovor kad pogrešiš, konfete kad pređeš nivo.',
