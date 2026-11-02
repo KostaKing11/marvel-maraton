@@ -176,7 +176,7 @@ window.MM = window.MM || {};
     el.innerHTML = '<div class="scrim"></div><div class="sheet" role="dialog" aria-modal="true">' +
       '<div class="grab"><i></i></div><div class="sheet-in"></div></div>';
     $('#sheets').appendChild(el);
-    var entry = { id: opts.id || ('s' + Date.now()), el: el, render: opts.render, onClose: opts.onClose, onOpen: opts.onOpen };
+    var entry = { id: opts.id || ('s' + Date.now()), el: el, render: opts.render, onClose: opts.onClose, onOpen: opts.onOpen, onBack: opts.onBack };
     stack.push(entry);
     renderSheet(entry);
     document.body.classList.add('has-sheet');
@@ -224,7 +224,12 @@ window.MM = window.MM || {};
   /** popstate: ako je list otvoren, zatvori ga. Vraca true ako je obradjeno. */
   function onPop() {
     if (ignorePop > 0) { ignorePop--; return true; }
-    if (stack.length) { removeEntry(stack[stack.length - 1]); return true; }
+    if (stack.length) {
+      var top = stack[stack.length - 1];
+      // list moze sam da obradi "nazad" (npr. podekran u igri) - onda ostaje otvoren
+      if (top.onBack && top.onBack()) { history.pushState({ mm: 'sheet', n: stack.length }, ''); return true; }
+      removeEntry(top); return true;
+    }
     return false;
   }
 

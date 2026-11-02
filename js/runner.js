@@ -1,20 +1,19 @@
 /* ============================================================
-   runner.js  -  Marvel Runner: meni, likovi, moci, pass, misije
+   runner.js  -  Marvel Runner: meniji, kolekcija, pass, misije
    ------------------------------------------------------------
-   Sama igra (3D) je u run3d.js; Three.js se ucitava tek kad
-   pritisnes "Trci" (js/vendor/three.min.js), pa app ostaje lagan.
+   Igra (3D) je u run3d.js, junaci u heroes3d.js, deonice u
+   runsections.js. Three.js + model se ucitavaju tek kad otvoris
+   Runner (js/vendor, models/hero.glb).
 
-   Progresija (s.runner):
-     wallet   novcici za kupovinu (skupljas u trci)
-     keys     kljucevi = nastavak posle pada
-     boards   hoverboardovi (dupli tap u trci = 30 s zastite)
-     up       nivoi moci (magnet, jet, x2, jump) 0..5
-     pass     { pts, got: {tier: 1} }  -  Marvel Pass, 40 nivoa
-     miss     { day, list: [{ id, n, p, got }] }  -  3 dnevne misije
-     skin     izgled boarda; skins: otkljucani
+   Kao u Subway Surfers City:
+     - junaci i boardovi imaju nivo (1-10) i mnozilac poena (×)
+     - nivo se dize za novcice + tokene (crveni = junaci, plavi = boardovi)
+     - svaki podignut nivo daje i bonus kolekcije (+2% poena)
+     - u trci skupljas plave board tokene: 3 = hoverboard (dugme)
+     - Marvel Pass (40 nivoa), 3 dnevne misije, moci za novcice
+   Junaci se i dalje otkljucavaju gledanjem filmova.
 
-   Likovi se otkljucavaju filmovima. Moci likova su male (+25% i
-   slicno), da ne kvare igru.
+   Stanje: s.runner (vidi R()). Stari napredak se cuva (mig3).
    ============================================================ */
 window.MM = window.MM || {};
 
@@ -22,10 +21,17 @@ window.MM = window.MM || {};
   'use strict';
 
   var UI = MM.UI, esc = UI.esc;
-  function fmt(n) { return (n || 0).toLocaleString('sr-RS'); }
+  function fmt(n) { return Math.round(n || 0).toLocaleString('sr-RS'); }
+  function ico(name, cls) { return '<img class="ri ' + (cls || '') + '" src="' + (name === 'coin' ? 'img/run/coin.webp' : 'img/ui/' + name + '.webp') + '" alt="">'; }
+  var SVG = {
+    back: '<svg viewBox="0 0 24 24"><path d="M15.4 4.6 8 12l7.4 7.4-1.4 1.4L5.2 12 14 3.2z"/></svg>',
+    pause: '<svg viewBox="0 0 24 24"><path d="M7 4h4v16H7zM13 4h4v16h-4z"/></svg>',
+    left: '<svg viewBox="0 0 24 24"><path d="M15.4 4.6 8 12l7.4 7.4-1.4 1.4L5.2 12 14 3.2z"/></svg>',
+    right: '<svg viewBox="0 0 24 24"><path d="M8.6 19.4 16 12 8.6 4.6 10 3.2l8.8 8.8L10 20.8z"/></svg>',
+    up: '<svg viewBox="0 0 24 24"><path d="M12 3 3 12h6v9h6v-9h6z"/></svg>'
+  };
 
-  /* ---------------- likovi ---------------- */
-  // p: mnozioci trajanja moci ili posebna sitnica; sve umereno
+  /* ---------------- junaci ---------------- */
   var CHARS = [
     { id: 'agent', name: 'Agent S.H.I.E.L.D.-a', film: null, perk: 'Bez moći. Čist talenat.', p: {} },
     { id: 'iron', name: 'Iron Man', film: 'iron-man', perk: 'Magnet traje 25% duže.', p: { magnet: 1.25 } },
@@ -43,56 +49,71 @@ window.MM = window.MM || {};
   ];
   function sprite(c) { return 'img/run/' + c.id + '.webp'; }
   function unlocked(c, s) { return !c.film || MM.Plan.isDone(MM.Cat.get(c.film), s); }
-  function charOf(s) {
-    var c = CHARS.filter(function (x) { return x.id === s.runnerChar; })[0];
-    return c && unlocked(c, s) ? c : CHARS[0];
-  }
+  function charById(id) { return CHARS.filter(function (x) { return x.id === id; })[0]; }
+  function charOf(s) { var c = charById(s.runnerChar); return c && unlocked(c, s) ? c : CHARS[0]; }
   /** Bonus od filmova: +0.5% poena po odgledanom naslovu, najvise ×1.5. */
   function filmBonus(s) {
     var n = Object.keys(MM.Badges.doneMap(s)).length;
     return { n: n, mul: Math.min(1.5, 1 + n / 200) };
   }
 
-  /* ---------------- moci (kupuju se novcicima) ---------------- */
+  /* ---------------- boardovi ---------------- */
+  var BOARDS = [
+    { id: 'klasik', name: 'Klasik', c1: '#e62429', c2: '#ffd36b' },
+    { id: 'mjolnir', name: 'Mjolnir', c1: '#8f9cb0', c2: '#5fd3ff' },
+    { id: 'gama', name: 'Gama', c1: '#2f8f3a', c2: '#9dff6b' },
+    { id: 'vibra', name: 'Vibranijum', c1: '#2a1d4a', c2: '#c46bff' },
+    { id: 'kosmik', name: 'Kosmik', c1: '#1b3a8f', c2: '#ffd23f' },
+    { id: 'stark', name: 'Stark', c1: '#b3141b', c2: '#ffcf3f' },
+    { id: 'doom', name: 'Doom', c1: '#2e4a2e', c2: '#9dffbc' }
+  ];
+  function boardById(id) { return BOARDS.filter(function (b) { return b.id === id; })[0] || BOARDS[0]; }
+
+  /* ---------------- nivoi (1-10) ---------------- */
+  var MAXL = 10;
+  var H_TOK = [10, 20, 35, 55, 80, 110, 150, 200, 260], H_COIN = [200, 400, 700, 1100, 1600, 2300, 3200, 4400, 6000];
+  var B_TOK = [5, 10, 18, 28, 40, 55, 75, 100, 130], B_COIN = [150, 300, 550, 850, 1250, 1800, 2500, 3400, 4600];
+  function hMul(l) { return 1 + .25 * ((l || 1) - 1); }
+  function bMul(l) { return 1 + .1 * ((l || 1) - 1); }
+  /** Bonus kolekcije: +2% za svaki podignut nivo (junaci + boardovi). */
+  function collBonus(r) {
+    var n = 0;
+    Object.keys(r.hlv).forEach(function (k) { n += (r.hlv[k] || 1) - 1; });
+    Object.keys(r.blv).forEach(function (k) { n += (r.blv[k] || 1) - 1; });
+    return n * 2;
+  }
+
+  /* ---------------- moci (trajanje se kupuje novcicima) ---------------- */
   var UPS = [
-    { id: 'magnet', name: 'Magnet', ico: '🧲', col: '#ff3b30', desc: 'Privlači novčiće iz svih traka.', base: 10 },
-    { id: 'jet', name: 'Mjolnir let', ico: '🔨', col: '#ffd23f', desc: 'Letiš iznad svega i kupiš novčiće u vazduhu.', base: 7 },
-    { id: 'x2', name: '×2 poeni', ico: '✖️', col: '#39d97a', desc: 'Dupli poeni i novčići.', base: 12 },
-    { id: 'jump', name: 'Spider skok', ico: '🕸️', col: '#c46bff', desc: 'Skačeš duplo više, pravo na vozove.', base: 10 }
+    { id: 'magnet', name: 'Magnet', ic: 'magnet', desc: 'Privlači novčiće iz svih traka.', base: 10 },
+    { id: 'jet', name: 'Mjolnir let', ic: 'hammer', desc: 'Letiš iznad svega i kupiš novčiće u vazduhu.', base: 7 },
+    { id: 'x2', name: '×2 poeni', ic: 'x2', desc: 'Dupli poeni i novčići.', base: 12 },
+    { id: 'jump', name: 'Spider skok', ic: 'web', desc: 'Skačeš duplo više, pravo na vozove.', base: 10 }
   ];
   var UP_COST = [300, 700, 1500, 3000, 6000];
   function upDur(u, lvl) { return Math.round(u.base * (1 + .2 * (lvl || 0))); }
 
-  /* ---------------- boardovi (izgled) ---------------- */
-  var SKINS = [
-    { id: 'klasik', name: 'Klasik', col: '#e62429', col2: '#ffd36b' },
-    { id: 'mjolnir', name: 'Mjolnir', col: '#9aa7b8', col2: '#5fd3ff' },
-    { id: 'vibra', name: 'Vibranijum', col: '#2a1d4a', col2: '#c46bff' },
-    { id: 'gama', name: 'Gama', col: '#2f8f3a', col2: '#9dff6b' },
-    { id: 'kosmik', name: 'Kosmik', col: '#1b3a8f', col2: '#ffd23f' },
-    { id: 'stark', name: 'Stark', col: '#b3141b', col2: '#ffcf3f' },
-    { id: 'doom', name: 'Doom', col: '#2e4a2e', col2: '#9dffbc' }
-  ];
-
   /* ---------------- Marvel Pass ---------------- */
   var TIER = 150, TIERS = 40;
-  // nagrada po nivou passa: c = novcici, k = kljucevi, b = boardovi, s = izgled boarda
+  // c = novcici, k = kljucevi, h = tokeni junaka, t = board tokeni, s = novi board
   var PASS = (function () {
-    var r = [], skins = { 3: 'mjolnir', 8: 'gama', 14: 'vibra', 20: 'kosmik', 28: 'stark', 40: 'doom' };
+    var r = [], boards = { 3: 'mjolnir', 8: 'gama', 14: 'vibra', 20: 'kosmik', 28: 'stark', 40: 'doom' };
     for (var i = 1; i <= TIERS; i++) {
-      if (skins[i]) r.push({ s: skins[i] });
+      if (boards[i]) r.push({ s: boards[i] });
       else if (i % 5 === 0) r.push({ k: i >= 20 ? 2 : 1 });
-      else if (i % 3 === 0) r.push({ b: i >= 20 ? 2 : 1 });
-      else r.push({ c: 100 + Math.floor(i / 5) * 50 });
+      else if (i % 4 === 0) r.push({ c: 150 + Math.floor(i / 4) * 50 });
+      else if (i % 2 === 0) r.push({ h: 6 + Math.floor(i / 5) * 2 });
+      else r.push({ t: 4 + Math.floor(i / 6) * 2 });
     }
     return r;
   })();
-  function rewTxt(w) {
-    if (w.c) return { ico: '🪙', t: fmt(w.c), sub: 'novčića' };
-    if (w.k) return { ico: '🔑', t: '×' + w.k, sub: w.k > 1 ? 'ključa' : 'ključ' };
-    if (w.b) return { ico: '🛹', t: '×' + w.b, sub: 'board' };
-    var sk = SKINS.filter(function (x) { return x.id === w.s; })[0];
-    return { ico: '✨', t: sk.name, sub: 'izgled boarda', skin: sk };
+  function rew(w) {
+    if (w.c) return { ic: 'coin', t: fmt(w.c), sub: 'novčića' };
+    if (w.k) return { ic: 'key', t: '×' + w.k, sub: w.k > 1 ? 'ključa' : 'ključ' };
+    if (w.h) return { ic: 'htoken', t: '×' + w.h, sub: 'tokena junaka' };
+    if (w.t) return { ic: 'btoken', t: '×' + w.t, sub: 'board tokena' };
+    var b = boardById(w.s);
+    return { ic: 'board', t: b.name, sub: 'novi board', board: b };
   }
 
   /* ---------------- dnevne misije ---------------- */
@@ -103,6 +124,7 @@ window.MM = window.MM || {};
     { id: 'rolls', t: 'Klizni {n} puta', n: [15, 25, 40] },
     { id: 'trains', t: 'Pretrči preko {n} vozova', n: [3, 6, 10] },
     { id: 'powerups', t: 'Uzmi {n} moći', n: [3, 5, 8] },
+    { id: 'btok', t: 'Skupi {n} board tokena', n: [6, 10, 15] },
     { id: 'runs', t: 'Odigraj {n} trke', n: [3, 4, 5] },
     { id: 'score1', t: 'Napravi {n} poena u jednoj trci', n: [8000, 15000, 25000] }
   ];
@@ -116,184 +138,288 @@ window.MM = window.MM || {};
     }
     return { day: d, list: out, all: 0 };
   }
-  function missText(m) { var d = MISS.filter(function (x) { return x.id === m.id; })[0]; return d.t.replace('{n}', fmt(m.n)); }
+  function missText(m) { var d = MISS.filter(function (x) { return x.id === m.id; })[0]; return d ? d.t.replace('{n}', fmt(m.n)) : m.id; }
 
-  /* ---------------- stanje progresije ---------------- */
+  /* ---------------- stanje ---------------- */
   function R(s) {
     var r = s.runner && typeof s.runner === 'object' ? s.runner : {};
-    return {
-      wallet: r.wallet | 0, keys: r.keys == null ? 2 : r.keys | 0, boards: r.boards == null ? 3 : r.boards | 0,
+    var o = {
+      wallet: r.wallet | 0, keys: r.keys == null ? 2 : r.keys | 0,
+      htok: r.htok | 0, btok: r.btok | 0,
       up: Object.assign({ magnet: 0, jet: 0, x2: 0, jump: 0 }, r.up || {}),
       pass: { pts: (r.pass && r.pass.pts) | 0, got: Object.assign({}, r.pass && r.pass.got) },
       miss: r.miss && r.miss.day === today() ? JSON.parse(JSON.stringify(r.miss)) : dayMissions(),
-      skin: r.skin || 'klasik', skins: (r.skins || ['klasik']).slice(),
-      runs: r.runs | 0, distAll: r.distAll | 0, gift: r.gift | 0
+      board: r.board || r.skin || 'klasik', owned: (r.owned || r.skins || ['klasik']).slice(),
+      hlv: Object.assign({}, r.hlv), blv: Object.assign({}, r.blv),
+      runs: r.runs | 0, distAll: r.distAll | 0, gift: r.gift | 0, tut: r.tut | 0, mig3: r.mig3 | 0
     };
+    if (!o.mig3) {
+      // v2.18 -> v3: stari "boardovi" (komadi) postaju board tokeni; ko je vec igrao preskace tutorijal
+      o.btok += (r.boards == null ? 0 : r.boards | 0) * 5;
+      if (o.runs > 0) o.tut = 1;
+      o.mig3 = 1;
+    }
+    if (o.owned.indexOf('klasik') < 0) o.owned.unshift('klasik');
+    return o;
   }
   function save(fn) { MM.Store.mutate(function (s) { var r = R(s); fn(r, s); s.runner = r; }); }
   function tierOf(pts) { return Math.min(TIERS, Math.floor(pts / TIER)); }
-  function canClaim(r) {
+  function claimable(r) {
     var t = tierOf(r.pass.pts), n = 0;
     for (var i = 1; i <= t; i++) if (!r.pass.got[i]) n++;
-    r.miss.list.forEach(function (m) { if (m.p >= m.n && !m.got) n++; });
     return n;
   }
+  function missReady(r) { return r.miss.list.filter(function (m) { return m.p >= m.n && !m.got; }).length; }
+  function canUpH(r, id) { var l = r.hlv[id] || 1; return l < MAXL && r.htok >= H_TOK[l - 1] && r.wallet >= H_COIN[l - 1]; }
+  function canUpB(r, id) { var l = r.blv[id] || 1; return l < MAXL && r.btok >= B_TOK[l - 1] && r.wallet >= B_COIN[l - 1]; }
+  function upgradable(r, s) {
+    return CHARS.filter(function (c) { return unlocked(c, s) && canUpH(r, c.id); }).length + r.owned.filter(function (b) { return canUpB(r, b); }).length;
+  }
+  /** Ukupni mnozilac poena za trku. */
+  function runMul(s, r, c) {
+    return filmBonus(s).mul * hMul(r.hlv[c.id]) * bMul(r.blv[r.board]) * (1 + collBonus(r) / 100) * (c.p.score || 1);
+  }
 
-  /* ---------------- Three.js (lenjo) ---------------- */
-  var threeP = null;
-  function loadThree() {
-    if (window.THREE) return Promise.resolve();
-    if (threeP) return threeP;
-    threeP = new Promise(function (ok, no) {
-      var sc = document.createElement('script');
-      sc.src = 'js/vendor/three.min.js?v=149'; sc.onload = function () { ok(); }; sc.onerror = function () { threeP = null; no(new Error('three')); };
+  /* ---------------- ucitavanje 3D ---------------- */
+  var loadP = null;
+  function script(src) {
+    return new Promise(function (ok, no) {
+      var sc = document.createElement('script'); sc.src = src; sc.onload = function () { ok(); }; sc.onerror = function () { no(new Error(src)); };
       document.head.appendChild(sc);
     });
-    return threeP;
+  }
+  function load3d() {
+    if (loadP) return loadP;
+    loadP = (window.THREE ? Promise.resolve() : script('js/vendor/three.min.js?v=149'))
+      .then(function () { return THREE.GLTFLoader ? null : script('js/vendor/three-addons.js?v=149'); })
+      .then(function () { return MM.Heroes.load(); })
+      .catch(function (e) { loadP = null; throw e; });
+    return loadP;
   }
 
   /* ---------------- ekrani ---------------- */
-  var host = null, onEnd = null, game = null, run = null;
-  function each(sel, fn) { Array.prototype.forEach.call(host.querySelectorAll(sel), fn); }
+  var host = null, onEnd = null, game = null, run = null, view = 'home', colTab = 'h';
 
-  function topBar(r) {
-    var t = tierOf(r.pass.pts), into = r.pass.pts - t * TIER;
-    return '<div class="r3-top">' +
-      '<button type="button" class="r3-tier" data-v="pass"><b>' + t + '</b><span><i style="width:' + (t >= TIERS ? 100 : Math.round(into / TIER * 100)) + '%"></i></span><em>PASS</em></button>' +
-      '<span class="r3-cur"><img src="img/run/coin.webp" alt="">' + fmt(r.wallet) + '</span>' +
-      '<span class="r3-cur">🔑 ' + r.keys + '</span>' +
-      '<button type="button" class="r3-x" data-a="sheet-close" aria-label="Zatvori">✕</button></div>';
-  }
-
-  /** Jednokratni poklon za stari napredak: svaki predjen nivo mini igara
-      (i izbacenih) = 50 novcica, stari rekord u Runneru / 20, kljuc na 10 nivoa. */
-  function oldGift(s) {
-    var best = (s.games && s.games.best) || {}, lv = 0;
-    Object.keys(best).forEach(function (k) { if (k !== 'runner' && k !== '_v') lv += best[k] | 0; });
-    var old = s.gameBest || {}; Object.keys(old).forEach(function (k) { if (!best[{ g0: 'classic', g1: 'doom', g2: 'stones', g3: 'quiz' }[k]]) lv += old[k] | 0; });
-    return { coins: Math.min(5000, lv * 50 + Math.floor((best.runner | 0) / 20)), keys: lv ? 1 + Math.floor(lv / 10) : 0, lv: lv };
-  }
-  function home() {
-    var s0 = MM.Store.get();
-    if (!R(s0).gift) {
-      var gf = oldGift(s0);
-      save(function (r2) { r2.gift = 1; r2.wallet += gf.coins; r2.keys += gf.keys; });
-      if (gf.coins || gf.keys) setTimeout(function () { reward({ ico: '🎁', t: '+' + fmt(gf.coins) + ' · 🔑 ' + gf.keys, sub: 'poklon za stari napredak (' + gf.lv + ' pređenih nivoa)' }, 3200); }, 350);
-    }
-    var s = MM.Store.get(), r = R(s), c = charOf(s), fb = filmBonus(s), best = ((s.games || {}).best || {}).runner || 0;
-    var un = CHARS.filter(function (x) { return unlocked(x, s); }), claim = canClaim(r);
-    var sk = SKINS.filter(function (x) { return x.id === r.skin; })[0] || SKINS[0];
-    host.innerHTML = '<div class="r3-home">' + topBar(r) +
-      '<div class="r3-stage">' +
-        '<div class="r3-sky"></div><div class="r3-rails"></div>' +
-        '<button type="button" class="r3-arr l" data-sw="-1" aria-label="Prethodni lik"' + (un.length < 2 ? ' hidden' : '') + '>‹</button>' +
-        '<div class="r3-hero"><img src="' + sprite(c) + '" alt=""><span class="r3-board" style="--b1:' + sk.col + ';--b2:' + sk.col2 + '"></span></div>' +
-        '<button type="button" class="r3-arr r" data-sw="1" aria-label="Sledeći lik"' + (un.length < 2 ? ' hidden' : '') + '>›</button>' +
-        '<div class="r3-name"><b>' + esc(c.name) + '</b><span>' + esc(c.perk) + '</span></div>' +
-      '</div>' +
-      '<div class="r3-chips"><span>🏆 <b>' + fmt(best) + '</b></span><span>✖ <b>' + fb.mul.toFixed(2) + '</b> od filmova</span><span>🛹 <b>' + r.boards + '</b></span></div>' +
-      '<button type="button" class="r3-play" id="r3Go"><b>TRČI</b><span>do Doomsdaya</span></button>' +
-      '<nav class="r3-nav">' +
-        '<button type="button" data-v="chars"><i>🦸</i>Likovi<em>' + un.length + '/' + CHARS.length + '</em></button>' +
-        '<button type="button" data-v="shop"><i>⚡</i>Moći</button>' +
-        '<button type="button" data-v="pass"><i>🎟️</i>Pass' + (claim ? '<u>' + claim + '</u>' : '') + '</button>' +
-        '<button type="button" data-v="miss"><i>🎯</i>Misije<em>' + r.miss.list.filter(function (m) { return m.p >= m.n; }).length + '/3</em></button>' +
-      '</nav>' +
-      '<p class="r3-help">Prevuci ← → traka · ↑ skok · ↓ klizanje · dupli tap = hoverboard</p></div>';
-    host.querySelector('#r3Go').onclick = start;
-    each('[data-sw]', function (b) {
-      b.onclick = function () {
-        var i = un.indexOf(c), n = un[(i + +b.getAttribute('data-sw') + un.length) % un.length];
-        MM.Store.mutate(function (st) { st.runnerChar = n.id; }); UI.buzz(6); home();
-      };
-    });
-    wireNav();
-  }
-
-  function wireNav() {
-    each('[data-v]', function (b) {
-      b.onclick = function () { UI.buzz(5); ({ pass: passView, chars: charsView, shop: shopView, miss: missView, home: home })[b.getAttribute('data-v')](); };
-    });
-  }
-  function sub(title, body) {
+  function top(title, backTo) {
     var r = R(MM.Store.get());
-    host.innerHTML = '<div class="r3-sub">' + topBar(r) +
-      '<div class="r3-sh"><button type="button" class="r3-back" data-v="home">‹ Nazad</button><h2>' + title + '</h2></div><div class="r3-scroll">' + body + '</div></div>';
-    wireNav();
+    return '<header class="r3-top">' +
+      '<button type="button" class="r3-back" data-back="' + (backTo || '') + '" aria-label="Nazad">' + SVG.back + '</button>' +
+      '<b class="r3-title">' + esc(title) + '</b>' +
+      '<span class="r3-cur">' + ico('coin') + fmt(r.wallet) + '</span>' +
+      '<span class="r3-cur">' + ico('key') + r.keys + '</span></header>';
+  }
+  function nav(cur) {
+    var s = MM.Store.get(), r = R(s);
+    var it = [['miss', 'missions', 'Misije', missReady(r)], ['col', 'mask', 'Kolekcija', upgradable(r, s)], ['home', 'play', 'Igraj', 0], ['pass', 'ticket', 'Pass', claimable(r)], ['shop', 'bolt', 'Moći', 0]];
+    return '<nav class="r3-nav">' + it.map(function (x) {
+      return '<button type="button" class="' + (cur === x[0] ? 'on' : '') + '" data-v="' + x[0] + '">' + ico(x[1]) + '<span>' + x[2] + '</span>' + (x[3] ? '<u>' + x[3] + '</u>' : '') + '</button>';
+    }).join('') + '</nav>';
+  }
+  function frame(cur, title, body, backTo) {
+    stopPreview();
+    view = cur;
+    host.innerHTML = '<div class="r3-screen">' + top(title, backTo) + '<div class="r3-body">' + body + '</div>' + (backTo ? '' : nav(cur)) + '</div>';
+    wire();
+  }
+  function wire() {
+    each('[data-v]', function (b) { b.onclick = function () { UI.buzz(5); go(b.getAttribute('data-v')); }; });
+    each('[data-back]', function (b) { b.onclick = function () { back(); }; });
+  }
+  function each(sel, fn) { Array.prototype.forEach.call(host.querySelectorAll(sel), fn); }
+  function go(v) { ({ home: home, col: collection, pass: passView, miss: missView, shop: shopView })[v](); }
+  /** "Nazad" (dugme u aplikaciji i na telefonu). Vraca true kad je obradjeno ovde. */
+  function back() {
+    if (!host) return false;
+    if (game) { if (!host.querySelector('.r3-over')) pause(); return true; }
+    if (view === 'detail') { collection(); return true; }
+    if (view !== 'home') { home(); return true; }
+    return false;
   }
 
-  function charsView() {
-    var s = MM.Store.get(), c = charOf(s);
-    sub('Likovi', '<p class="r3-note">Likove otključavaš gledanjem filmova. Svaki odgledan naslov daje i +0,5% poena (do ×1,5).</p><div class="r3-chars">' +
-      CHARS.map(function (x) {
-        var on = unlocked(x, s), f = x.film && MM.Cat.get(x.film);
-        return '<button type="button" class="r3-c' + (on ? '' : ' locked') + (x.id === c.id ? ' sel' : '') + '" data-c="' + x.id + '">' +
-          '<span class="r3-cimg"><img src="' + sprite(x) + '" alt="" loading="lazy"></span><b>' + esc(x.name) + '</b>' +
-          '<i>' + esc(on ? x.perk : '🔒 Odgledaj „' + MM.Cat.cleanTitle(f) + '“') + '</i></button>';
-      }).join('') + '</div>');
-    each('.r3-c', function (b) {
-      b.onclick = function () {
-        var x = CHARS.filter(function (y) { return y.id === b.getAttribute('data-c'); })[0];
-        if (!unlocked(x, MM.Store.get())) { UI.buzz([20, 40, 20]); UI.toast('🔒 Otključava se kad odgledaš „' + MM.Cat.cleanTitle(MM.Cat.get(x.film)) + '“.'); return; }
-        MM.Store.mutate(function (st) { st.runnerChar = x.id; }); UI.buzz(6); charsView();
+  /* --- 3D pregled u meniju --- */
+  var pv = null;
+  function stopPreview() { if (pv) { pv.stop(); pv = null; } }
+  function startPreview(el, opts) {
+    load3d().then(function () {
+      if (!host || !el.isConnected) return;
+      var sp = el.querySelector('.r3-sprite'); if (sp) sp.remove();
+      var dk = el.querySelector('.r3-deck'); if (dk) dk.remove();
+      stopPreview();
+      pv = MM.Heroes.preview(el, opts);
+      el.onclick = function () { if (pv && pv.dance) { pv.dance(); UI.buzz(6); } };
+    }).catch(function () {});
+  }
+
+  /* --- pocetna --- */
+  function home() {
+    var s = MM.Store.get(), r = R(s), c = charOf(s), b = boardById(r.board), best = ((s.games || {}).best || {}).runner || 0;
+    var g = MM.Views.gamesOf(s), lv = MM.Games.lvlOf(g.xp), un = CHARS.filter(function (x) { return unlocked(x, s); });
+    var mul = runMul(s, r, c);
+    frame('home', 'Marvel Runner',
+      '<div class="r3-home">' +
+        '<div class="r3-stats">' +
+          '<span class="r3-lvl">' + ico('badge') + '<b>' + lv.n + '</b><i><s style="width:' + lv.pct + '%"></s></i><em>' + (g.xp - lv.from) + '/' + (lv.to - lv.from) + '</em></span>' +
+          '<span class="r3-bonus">+' + collBonus(r) + '%</span>' +
+          '<span class="r3-cur sm">' + ico('htoken') + fmt(r.htok) + '</span><span class="r3-cur sm">' + ico('btoken') + fmt(r.btok) + '</span>' +
+        '</div>' +
+        '<div class="r3-stage" id="r3Stage"><img class="r3-sprite" src="' + sprite(c) + '" alt=""></div>' +
+        '<div class="r3-who">' +
+          '<button type="button" class="r3-arr" data-sw="-1" aria-label="Prethodni"' + (un.length < 2 ? ' hidden' : '') + '>' + SVG.left + '</button>' +
+          '<div><b>' + esc(c.name) + '</b><span>Nivo ' + (r.hlv[c.id] || 1) + ' · board ' + esc(b.name) + '</span></div>' +
+          '<button type="button" class="r3-arr" data-sw="1" aria-label="Sledeći"' + (un.length < 2 ? ' hidden' : '') + '>' + SVG.right + '</button>' +
+        '</div>' +
+        '<div class="r3-chips"><span>' + ico('trophy') + '<b>' + fmt(best) + '</b></span><span><b>×' + mul.toFixed(2) + '</b> poeni</span></div>' +
+        '<button type="button" class="r3-go" id="r3Go">' + (r.tut ? 'IGRAJ' : 'IGRAJ · TUTORIJAL') + '</button>' +
+        (r.tut ? '<button type="button" class="r3-link" id="r3Tut">Ponovi tutorijal</button>' : '') +
+      '</div>');
+    host.querySelector('#r3Go').onclick = function () { start(!r.tut); };
+    var tb = host.querySelector('#r3Tut'); if (tb) tb.onclick = function () { start(true); };
+    each('[data-sw]', function (bt) {
+      bt.onclick = function () {
+        var i = un.indexOf(c), n = un[(i + +bt.getAttribute('data-sw') + un.length) % un.length];
+        MM.Store.mutate(function (st) { st.runnerChar = n.id; }); UI.buzz(6);
+        if (pv) {
+          pv.set(n.id); c = n;
+          host.querySelector('.r3-who b').textContent = n.name;
+          host.querySelector('.r3-who span').textContent = 'Nivo ' + (R(MM.Store.get()).hlv[n.id] || 1) + ' · board ' + b.name;
+        } else home();
       };
     });
+    startPreview(host.querySelector('#r3Stage'), { hero: c.id, board: b });
   }
 
+  /* --- kolekcija: junaci i boardovi --- */
+  function collection() {
+    var s = MM.Store.get(), r = R(s), cur = charOf(s);
+    var body = '<div class="r3-seg"><button type="button" class="' + (colTab === 'h' ? 'on' : '') + '" data-ct="h">' + ico('mask') + 'Junaci</button>' +
+      '<button type="button" class="' + (colTab === 'b' ? 'on' : '') + '" data-ct="b">' + ico('board') + 'Boardovi</button></div>' +
+      '<div class="r3-cbar"><span>Bonus kolekcije <b>+' + collBonus(r) + '%</b></span><span class="r3-cur sm">' + ico(colTab === 'h' ? 'htoken' : 'btoken') + fmt(colTab === 'h' ? r.htok : r.btok) + '</span></div><div class="r3-grid">';
+    if (colTab === 'h') {
+      CHARS.forEach(function (c) {
+        var on = unlocked(c, s), l = r.hlv[c.id] || 1, need = H_TOK[l - 1];
+        body += '<button type="button" class="r3-card' + (on ? '' : ' locked') + (c.id === cur.id ? ' sel' : '') + '" data-h="' + c.id + '">' +
+          '<span class="r3-ci"><img src="' + (thumbs[c.id] || sprite(c)) + '" data-th="' + c.id + '" alt="" loading="lazy"></span>' +
+          (on ? '<em class="r3-x">×' + +hMul(l).toFixed(2) + '</em>' : ico('lock', 'r3-lk')) +
+          (on && canUpH(r, c.id) ? '<i class="r3-upa">' + SVG.up + '</i>' : '') +
+          '<b>' + esc(c.name) + '</b>' +
+          (on ? '<span class="r3-lb"><i>Nv. ' + l + '</i>' + (l < MAXL ? '<s>' + ico('htoken') + '<u><q style="width:' + Math.min(100, r.htok / need * 100) + '%"></q></u>' + need + '</s>' : '<s>MAX</s>') + '</span>'
+            : '<span class="r3-lb"><s>„' + esc(MM.Cat.cleanTitle(MM.Cat.get(c.film))) + '“</s></span>') + '</button>';
+      });
+    } else {
+      BOARDS.forEach(function (b) {
+        var own = r.owned.indexOf(b.id) >= 0, l = r.blv[b.id] || 1, need = B_TOK[l - 1];
+        var tier = PASS.map(function (w, i) { return w.s === b.id ? i + 1 : 0; }).filter(Boolean)[0];
+        body += '<button type="button" class="r3-card' + (own ? '' : ' locked') + (r.board === b.id ? ' sel' : '') + '" data-b="' + b.id + '" style="--b1:' + b.c1 + ';--b2:' + b.c2 + '">' +
+          '<span class="r3-ci"><span class="r3-deck"></span></span>' +
+          (own ? '<em class="r3-x">×' + bMul(l).toFixed(1) + '</em>' : ico('lock', 'r3-lk')) +
+          (own && canUpB(r, b.id) ? '<i class="r3-upa">' + SVG.up + '</i>' : '') +
+          '<b>' + esc(b.name) + '</b>' +
+          (own ? '<span class="r3-lb"><i>Nv. ' + l + '</i>' + (l < MAXL ? '<s>' + ico('btoken') + '<u><q style="width:' + Math.min(100, r.btok / need * 100) + '%"></q></u>' + need + '</s>' : '<s>MAX</s>') + '</span>'
+            : '<span class="r3-lb"><s>Pass nivo ' + tier + '</s></span>') + '</button>';
+      });
+    }
+    body += '</div>';
+    frame('col', 'Kolekcija', body);
+    each('[data-ct]', function (b) { b.onclick = function () { colTab = b.getAttribute('data-ct'); UI.buzz(5); collection(); }; });
+    each('[data-h]', function (b) { b.onclick = function () { heroDetail(b.getAttribute('data-h')); }; });
+    each('[data-b]', function (b) { b.onclick = function () { boardDetail(b.getAttribute('data-b')); }; });
+    if (colTab === 'h') makeThumbs();
+  }
+
+  // slicice junaka iz 3D modela (jednom, posle ucitavanja)
+  var thumbs = {};
+  function makeThumbs() {
+    load3d().then(function () {
+      CHARS.forEach(function (c) {
+        if (!thumbs[c.id]) thumbs[c.id] = MM.Heroes.thumb(c.id);
+        var im = host && host.querySelector('img[data-th="' + c.id + '"]'); if (im) im.src = thumbs[c.id];
+      });
+    }).catch(function () {});
+  }
+
+  function heroDetail(id) {
+    var s = MM.Store.get(), r = R(s), c = charById(id), on = unlocked(c, s), l = r.hlv[id] || 1, sel = charOf(s).id === id;
+    var cost = l < MAXL ? '<button type="button" class="r3-upg" id="r3Up"' + (canUpH(r, id) ? '' : ' disabled') + '><b>Nadogradi · nivo ' + (l + 1) + '</b>' +
+      '<span>' + ico('coin') + fmt(H_COIN[l - 1]) + ico('htoken') + fmt(r.htok) + '/' + H_TOK[l - 1] + '</span></button>' : '<p class="r3-max">Najviši nivo</p>';
+    frame('detail', c.name,
+      '<div class="r3-det"><div class="r3-stage big" id="r3Stage"><img class="r3-sprite" src="' + sprite(c) + '" alt=""></div>' +
+      '<div class="r3-dl"><span class="r3-hex">×' + +hMul(l).toFixed(2) + '</span><div><em>NIVO ' + l + '</em><b>' + esc(c.name) + '</b><span>' + esc(c.perk) + '</span></div></div>' +
+      (on ? '<div class="r3-btns"><button type="button" class="r3-sel' + (sel ? ' on' : '') + '" id="r3Sel">' + (sel ? 'Izabran' : 'Izaberi') + '</button>' + cost + '</div>'
+        : '<p class="r3-note center">' + ico('lock') + ' Otključava se kad odgledaš „' + esc(MM.Cat.cleanTitle(MM.Cat.get(c.film))) + '“.</p>') +
+      '<p class="r3-note center">Tapni junaka da zaigra.</p></div>', 'col');
+    var sb = host.querySelector('#r3Sel'); if (sb) sb.onclick = function () { MM.Store.mutate(function (st) { st.runnerChar = id; }); UI.buzz(8); heroDetail(id); };
+    var ub = host.querySelector('#r3Up'); if (ub) ub.onclick = function () {
+      var ok = false;
+      save(function (r2) { var lv = r2.hlv[id] || 1; if (lv < MAXL && r2.htok >= H_TOK[lv - 1] && r2.wallet >= H_COIN[lv - 1]) { r2.htok -= H_TOK[lv - 1]; r2.wallet -= H_COIN[lv - 1]; r2.hlv[id] = lv + 1; ok = true; } });
+      if (ok) { reward({ ic: 'badge', t: 'Nivo ' + (l + 1), sub: c.name + ' · ×' + +hMul(l + 1).toFixed(2) + ' poena' }); heroDetail(id); }
+    };
+    startPreview(host.querySelector('#r3Stage'), { hero: id, board: boardById(r.board), dark: !on });
+  }
+
+  function boardDetail(id) {
+    var r = R(MM.Store.get()), b = boardById(id), own = r.owned.indexOf(id) >= 0, l = r.blv[id] || 1, sel = r.board === id;
+    var tier = PASS.map(function (w, i) { return w.s === id ? i + 1 : 0; }).filter(Boolean)[0];
+    var cost = l < MAXL ? '<button type="button" class="r3-upg" id="r3Up"' + (canUpB(r, id) ? '' : ' disabled') + '><b>Nadogradi · nivo ' + (l + 1) + '</b>' +
+      '<span>' + ico('coin') + fmt(B_COIN[l - 1]) + ico('btoken') + fmt(r.btok) + '/' + B_TOK[l - 1] + '</span></button>' : '<p class="r3-max">Najviši nivo</p>';
+    frame('detail', b.name,
+      '<div class="r3-det"><div class="r3-stage big" id="r3Stage" style="--b1:' + b.c1 + ';--b2:' + b.c2 + '"><span class="r3-deck big"></span></div>' +
+      '<div class="r3-dl"><span class="r3-hex">×' + bMul(l).toFixed(1) + '</span><div><em>NIVO ' + l + '</em><b>' + esc(b.name) + '</b><span>Skupi 3 plava tokena u trci i tapni dugme: 30 s te jedan udarac ne obara. Nivo boarda diže poene.</span></div></div>' +
+      (own ? '<div class="r3-btns"><button type="button" class="r3-sel' + (sel ? ' on' : '') + '" id="r3Sel">' + (sel ? 'Izabran' : 'Izaberi') + '</button>' + cost + '</div>'
+        : '<p class="r3-note center">' + ico('lock') + ' Dobija se na Pass nivou ' + tier + '.</p>') + '</div>', 'col');
+    var sb = host.querySelector('#r3Sel'); if (sb) sb.onclick = function () { save(function (r2) { r2.board = id; }); UI.buzz(8); boardDetail(id); };
+    var ub = host.querySelector('#r3Up'); if (ub) ub.onclick = function () {
+      var ok = false;
+      save(function (r2) { var lv = r2.blv[id] || 1; if (lv < MAXL && r2.btok >= B_TOK[lv - 1] && r2.wallet >= B_COIN[lv - 1]) { r2.btok -= B_TOK[lv - 1]; r2.wallet -= B_COIN[lv - 1]; r2.blv[id] = lv + 1; ok = true; } });
+      if (ok) { reward({ ic: 'board', t: 'Nivo ' + (l + 1), sub: b.name + ' · ×' + bMul(l + 1).toFixed(1) + ' poena' }); boardDetail(id); }
+    };
+    startPreview(host.querySelector('#r3Stage'), { board: b });
+  }
+
+  /* --- moci --- */
   function shopView() {
     var r = R(MM.Store.get());
-    var body = '<p class="r3-note">Moći pokupiš u trci. Svaki nivo = +20% trajanja.</p><div class="r3-ups">' +
+    var body = '<p class="r3-note">Moći kupiš u trci. Svaki nivo = +20% trajanja.</p><div class="r3-list">' +
       UPS.map(function (u) {
         var l = r.up[u.id] || 0, cost = UP_COST[l];
-        return '<div class="r3-up" style="--c:' + u.col + '"><span class="r3-uico">' + u.ico + '</span><div class="r3-ut"><b>' + esc(u.name) + '</b><i>' + esc(u.desc) + '</i>' +
+        return '<div class="r3-row">' + ico(u.ic, 'big') + '<div class="r3-rt"><b>' + esc(u.name) + '</b><span>' + esc(u.desc) + '</span>' +
           '<div class="r3-pips">' + [0, 1, 2, 3, 4].map(function (k) { return '<s class="' + (k < l ? 'on' : '') + '"></s>'; }).join('') + '<em>' + upDur(u, l) + ' s</em></div></div>' +
-          (l >= 5 ? '<span class="r3-max">MAX</span>' : '<button type="button" class="r3-buy" data-u="' + u.id + '"' + (r.wallet < cost ? ' disabled' : '') + '><img src="img/run/coin.webp" alt="">' + fmt(cost) + '</button>') + '</div>';
+          (l >= 5 ? '<span class="r3-maxs">MAX</span>' : '<button type="button" class="r3-buy" data-u="' + u.id + '"' + (r.wallet < cost ? ' disabled' : '') + '>' + ico('coin') + fmt(cost) + '</button>') + '</div>';
       }).join('') +
-      '<div class="r3-up" style="--c:#5fd3ff"><span class="r3-uico">🛹</span><div class="r3-ut"><b>Hoverboard</b><i>Dupli tap u trci: 30 s te jedan udarac ne obara. Imaš ' + r.boards + '.</i></div>' +
-        '<button type="button" class="r3-buy" data-u="board"' + (r.wallet < 400 ? ' disabled' : '') + '><img src="img/run/coin.webp" alt="">400</button></div>' +
-      '<div class="r3-up" style="--c:#ffd36b"><span class="r3-uico">🔑</span><div class="r3-ut"><b>Ključ</b><i>Nastavak posle pada. Imaš ' + r.keys + '.</i></div>' +
-        '<button type="button" class="r3-buy" data-u="key"' + (r.wallet < 1000 ? ' disabled' : '') + '><img src="img/run/coin.webp" alt="">1.000</button></div></div>' +
-      '<h3 class="r3-h3">Izgled boarda</h3><div class="r3-skins">' + SKINS.map(function (k) {
-        var own = r.skins.indexOf(k.id) >= 0, tier = PASS.map(function (w, i) { return w.s === k.id ? i + 1 : 0; }).filter(Boolean)[0];
-        return '<button type="button" class="r3-skin' + (own ? '' : ' locked') + (r.skin === k.id ? ' sel' : '') + '" data-sk="' + k.id + '" style="--b1:' + k.col + ';--b2:' + k.col2 + '"><span></span><b>' + esc(k.name) + '</b><i>' + (own ? (r.skin === k.id ? 'izabran' : 'izaberi') : 'Pass nivo ' + tier) + '</i></button>';
-      }).join('') + '</div>';
-    sub('Moći', body);
+      '<div class="r3-row">' + ico('key', 'big') + '<div class="r3-rt"><b>Ključ</b><span>Nastavak posle pada. Imaš ' + r.keys + '.</span></div>' +
+        '<button type="button" class="r3-buy" data-u="key"' + (r.wallet < 1000 ? ' disabled' : '') + '>' + ico('coin') + '1.000</button></div>' +
+      '<div class="r3-row">' + ico('htoken', 'big') + '<div class="r3-rt"><b>5 tokena junaka</b><span>Za nivo junaka. Imaš ' + fmt(r.htok) + '.</span></div>' +
+        '<button type="button" class="r3-buy" data-u="htok"' + (r.wallet < 800 ? ' disabled' : '') + '>' + ico('coin') + '800</button></div></div>';
+    frame('shop', 'Moći', body);
     each('.r3-buy', function (b) {
       b.onclick = function () {
         var id = b.getAttribute('data-u'), ok = false;
         save(function (r2) {
-          if (id === 'board') { if (r2.wallet >= 400) { r2.wallet -= 400; r2.boards++; ok = true; } }
-          else if (id === 'key') { if (r2.wallet >= 1000) { r2.wallet -= 1000; r2.keys++; ok = true; } }
+          if (id === 'key') { if (r2.wallet >= 1000) { r2.wallet -= 1000; r2.keys++; ok = true; } }
+          else if (id === 'htok') { if (r2.wallet >= 800) { r2.wallet -= 800; r2.htok += 5; ok = true; } }
           else { var l = r2.up[id] || 0; if (l < 5 && r2.wallet >= UP_COST[l]) { r2.wallet -= UP_COST[l]; r2.up[id] = l + 1; ok = true; } }
         });
         if (ok) { UI.buzz([10, 30, 10]); shopView(); }
       };
     });
-    each('.r3-skin', function (b) {
-      b.onclick = function () {
-        var id = b.getAttribute('data-sk');
-        if (R(MM.Store.get()).skins.indexOf(id) < 0) { UI.toast('🔒 Otključava se u Passu.'); return; }
-        save(function (r2) { r2.skin = id; }); UI.buzz(6); shopView();
-      };
-    });
   }
 
+  /* --- pass --- */
   function passView() {
-    var r = R(MM.Store.get()), t = tierOf(r.pass.pts), into = r.pass.pts - t * TIER;
-    var body = '<div class="r3-ph"><div class="r3-pbig"><b>' + t + '</b><i>/ ' + TIERS + '</i></div><div><b>Marvel Pass</b>' +
-      '<span>' + (t >= TIERS ? 'Sve otključano. Legenda.' : 'još ' + (TIER - into) + ' poena do nivoa ' + (t + 1)) + '</span>' +
-      '<div class="r3-pbar"><i style="width:' + (t >= TIERS ? 100 : Math.round(into / TIER * 100)) + '%"></i></div>' +
-      '<em>8 m trčanja = 1 poen · misija = +100</em></div></div><div class="r3-track">' +
-      PASS.map(function (w, i) {
-        var n = i + 1, x = rewTxt(w), got = r.pass.got[n], ready = n <= t && !got;
-        return '<button type="button" class="r3-tile' + (got ? ' got' : ready ? ' ready' : n === t + 1 ? ' next' : '') + (x.skin ? ' skin' : '') + '" data-t="' + n + '"' +
-          (x.skin ? ' style="--b1:' + x.skin.col + ';--b2:' + x.skin.col2 + '"' : '') + '>' +
-          '<span class="r3-tn">' + n + '</span><span class="r3-ti">' + (x.skin ? '<s class="r3-mini"></s>' : x.ico) + '</span><b>' + esc(x.t) + '</b><i>' + esc(got ? '✓ uzeto' : ready ? 'UZMI' : x.sub) + '</i></button>';
+    var r = R(MM.Store.get()), t = tierOf(r.pass.pts), into = r.pass.pts - t * TIER, pct = t >= TIERS ? 100 : Math.round(into / TIER * 100);
+    var body = '<div class="r3-phead">' + ico('ticket', 'big') + '<div><b>Marvel Pass · nivo ' + t + ' / ' + TIERS + '</b>' +
+      '<div class="r3-bar"><i style="width:' + pct + '%"></i></div>' +
+      '<span>' + (t >= TIERS ? 'Sve otključano.' : 'još ' + (TIER - into) + ' poena do nivoa ' + (t + 1)) + ' · 8 m = 1 poen · misija = 100</span></div></div>' +
+      '<div class="r3-track">' + PASS.map(function (w, i) {
+        var n = i + 1, x = rew(w), got = r.pass.got[n], ready = n <= t && !got;
+        return '<div class="r3-tr' + (got ? ' got' : ready ? ' ready' : n === t + 1 ? ' next' : '') + '">' +
+          '<span class="r3-tn">' + n + '</span>' +
+          '<div class="r3-tc"' + (x.board ? ' style="--b1:' + x.board.c1 + ';--b2:' + x.board.c2 + '"' : '') + '>' + (x.board ? '<span class="r3-deck sm"></span>' : ico(x.ic)) + '<div><b>' + esc(x.t) + '</b><span>' + esc(x.sub) + '</span></div>' +
+            (ready ? '<button type="button" class="r3-buy" data-t="' + n + '">Uzmi</button>' : got ? '<em class="r3-ok">✓</em>' : '') + '</div></div>';
       }).join('') + '</div>';
-    sub('Pass', body);
-    var nx = host.querySelector('.r3-tile.ready') || host.querySelector('.r3-tile.next');
+    frame('pass', 'Pass', body);
+    var nx = host.querySelector('.r3-tr.ready') || host.querySelector('.r3-tr.next');
     if (nx && nx.scrollIntoView) nx.scrollIntoView({ block: 'center' });
-    each('.r3-tile.ready', function (b) {
+    each('[data-t]', function (b) {
       b.onclick = function () {
         var n = +b.getAttribute('data-t'), w = PASS[n - 1];
         save(function (r2) {
@@ -301,123 +427,151 @@ window.MM = window.MM || {};
           r2.pass.got[n] = 1;
           if (w.c) r2.wallet += w.c;
           if (w.k) r2.keys += w.k;
-          if (w.b) r2.boards += w.b;
-          if (w.s && r2.skins.indexOf(w.s) < 0) r2.skins.push(w.s);
+          if (w.h) r2.htok += w.h;
+          if (w.t) r2.btok += w.t;
+          if (w.s && r2.owned.indexOf(w.s) < 0) r2.owned.push(w.s);
         });
-        reward(rewTxt(w)); passView();
+        reward(rew(w)); passView();
       };
     });
   }
 
+  /* --- misije --- */
   function missView() {
     var r = R(MM.Store.get());
-    var body = '<p class="r3-note">Nove misije svaki dan. Svaka: +100 poena passa i 100 novčića. Sve tri: +1 🔑.</p><div class="r3-miss">' +
+    var body = '<p class="r3-note">Nove misije svaki dan. Svaka daje 100 novčića, 5 tokena junaka i 100 poena passa. Sve tri: +1 ključ.</p><div class="r3-list">' +
       r.miss.list.map(function (m, i) {
         var done = m.p >= m.n, pct = Math.min(100, Math.round(m.p / m.n * 100));
-        return '<div class="r3-m' + (m.got ? ' got' : done ? ' ready' : '') + '"><span class="r3-mn">' + (m.got ? '✓' : i + 1) + '</span><div><b>' + esc(missText(m)) + '</b>' +
-          '<div class="r3-pbar"><i style="width:' + pct + '%"></i></div><em>' + fmt(Math.min(m.p, m.n)) + ' / ' + fmt(m.n) + '</em></div>' +
-          (done && !m.got ? '<button type="button" class="r3-buy" data-m="' + i + '">Uzmi</button>' : '') + '</div>';
+        return '<div class="r3-row' + (m.got ? ' got' : done ? ' ready' : '') + '">' + ico('target', 'big') + '<div class="r3-rt"><b>' + esc(missText(m)) + '</b>' +
+          '<div class="r3-bar"><i style="width:' + pct + '%"></i></div><span>' + fmt(Math.min(m.p, m.n)) + ' / ' + fmt(m.n) + '</span></div>' +
+          (m.got ? '<em class="r3-ok">✓</em>' : done ? '<button type="button" class="r3-buy" data-m="' + i + '">Uzmi</button>' : '') + '</div>';
       }).join('') + '</div>';
-    sub('Misije', body);
+    frame('miss', 'Misije', body);
     each('[data-m]', function (b) {
       b.onclick = function () {
         var i = +b.getAttribute('data-m'), key = false;
         save(function (r2) {
           var m = r2.miss.list[i]; if (!m || m.got || m.p < m.n) return;
-          m.got = 1; r2.pass.pts += 100; r2.wallet += 100;
+          m.got = 1; r2.pass.pts += 100; r2.wallet += 100; r2.htok += 5;
           if (!r2.miss.all && r2.miss.list.every(function (x) { return x.got; })) { r2.miss.all = 1; r2.keys++; key = true; }
         });
-        reward({ ico: '🎯', t: '+100', sub: 'poena passa i 100 novčića' + (key ? ' · +1 🔑 za sve tri!' : '') }); missView();
+        reward({ ic: 'target', t: 'Misija!', sub: '+100 novčića · +5 tokena' + (key ? ' · +1 ključ za sve tri' : '') }); missView();
       };
     });
   }
 
-  /** Mala animacija nagrade preko ekrana. */
+  /** Nagrada preko ekrana. */
   function reward(x, ms) {
-    ms = ms || 1300;
+    ms = ms || 1400;
     UI.buzz([15, 40, 25]);
     var el = document.createElement('div'); el.className = 'r3-rew';
-    el.innerHTML = '<div><span>' + (x.skin ? '<s class="r3-mini" style="--b1:' + x.skin.col + ';--b2:' + x.skin.col2 + '"></s>' : x.ico) + '</span><b>' + esc(x.t) + '</b><i>' + esc(x.sub) + '</i></div>';
+    el.innerHTML = '<div>' + (x.board ? '<span class="r3-deck" style="--b1:' + x.board.c1 + ';--b2:' + x.board.c2 + '"></span>' : ico(x.ic, 'huge')) + '<b>' + esc(x.t) + '</b><span>' + esc(x.sub) + '</span></div>';
     (host && host.closest('.sheet') || document.body).appendChild(el);
     setTimeout(function () { el.classList.add('out'); }, ms);
     setTimeout(function () { el.remove(); }, ms + 400);
   }
 
+  /** Jednokratni poklon za stari napredak (mini igre i stari rekord). */
+  function oldGift(s) {
+    var best = (s.games && s.games.best) || {}, lv = 0;
+    Object.keys(best).forEach(function (k) { if (k !== 'runner' && k !== '_v') lv += best[k] | 0; });
+    var old = s.gameBest || {}; Object.keys(old).forEach(function (k) { if (!best[{ g0: 'classic', g1: 'doom', g2: 'stones', g3: 'quiz' }[k]]) lv += old[k] | 0; });
+    return { coins: Math.min(5000, lv * 50 + Math.floor((best.runner | 0) / 20)), keys: lv ? 1 + Math.floor(lv / 10) : 0, htok: Math.min(60, lv * 2), lv: lv };
+  }
+
   /* ---------------- trka ---------------- */
-  function start() {
-    var s = MM.Store.get(), r = R(s), c = charOf(s), fb = filmBonus(s);
-    var sk = SKINS.filter(function (x) { return x.id === r.skin; })[0] || SKINS[0];
+  function start(tutorial) {
+    stopPreview();
+    var s = MM.Store.get(), r = R(s), c = charOf(s), b = boardById(r.board);
+    view = 'game';
     host.innerHTML = '<div class="r3-load"><img src="' + sprite(c) + '" alt=""><b>Učitavam…</b></div>';
-    loadThree().then(function () {
+    load3d().then(function () {
       if (!host) return;
-      run = { c: c, usedBoards: 0, revives: 0, ms: 0, msCoins: 0 };
+      run = { c: c, revives: 0, ms: 0, msCoins: 0, tut: tutorial };
+      var mul = runMul(s, r, c);
       host.innerHTML = '<div class="r3-game" id="r3G">' +
-        '<div class="r3-hud"><div class="r3-sc"><b id="r3S">0</b><i id="r3M">×' + (fb.mul * (c.p.score || 1)).toFixed(1) + '</i></div>' +
-          '<span class="r3-coin"><img src="img/run/coin.webp" alt=""><b id="r3C">0</b></span>' +
-          '<button type="button" class="r3-pause" id="r3P" aria-label="Pauza">❚❚</button></div>' +
+        '<div class="r3-hud"><div class="r3-sc"><b id="r3S">0</b><i id="r3M">×' + mul.toFixed(1) + '</i></div>' +
+          '<span class="r3-cur">' + ico('coin') + '<b id="r3C">0</b></span>' +
+          '<button type="button" class="r3-pause" id="r3P" aria-label="Pauza">' + SVG.pause + '</button></div>' +
         '<div class="r3-pws" id="r3W"></div>' +
-        '<button type="button" class="r3-bd" id="r3B"' + (r.boards ? '' : ' hidden') + '>🛹<b id="r3BN">' + r.boards + '</b></button>' +
+        '<button type="button" class="r3-bd" id="r3B" aria-label="Hoverboard">' + ico('board') + '<span class="r3-seg3"><i></i><i></i><i></i></span></button>' +
         '<div class="r3-toast" id="r3T"></div>' +
-        '<div class="r3-tip" id="r3Tip">Prevuci ← → ↑ ↓</div></div>';
-      var g = host.querySelector('#r3G');
-      game = MM.Run3D.create(g, {
-        hero: c.id, mul: fb.mul * (c.p.score || 1), coinMul: c.p.coin || 1, accel: c.p.accel || 1, pwRate: c.p.pwRate || 1, smash: !!c.p.smash,
-        up: r.up, perk: c.p, board: { c1: sk.col, c2: sk.col2 }, boards: r.boards,
+        '<div class="r3-tip" id="r3Tip" hidden></div></div>';
+      game = MM.Run3D.create(host.querySelector('#r3G'), {
+        hero: c.id, mul: mul, coinMul: c.p.coin || 1, accel: c.p.accel || 1, pwRate: c.p.pwRate || 1, smash: !!c.p.smash,
+        up: r.up, perk: c.p, board: { c1: b.c1, c2: b.c2 }, tutorial: tutorial,
         onHud: hud, onEvent: onEvent, onEnd: crashed, onHidden: pause
       });
       host.querySelector('#r3P').onclick = pause;
       host.querySelector('#r3B').onclick = function () { if (game) game.useBoard(); };
     }).catch(function () {
       if (!host) return;
-      host.innerHTML = '<div class="gm-end"><div class="gm-emo">📡</div><h2>Igra nije učitana</h2><p class="muted">Prvi put treba internet.</p><button type="button" class="btn primary wide" id="r3Re">Probaj opet</button></div>';
+      host.innerHTML = '<div class="r3-load"><b>Igra nije učitana</b><p class="muted">Prvi put treba internet.</p><button type="button" class="btn primary" id="r3Re">Probaj opet</button></div>';
       host.querySelector('#r3Re').onclick = home;
     });
   }
 
   // nagrade za daljinu u jednoj trci
   var MILES = [[500, 25], [1000, 50], [2000, 100], [3000, 150], [5000, 250], [7500, 400], [10000, 600], [15000, 1000]];
+  var PW_IC = { magnet: 'magnet', jet: 'hammer', x2: 'x2', jump: 'web' };
   function hud(h) {
-    if (!host) return;
+    if (!host || !run) return;
     var q = function (id) { return host.querySelector(id); };
     var sc = q('#r3S'); if (!sc) return;
     sc.textContent = fmt(h.score); q('#r3C').textContent = fmt(h.coins);
-    q('#r3M').textContent = '×' + h.mul.toFixed(1);
-    q('#r3M').classList.toggle('hot', h.x2);
+    q('#r3M').textContent = '×' + h.mul.toFixed(1); q('#r3M').classList.toggle('hot', h.x2);
     var w = '';
-    UPS.forEach(function (u) {
-      var t = h.pw[u.id]; if (!(t > 0)) return;
-      w += '<div style="--c:' + u.col + '"><span>' + u.ico + '</span><i><s style="width:' + Math.round(t / h.max[u.id] * 100) + '%"></s></i></div>';
+    Object.keys(PW_IC).forEach(function (k) {
+      var t = h.pw[k]; if (!(t > 0)) return;
+      w += '<div>' + ico(PW_IC[k]) + '<i><s style="width:' + Math.round(t / h.max[k] * 100) + '%"></s></i></div>';
     });
-    if (h.board > 0) w += '<div style="--c:#5fd3ff"><span>🛹</span><i><s style="width:' + Math.round(h.board / h.max.board * 100) + '%"></s></i></div>';
-    if (h.shield) w += '<div style="--c:#5fd3ff"><span>🛡️</span><i><s style="width:100%"></s></i></div>';
+    if (h.board > 0) w += '<div>' + ico('board') + '<i><s style="width:' + Math.round(h.board / h.max.board * 100) + '%"></s></i></div>';
+    if (h.shield) w += '<div>' + ico('shield') + '<i><s style="width:100%"></s></i></div>';
     q('#r3W').innerHTML = w;
-    var bd = q('#r3B'); if (bd) { bd.hidden = !(h.boardsLeft > 0) || h.board > 0; q('#r3BN').textContent = h.boardsLeft; }
-    while (run && run.ms < MILES.length && h.dist >= MILES[run.ms][0]) {
+    var bd = q('#r3B');
+    bd.classList.toggle('ready', h.meter >= 3 && !(h.board > 0)); bd.classList.toggle('active', h.board > 0);
+    Array.prototype.forEach.call(bd.querySelectorAll('.r3-seg3 i'), function (seg, i) { seg.classList.toggle('on', i < h.meter || h.board > 0); });
+    while (run.ms < MILES.length && h.dist >= MILES[run.ms][0]) {
       run.msCoins += MILES[run.ms][1];
-      flash('🎁 ' + fmt(MILES[run.ms][0]) + ' m · +' + MILES[run.ms][1] + ' novčića');
+      flash(fmt(MILES[run.ms][0]) + ' m · +' + MILES[run.ms][1], 'coin');
       run.ms++;
     }
   }
-  function flash(t) {
+  function flash(t, ic) {
     var el = host && host.querySelector('#r3T'); if (!el) return;
-    el.textContent = t; el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+    el.innerHTML = (ic ? ico(ic) : '') + '<span>' + esc(t) + '</span>'; el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
   }
-  var PW_TXT = { magnet: '🧲 MAGNET', jet: '🔨 MJOLNIR LET', x2: '✖ ×2 POENI', jump: '🕸️ SPIDER SKOK', shield: '🛡️ ŠTIT' };
-  function onEvent(n) {
-    if (n === 'move') { var tip = host && host.querySelector('#r3Tip'); if (tip) tip.remove(); return; }
-    if (n.indexOf('pw:') === 0) { flash(PW_TXT[n.slice(3)] || ''); UI.buzz(10); }
-    else if (n === 'stumble') { flash('⚠️ Doom je iza tebe!'); UI.buzz([20, 30, 20]); }
-    else if (n === 'shield') { flash('🛡️ Štit te spasao!'); UI.buzz(30); }
-    else if (n === 'boardbreak') { flash('🛹 Board te spasao!'); UI.buzz(30); }
-    else if (n === 'board') { run.usedBoards++; flash('🛹 HOVERBOARD'); UI.buzz(10); }
-    else if (n === 'smash') { flash('👊 HULK SMASH!'); UI.buzz(30); }
+  var PW_TXT = { magnet: ['magnet', 'Magnet'], jet: ['hammer', 'Mjolnir let'], x2: ['x2', '×2 poeni'], jump: ['web', 'Spider skok'], shield: ['shield', 'Štit'] };
+  var ARROW = { side: SVG.left + SVG.right, up: SVG.up, down: '<svg viewBox="0 0 24 24" style="transform:rotate(180deg)"><path d="M12 3 3 12h6v9h6v-9h6z"/></svg>' };
+  function onEvent(n, x) {
+    var tip = host && host.querySelector('#r3Tip');
+    if (n === 'move') return;
+    if (n === 'tip') {
+      if (!tip) return;
+      tip.hidden = false; tip.className = 'r3-tip ' + x.need;
+      tip.innerHTML = (ARROW[x.need] ? '<span class="r3-arw">' + ARROW[x.need] + '</span>' : '') + '<b>' + esc(x.t) + '</b>';
+      if (x.need === 'none') setTimeout(function () { if (tip) tip.hidden = true; }, 2600);
+      return;
+    }
+    if (n === 'tipdone') { if (tip) tip.hidden = true; UI.buzz(8); return; }
+    if (n.indexOf('pw:') === 0) { var p = PW_TXT[n.slice(3)]; if (p) flash(p[1], p[0]); UI.buzz(10); }
+    else if (n === 'btok') { flash('Board token', 'btoken'); }
+    else if (n === 'boardready') {
+      flash('Hoverboard spreman', 'board'); UI.buzz([10, 30, 10]);
+      if (run.tut && tip) { tip.hidden = false; tip.className = 'r3-tip board'; tip.innerHTML = '<b>Tapni dugme dole desno — hoverboard</b>'; setTimeout(function () { if (tip) tip.hidden = true; }, 4000); }
+    }
+    else if (n === 'stumble') { flash('Doom je iza tebe!', 'mask'); UI.buzz([20, 30, 20]); }
+    else if (n === 'shield') { flash('Štit te spasao!', 'shield'); UI.buzz(30); }
+    else if (n === 'boardbreak') { flash('Board te spasao!', 'board'); UI.buzz(30); }
+    else if (n === 'board') { flash('Hoverboard!', 'board'); UI.buzz(10); }
+    else if (n === 'smash') { flash('Hulk smash!', 'bolt'); UI.buzz(30); }
     else if (n === 'crash') UI.buzz([40, 30, 80]);
   }
   function pause() {
-    if (!game || host.querySelector('.r3-over')) return;
+    if (!game || !host || host.querySelector('.r3-over')) return;
     game.pause();
     var g = host.querySelector('#r3G'), o = document.createElement('div');
-    o.className = 'r3-over'; o.innerHTML = '<div class="r3-box"><h2>Pauza</h2><button type="button" class="r3-play sm" id="r3Res"><b>NASTAVI</b></button><button type="button" class="btn ghost wide" id="r3Quit">Završi trku</button></div>';
+    o.className = 'r3-over'; o.innerHTML = '<div class="r3-box"><h2>Pauza</h2><button type="button" class="r3-go" id="r3Res">NASTAVI</button><button type="button" class="r3-ghost" id="r3Quit">Završi trku</button></div>';
     g.appendChild(o);
     o.querySelector('#r3Res').onclick = function () { o.remove(); game.resume(); };
     o.querySelector('#r3Quit').onclick = function () { o.remove(); var res = game.result(); res.why = 'Završio si trku'; game.stop(); game = null; finish(res); };
@@ -426,13 +580,13 @@ window.MM = window.MM || {};
   /** Pad: ponudi nastavak za kljuc (1, pa 2, pa 4), inace kraj. */
   function crashed(res) {
     if (!host || !game) return;
-    var r = R(MM.Store.get()), free = run.c.p.freeRevive && run.revives === 0;
+    var r = R(MM.Store.get()), free = (run.c.p.freeRevive && run.revives === 0) || run.tut;
     var cost = free ? 0 : Math.pow(2, run.revives);
     if (run.revives >= 3 || (!free && r.keys < cost)) { game.stop(); game = null; finish(res); return; }
     var g = host.querySelector('#r3G'), o = document.createElement('div');
     o.className = 'r3-over'; o.innerHTML = '<div class="r3-box"><h2>' + esc(res.why) + '</h2><p class="muted">' + fmt(res.score) + ' poena · ' + fmt(res.dist) + ' m</p>' +
-      '<button type="button" class="r3-play sm" id="r3Rev"><b>NASTAVI</b><span>' + (free ? 'besplatno (Deadpool)' : '🔑 ' + cost + ' · imaš ' + r.keys) + '</span></button>' +
-      '<div class="r3-ring"><i></i></div><button type="button" class="btn ghost wide" id="r3No">Ne, završi</button></div>';
+      '<button type="button" class="r3-go" id="r3Rev">NASTAVI<span>' + (free ? (run.tut ? 'besplatno u tutorijalu' : 'besplatno (Deadpool)') : ico('key') + cost + ' · imaš ' + r.keys) + '</span></button>' +
+      '<div class="r3-ring"><i></i></div><button type="button" class="r3-ghost" id="r3No">Ne, završi</button></div>';
     g.appendChild(o);
     var tm = setTimeout(no, 6000);
     function no() { clearTimeout(tm); o.remove(); if (game) { game.stop(); game = null; finish(res); } }
@@ -446,36 +600,40 @@ window.MM = window.MM || {};
 
   function finish(res) {
     if (!host) return;
-    var coinsWon = res.coins + run.msCoins, pts = Math.floor(res.dist / 8), before = 0, after = 0, done = [];
+    view = 'end';
+    var coinsWon = res.coins + run.msCoins, pts = Math.floor(res.dist / 8), before = 0, after = 0, done = [], st = res.stats;
     save(function (r) {
       before = tierOf(r.pass.pts);
-      r.wallet += coinsWon; r.pass.pts += pts; r.runs++; r.distAll += res.dist;
-      r.boards = Math.max(0, r.boards - run.usedBoards);
-      var st = res.stats;
+      r.wallet += coinsWon; r.pass.pts += pts; r.runs++; r.distAll += res.dist; r.btok += st.btok || 0;
+      if (run.tut && res.dist > 200) r.tut = 1;
       r.miss.list.forEach(function (m) {
         if (m.got || m.p >= m.n) return;
         if (m.id === 'dist1') m.p = Math.max(m.p, res.dist);
         else if (m.id === 'score1') m.p = Math.max(m.p, res.score);
-        else m.p += ({ coins: res.coins, jumps: st.jumps, rolls: st.rolls, trains: st.trains, powerups: st.powerups, runs: 1 }[m.id]) || 0;
+        else m.p += ({ coins: res.coins, jumps: st.jumps, rolls: st.rolls, trains: st.trains, powerups: st.powerups, btok: st.btok, runs: 1 }[m.id]) || 0;
         if (m.p >= m.n) done.push(missText(m));
       });
       after = tierOf(r.pass.pts);
     });
     var gx = (onEnd ? onEnd({ score: res.score, coins: coinsWon, dist: res.dist }) : null) || {};
     var r2 = R(MM.Store.get()), t = tierOf(r2.pass.pts), into = r2.pass.pts - t * TIER;
-    host.innerHTML = '<div class="r3-end">' +
-      '<em class="r3-why">' + esc(res.why || 'Kraj trke') + '</em>' +
-      (gx.rec ? '<div class="r3-rec">NOVI REKORD!</div>' : '') +
+    host.innerHTML = '<div class="r3-screen">' + top('Kraj trke') + '<div class="r3-body r3-end">' +
+      '<span class="r3-why">' + esc(res.why || 'Kraj trke') + '</span>' +
+      (gx.rec ? '<span class="r3-rec">' + ico('trophy') + 'NOVI REKORD</span>' : '') +
       '<h2 class="r3-big">' + fmt(res.score) + '</h2>' +
-      '<div class="r3-row"><div><b>' + fmt(res.dist) + ' m</b><i>pretrčano</i></div><div><b><img src="img/run/coin.webp" alt="">' + fmt(coinsWon) + '</b><i>novčića' + (run.msCoins ? ' (+' + run.msCoins + ' bonus)' : '') + '</i></div><div><b>+' + (gx.xp || 0) + '</b><i>XP</i></div></div>' +
-      '<div class="r3-pcard"><div class="r3-pbig sm"><b>' + t + '</b></div><div><b>Marvel Pass +' + pts + '</b>' +
-        '<div class="r3-pbar"><i style="width:' + (t >= TIERS ? 100 : Math.round(into / TIER * 100)) + '%"></i></div>' +
-        '<em>' + (after > before ? '🎉 ' + (after - before > 1 ? (after - before) + ' nova nivoa' : 'Novi nivo') + ' — uzmi nagradu!' : 'još ' + (TIER - into) + ' do nivoa ' + (t + 1)) + '</em></div></div>' +
-      (done.length ? '<div class="r3-done">' + done.map(function (d) { return '<span>🎯 ' + esc(d) + ' ✓</span>'; }).join('') + '</div>' : '') +
-      '<button type="button" class="r3-play" id="r3Again"><b>PONOVO</b></button>' +
-      '<div class="r3-endnav"><button type="button" class="btn ghost" data-v="home">Meni</button>' + (after > before || done.length ? '<button type="button" class="btn ghost" data-v="' + (after > before ? 'pass' : 'miss') + '">Nagrade</button>' : '') + '</div></div>';
-    host.querySelector('#r3Again').onclick = start;
-    wireNav();
+      '<div class="r3-sum"><div><b>' + fmt(res.dist) + ' m</b><span>pretrčano</span></div>' +
+        '<div><b>' + ico('coin') + fmt(coinsWon) + '</b><span>novčića</span></div>' +
+        '<div><b>' + ico('btoken') + fmt(st.btok || 0) + '</b><span>tokena</span></div>' +
+        '<div><b>+' + (gx.xp || 0) + '</b><span>XP</span></div></div>' +
+      '<div class="r3-phead">' + ico('ticket', 'big') + '<div><b>Marvel Pass +' + pts + ' · nivo ' + t + '</b>' +
+        '<div class="r3-bar"><i style="width:' + (t >= TIERS ? 100 : Math.round(into / TIER * 100)) + '%"></i></div>' +
+        '<span>' + (after > before ? (after - before > 1 ? (after - before) + ' nova nivoa' : 'Novi nivo') + ' — uzmi nagradu u Passu' : 'još ' + (TIER - into) + ' do nivoa ' + (t + 1)) + '</span></div></div>' +
+      (done.length ? '<div class="r3-done">' + done.map(function (d) { return '<span>' + ico('target') + esc(d) + ' ✓</span>'; }).join('') + '</div>' : '') +
+      '<button type="button" class="r3-go" id="r3Again">PONOVO</button>' +
+      '<div class="r3-endnav"><button type="button" class="r3-ghost" data-v="home">Meni</button>' + (after > before ? '<button type="button" class="r3-ghost" data-v="pass">Pass</button>' : done.length ? '<button type="button" class="r3-ghost" data-v="miss">Misije</button>' : '') + '</div>' +
+      '</div></div>';
+    host.querySelector('#r3Again').onclick = function () { start(false); };
+    wire();
     if (gx.up && MM.Games.levelUp) setTimeout(function () { MM.Games.levelUp(gx.lvl, gx.title); }, 500);
   }
 
@@ -485,16 +643,26 @@ window.MM = window.MM || {};
     UI.openSheet({
       id: 'games', full: true, cls: 'gm-sheet r3-sheet',
       render: function () { return '<div class="r3 no-drag" id="r3Box" data-keep></div>'; },
-      onOpen: function (el) { host = el.querySelector('#r3Box'); home(); },
-      onClose: function () { if (game) game.stop(); game = null; host = null; }
+      onOpen: function (el) {
+        host = el.querySelector('#r3Box');
+        var s0 = MM.Store.get(), r0 = R(s0);
+        if (!r0.gift) {
+          var gf = oldGift(s0);
+          save(function (r2) { r2.gift = 1; r2.wallet += gf.coins; r2.keys += gf.keys; r2.htok += gf.htok; });
+          if (gf.coins || gf.keys) setTimeout(function () { reward({ ic: 'gift', t: '+' + fmt(gf.coins), sub: 'poklon za stari napredak · ' + gf.keys + ' ključ(a) · ' + gf.htok + ' tokena' }, 3200); }, 400);
+        } else save(function () {});
+        home();
+      },
+      onBack: function () { return back(); },
+      onClose: function () { stopPreview(); if (game) game.stop(); game = null; host = null; }
     });
   }
 
   /** Za karticu u tabu Igre. */
   function summary(s) {
     var r = R(s), t = tierOf(r.pass.pts);
-    return { tier: t, tiers: TIERS, pct: t >= TIERS ? 100 : Math.round((r.pass.pts - t * TIER) / TIER * 100), claim: canClaim(r), wallet: r.wallet };
+    return { tier: t, tiers: TIERS, pct: t >= TIERS ? 100 : Math.round((r.pass.pts - t * TIER) / TIER * 100), claim: claimable(r) + missReady(r), wallet: r.wallet };
   }
 
-  MM.Runner = { _game: function () { return game; }, open: open, CHARS: CHARS, unlocked: unlocked, filmBonus: filmBonus, charOf: charOf, sprite: sprite, summary: summary, PASS: PASS, _R: R, loadThree: loadThree };
+  MM.Runner = { _game: function () { return game; }, open: open, CHARS: CHARS, BOARDS: BOARDS, unlocked: unlocked, filmBonus: filmBonus, charOf: charOf, sprite: sprite, summary: summary, PASS: PASS, _R: R, load3d: load3d };
 })();

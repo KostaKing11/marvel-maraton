@@ -1415,6 +1415,15 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.19', title: 'Runner: pravi 3D junaci', big: true, items: [
+      '<b>Pravi 3D junaci</b> — profesionalne animacije (sprint, skok, kolut, ples, pad), kostim za svakog: Kepov štit, Torov plašt, Iron Manova kaciga, Spajdijeve oči…',
+      '<b>Kolekcija kao u Subway Surfers City</b> — junaci i boardovi imaju nivo i množilac poena (×). Diže se za novčiće + tokene; svaki nivo daje i bonus kolekcije.',
+      '<b>Board tokeni</b> — skupi 3 plava tokena u trci i tapni dugme dole desno za hoverboard.',
+      '<b>Staza od ručno pravljenih deonica</b> — nema više nasumičnih prepreka; svaka deonica je proverena da ima prolaz iz svake trake.',
+      '<b>Tutorijal</b> — prva trka staje ispred prepreke i pokaže šta da prevučeš.',
+      '<b>Izgleda kao ostatak aplikacije</b> — isti font i boje, nove ikonice iz Figme umesto emojija, „nazad“ na telefonu radi svuda.',
+      'Sav napredak je sačuvan: novčići, ključevi, pass i moći ostaju, a stari boardovi su postali board tokeni.'
+    ], cta: { a: 'runner', label: 'Igraj' } },
     { id: '2.18.1', title: 'Niko ne gubi napredak', big: false, items: [
       '<b>Nivo ostaje isti</b> — XP je prebačen na novu skalu tako da svako ima tačno isti nivo i procenat kao pre. Rang lista računa sve isto.',
       '<b>Poklon za stare rekorde</b> — svaki pređen nivo u mini igrama (i u igrama koje su izbačene) i stari rekord u Runneru pretvoreni su u novčiće i ključeve. Čeka te kad otvoriš Runner.',

@@ -4,10 +4,10 @@
    VAZNO: podigni CACHE verziju na svaki deploy, inace se
    korisnik zaglavi na staroj verziji app-a.
    ============================================================ */
-const CACHE = 'marvel-maraton-v81';
+const CACHE = 'marvel-maraton-v82';
 
 // App shell — cache-first. Isti ?v= broj kao u index.html.
-const V = '231';
+const V = '232';
 const SHELL = [
   './',
   './index.html',
@@ -23,7 +23,11 @@ const SHELL = [
   './js/doom.js?v=' + V,
   './js/badges.js?v=' + V,
   './js/games.js?v=' + V,
+  './js/runsections.js?v=' + V,
+  './js/heroes3d.js?v=' + V,
   './js/run3d.js?v=' + V,
+  './js/vendor/three-addons.js?v=149',
+  './models/hero.glb?v=1',
   './js/runner.js?v=' + V,
   './js/vendor/three.min.js?v=149',
   './js/views.js?v=' + V,
@@ -34,6 +38,7 @@ const SHELL = [
   './img/run/agent.webp', './img/run/iron.webp', './img/run/cap.webp', './img/run/thor.webp', './img/run/hulk.webp', './img/run/widow.webp', './img/run/spidey.webp', './img/run/panther.webp', './img/run/strange.webp', './img/run/ant.webp', './img/run/marvel.webp', './img/run/deadpool.webp', './img/run/doom.webp', './img/run/train.webp', './img/run/low.webp', './img/run/high.webp', './img/run/coin.webp', './img/run/shield.webp',
   './img/map/doomhead.jpg', './img/map/road.jpg', './img/map/sign.webp', './img/map/start.webp', './img/map/goal.webp', './img/map/gauntlet.webp',
   './img/map/stone-space.webp', './img/map/stone-mind.webp', './img/map/stone-reality.webp', './img/map/stone-power.webp', './img/map/stone-time.webp', './img/map/stone-soul.webp',
+  './img/ui/key.webp', './img/ui/btoken.webp', './img/ui/htoken.webp', './img/ui/magnet.webp', './img/ui/hammer.webp', './img/ui/x2.webp', './img/ui/web.webp', './img/ui/shield.webp', './img/ui/ticket.webp', './img/ui/target.webp', './img/ui/trophy.webp', './img/ui/gift.webp', './img/ui/mask.webp', './img/ui/board.webp', './img/ui/bolt.webp', './img/ui/missions.webp', './img/ui/chest.webp', './img/ui/lock.webp', './img/ui/play.webp', './img/ui/badge.webp',
   './manifest.json',
   './icons/icon-192.png',
   './icons/badge-96.png',
