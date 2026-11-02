@@ -6,7 +6,7 @@ name: Firestore pravila
 on:
   push:
     branches: [main]
-    paths: [firestore.rules, firebase.json]
+    paths: [firestore.rules, firebase.json, .github/workflows/firestore-rules.yml]
   workflow_dispatch:
 
 jobs:
@@ -24,5 +24,6 @@ jobs:
           if [ -z "$SA" ]; then echo "Nema tajne FIREBASE_SERVICE_ACCOUNT - preskacem."; exit 0; fi
           printf '%s' "$SA" > "$RUNNER_TEMP/sa.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          node -e "const k=require(process.env.GOOGLE_APPLICATION_CREDENTIALS); console.log('Nalog:', k.client_email, '| projekat:', k.project_id)"
           npx -y firebase-tools@13 deploy --only firestore:rules --project marvel-marathon-kosat --non-interactive
           rm -f "$RUNNER_TEMP/sa.json"
