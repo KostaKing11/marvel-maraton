@@ -1634,6 +1634,11 @@ body.skin-og {
 .skin-retro .ep-st button.on { color: #f2a500; }
 
 /* Vicovac */
+.flame-pop { position: fixed; z-index: 96; pointer-events: none; max-width: 70vw; padding: 9px 14px; border-radius: 16px;
+  background: #fff; color: #111; font-weight: 900; font-size: 15px; line-height: 1.25; box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+  transform: rotate(var(--r)) scale(.3); opacity: 0; animation: flamePop 2.6s cubic-bezier(.2, 1.4, .4, 1) forwards; }
+@keyframes flamePop { 12% { opacity: 1; transform: rotate(var(--r)) scale(1.05); } 20% { transform: rotate(var(--r)) scale(1); }
+  80% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--r)) translateY(-30px) scale(.95); } }
 .dosadan { padding: 26px 20px 20px; text-align: center; cursor: pointer; }
 .ds-emoji { font-size: 64px; line-height: 1; animation: dsYawn 2.4s ease-in-out infinite; }
 @keyframes dsYawn { 50% { transform: scale(1.12) rotate(-6deg); } }

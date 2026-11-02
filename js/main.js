@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.10.0';
+MM.VERSION = '2.10.1';
 
 (function () {
   'use strict';
@@ -1155,7 +1155,8 @@ MM.VERSION = '2.10.0';
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'hidden') hiddenAt = Date.now();
       // vratio se posle 10+ minuta = "ponovo usao"
-      if (document.visibilityState === 'visible' && hiddenAt && Date.now() - hiddenAt > 600000) { dosadanShown = false; setTimeout(maybeDosadan, 800); }
+      if (document.visibilityState === 'visible' && hiddenAt && Date.now() - hiddenAt > 600000) { dosadanShown = false; }
+      if (document.visibilityState === 'visible') setTimeout(maybeDosadan, 800);
       if (document.visibilityState === 'visible') { render(); if (UIS.tab === 'ekipa') loadReviews(false); }
     });
 
@@ -1332,15 +1333,45 @@ MM.VERSION = '2.10.0';
 
   /** Kad god Vićovac otvori aplikaciju: obaveštenje da je dosadan. */
   var dosadanShown = false, hiddenAt = 0;
+  // Kad se jednom prepozna, Vicovac ostaje obelezen: na uredjaju (localStorage)
+  // i na nalogu (s.dosadan se sinhronizuje), pa promena imena ne pomaze.
   function isVicovac() {
     var u = Store.user() || {};
     var n = [state().displayName, u.name, u.email].join(' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    return /vicovac/.test(n);
+    var marked = state().dosadan === true;
+    try { marked = marked || localStorage.getItem('mm-dosadan') === '1'; } catch (e) { /* */ }
+    if (/vicovac/.test(n) || marked) {
+      try { localStorage.setItem('mm-dosadan', '1'); } catch (e) { /* */ }
+      if (state().dosadan !== true) Store.mutate(function (s) { s.dosadan = true; });
+      return true;
+    }
+    return false;
+  }
+
+  /** Poruke koje stalno lete preko ekrana (ne blokiraju dodir). */
+  var flameTimer = null;
+  function startFlames() {
+    if (flameTimer || !isVicovac()) return;
+    flameTimer = setInterval(function () {
+      if (document.visibilityState !== 'visible') return;
+      var el = document.createElement('div');
+      el.className = 'flame-pop';
+      el.style.left = (6 + Math.random() * 46).toFixed(1) + '%';
+      el.style.top = (10 + Math.random() * 70).toFixed(1) + '%';
+      el.style.setProperty('--r', (Math.random() * 16 - 8).toFixed(1) + 'deg');
+      el.innerHTML = ['🥱', '😴', '💤', '🙄', '🗿'][Math.floor(Math.random() * 5)] + ' ' + esc(V.dosadanLine());
+      document.body.appendChild(el);
+      setTimeout(function () { el.remove(); }, 2600);
+      if (Math.random() < .25) UI.buzz(15);
+    }, 1200);
   }
   function maybeDosadan() {
-    if (dosadanShown || !isVicovac()) return;
+    if (!isVicovac()) return;
+    startFlames();
+    if (dosadanShown) return;
     if (UI.topSheet()) { setTimeout(maybeDosadan, 1500); return; }
     dosadanShown = true;
+    startFlames();
     UI.buzz([30, 60, 30]);
     UI.openSheet({ id: 'dosadan', center: true, cls: 'ds-sheet', render: function () { return V.dosadanSheet(); } });
   }

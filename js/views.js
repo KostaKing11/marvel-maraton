@@ -1297,10 +1297,17 @@ window.MM = window.MM || {};
   var DOSADAN = [
     'Vićovac, dosadan si.', 'Opet ti? Dosadan si, Vićovac.', 'Vićovac je ušao. Atmosfera je pala.',
     'Upozorenje: Vićovac je dosadan.', 'Doom je video ko je ušao. Zevnuo je.', 'Vićovac, čak i Howard the Duck je zanimljiviji.',
-    'Ulogovao se Vićovac. Svi glumimo da nismo primetili.', 'Vićovac, dosadan si kao Eternals.'
+    'Ulogovao se Vićovac. Svi glumimo da nismo primetili.', 'Vićovac, dosadan si kao Eternals.',
+    'Vićovac, promena imena ne pomaže. Znamo da si to ti.', 'I dalje dosadan.', 'Vićovac.exe je prestao da bude zanimljiv.',
+    'Thanos je pucnuo i nestala je polovina tvoje harizme.', 'Vićovac, čak ni Doom ne može ovoliko da čeka.',
+    'Dosadniji si od reklama pre filma.', 'Vićovac gleda Marvel na 0.5x.', 'Groot je rekao više zanimljivih stvari od tebe.',
+    'Vićovac, preskoči sebe.', 'Odgledano: ništa zanimljivo. — Vićovac', 'Kraven the Hunter ima bolje ocene od tvog humora.',
+    'Ovo je poruka broj ∞. Dosadan si.', 'Vićovac, ni Loki ne bi lagao da si zanimljiv.', 'Morbius time? Ne, Vićovac time. Isto dosadno.',
+    'Vidimo te, Vićovac. Sa svakog uređaja.', 'Vićovac, Ultron je imao više emocija.', 'Spojler: i dalje si dosadan.'
   ];
+  function dosadanLine() { return DOSADAN[Math.floor(Math.random() * DOSADAN.length)]; }
   function dosadanSheet() {
-    var t = DOSADAN[Math.floor(Math.random() * DOSADAN.length)];
+    var t = dosadanLine();
     return '<div class="dosadan" data-a="sheet-close"><div class="ds-emoji">🥱</div><div class="ds-k">OBAVEŠTENJE</div>' +
       '<h2>' + esc(t) + '</h2><p class="muted">— Kosta</p><button type="button" class="btn primary wide" data-a="sheet-close">Znam, izvini</button></div>';
   }
@@ -1456,7 +1463,7 @@ window.MM = window.MM || {};
   MM.Views = {
     danas: danas, plan: planView, ekipa: ekipa, katalog: katalog, ja: ja,
     itemSheet: itemSheet, customSheet: customSheet, filterSheet: filterSheet, rateSheet: rateSheet, profileSheet: profileSheet,
-    welcomeSheet: welcomeSheet, chooseSheet: chooseSheet, newsSheet: newsSheet, countdownSheet: countdownSheet, dosadanSheet: dosadanSheet, epAvg: epAvg, ogCountdown: ogCountdown, crew: crew, NEWS: NEWS, recapSheet: recapSheet, mondayOf: mondayOf, streakSheet: streakSheet, doomSheet: doomSheet,
+    welcomeSheet: welcomeSheet, chooseSheet: chooseSheet, newsSheet: newsSheet, countdownSheet: countdownSheet, dosadanSheet: dosadanSheet, dosadanLine: dosadanLine, epAvg: epAvg, ogCountdown: ogCountdown, crew: crew, NEWS: NEWS, recapSheet: recapSheet, mondayOf: mondayOf, streakSheet: streakSheet, doomSheet: doomSheet,
     clock: clock, countdownParts: countdownParts, ICON: ICON, scopeName: scopeName
   };
 })();
