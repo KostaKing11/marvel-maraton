@@ -953,6 +953,66 @@ window.MM = window.MM || {};
   }
 
   /* ============================================================
+     IGRE: mini igre, nivo igraca i rang lista ekipe
+     ============================================================ */
+
+  /** Stanje igara (stari gameBest g0..g3 se prevodi u nove id-jeve). */
+  function gamesOf(s) {
+    var g = s.games && typeof s.games === 'object' ? s.games : { xp: 0, wins: 0, best: {} };
+    g = { xp: g.xp | 0, wins: g.wins | 0, best: Object.assign({}, g.best || {}) };
+    var old = s.gameBest || {}, map = { g0: 'classic', g1: 'doom', g2: 'stones', g3: 'quiz' };
+    Object.keys(map).forEach(function (k) { if ((old[k] || 0) > (g.best[map[k]] || 0)) g.best[map[k]] = old[k]; });
+    return g;
+  }
+
+  function igre(ctx) {
+    var s = ctx.s, G = MM.Games, g = gamesOf(s), lv = G.lvlOf(g.xp), me = ctx.user && ctx.user.uid;
+    var out = '<section class="card gx-me" data-k="gxme">' +
+      '<div class="gx-badge"><b>' + lv.n + '</b><i>NIVO</i></div>' +
+      '<div class="gx-t"><em>' + esc(lv.title.toUpperCase()) + '</em><b>' + g.xp + ' XP</b>' +
+        '<div class="gx-bar"><i style="width:' + lv.pct + '%"></i></div>' +
+        '<span>još ' + (lv.to - g.xp) + ' XP do nivoa ' + (lv.n + 1) + ' · ' + g.wins + ' ' + plural(g.wins, 'pobeda', 'pobede', 'pobeda') + '</span></div></section>';
+
+    // igre
+    var ids = Object.keys(G.REG);
+    out += '<section class="card" data-k="gxlist"><div class="card-h"><h2>Igre</h2><span class="muted">pređi nivo = XP</span></div>' +
+      '<button type="button" class="game-b all" data-a="play-game" data-g="classic"><span>🏆</span><b>Klasika: tri zaredom</b>' +
+        '<i>Dooma, Kamenje i Kviz bez pada · trostruki XP · ' + (g.best.classic ? 'rekord nivo ' + g.best.classic : 'još nije pređeno') + '</i>' +
+        '<em class="gx-next">nivo ' + Math.min(10, (g.best.classic || 0) + 1) + ' ›</em></button><div class="game-grid">';
+    ids.forEach(function (id) {
+      var r = G.REG[id], best = g.best[id] || 0;
+      out += '<button type="button" class="game-b" data-a="play-game" data-g="' + id + '"><span>' + r.emo + '</span><b>' + esc(r.name) + '</b>' +
+        '<i>' + esc(r.desc) + '</i><em class="gx-next">' + (best ? '★ ' + best + ' · ' : '') + 'nivo ' + Math.min(10, best + 1) + ' ›</em></button>';
+    });
+    out += '</div></section>';
+
+    // rang lista ekipe
+    var ppl = MM.Reviews.people().map(function (p) {
+      return p.uid === me ? Object.assign({}, p, { gxp: g.xp, gbest: g.best, name: s.displayName || p.name, photo: s.avatar || p.photo }) : p;
+    });
+    if (!ppl.some(function (p) { return p.uid === me; })) ppl.push({ uid: me || 'me', name: s.displayName || 'Ti', photo: s.avatar, gxp: g.xp, gbest: g.best });
+    ppl.sort(function (a, b) { return (b.gxp || 0) - (a.gxp || 0); });
+    out += '<section class="card" data-k="gxrank"><div class="card-h"><h2>Rang lista</h2><span class="muted">ukupno XP</span></div><div class="gx-rank">';
+    ppl.forEach(function (p, i) {
+      var l = G.lvlOf(p.gxp || 0), mine = p.uid === (me || 'me');
+      out += '<div class="gx-row' + (mine ? ' me' : '') + '"><span class="rank">' + (i === 0 && p.gxp ? '👑' : i + 1) + '</span>' + avatar(p.name, p.photo) +
+        '<div class="gx-rn"><b>' + esc(p.name || 'Bez imena') + (mine ? ' <em>· ti</em>' : '') + '</b><span>nivo ' + l.n + ' · ' + esc(l.title) + '</span></div>' +
+        '<b class="gx-xp">' + (p.gxp || 0) + '<i>XP</i></b></div>';
+    });
+    out += '</div>';
+    // rekordi po igri
+    var recs = ['classic'].concat(ids).map(function (id) {
+      var top = null;
+      ppl.forEach(function (p) { var v = (p.gbest || {})[id] || 0; if (v && (!top || v > top.v)) top = { v: v, n: p.name || '?' }; });
+      var r = id === 'classic' ? { emo: '🏆', name: 'Klasika' } : G.REG[id];
+      return '<div class="gx-rec"><span>' + r.emo + '</span><b>' + esc(r.name) + '</b><i>' + (top ? esc(top.n) + ' · nivo ' + top.v : '—') + '</i></div>';
+    });
+    out += '<h3>Rekordi</h3><div class="gx-recs">' + recs.join('') + '</div>' +
+      (ctx.user ? '' : '<p class="muted small">Prijavi se da te ekipa vidi na rang listi.</p>') + '</section>';
+    return out;
+  }
+
+  /* ============================================================
      JA
      ============================================================ */
 
@@ -985,16 +1045,6 @@ window.MM = window.MM || {};
           : '<p class="muted small">Isključuju se na 24 sata ako pređeš tri igre zaredom. <b>Nivo ' + lvl + '</b>' + (lvl > 1 ? ' — teže nego prošli put.' : '.') + '</p>' +
             '<button type="button" class="btn primary wide" data-a="mute-games">🎮 Isključi (nivo ' + lvl + ')</button>') + '</section>';
     }
-
-    /* mini igre - za svakoga */
-    var gl = ctx.ui.gameLvl || 1, gb = s.gameBest || {};
-    function gBtn(g, emo, name) {
-      return '<button type="button" class="game-b' + (g ? '' : ' all') + '" data-a="play-game" data-g="' + g + '"><span>' + emo + '</span><b>' + name + '</b>' +
-        '<i>' + (gb['g' + g] ? 'rekord: nivo ' + gb['g' + g] : 'još nije pređeno') + '</i></button>';
-    }
-    out += '<section class="card" data-k="games"><div class="card-h"><h2>Mini igre</h2>' +
-      '<span class="lvl-pick"><button type="button" class="ib sm" data-a="game-lvl" data-d="-1">−</button><b>nivo ' + gl + '</b><button type="button" class="ib sm" data-a="game-lvl" data-d="1">+</button></span></div>' +
-      '<div class="game-grid">' + gBtn(0, '🏆', 'Sve tri zaredom') + gBtn(1, '🎯', 'Uhvati Dooma') + gBtn(2, '💎', 'Kamenje') + gBtn(3, '❓', 'Marvel kviz') + '</div></section>';
 
     /* izgled */
     var look = s.look === 'mini' ? 'mini' : 'full';
@@ -1398,6 +1448,11 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.14', title: 'Igre: novi tab, nivoi i rang lista', big: true, items: [
+      '<b>Novi tab Igre</b> — 7 igara: Uhvati Dooma, Kamenje, Marvel kviz, Memorija, Hronologija, Mjolnir i Pucanj prstima.',
+      '<b>Nivoi i XP</b> — svaki pređen nivo daje XP; tvoj nivo raste od Rekruta do Doomovog rivala. Klasika (tri zaredom) daje trostruko.',
+      '<b>Rang lista ekipe</b> — ko ima najviše XP i ko drži rekord u kojoj igri.'
+    ], cta: { a: 'tab', label: 'Igraj', tab: 'igre' } },
     { id: '2.13', title: 'Mini igre', big: false, items: [
       '<b>Mini igre u profilu</b> — Uhvati Dooma, Kamenje beskonačnosti i Marvel kviz. Igraš svaku posebno ili sve tri zaredom.',
       'Biraš nivo (1–10); pamti se tvoj rekord za svaku igru.'
@@ -1456,7 +1511,7 @@ window.MM = window.MM || {};
       '<div class="news-k">NOVO' + (n === NEWS[0] ? ' · v' + MM.VERSION : '') + '</div>' +
       '<h2>' + esc(n.title) + '</h2>' +
       '<ul class="news-list">' + n.items.map(function (t, i) { return '<li' + (i === 0 && n.cta ? ' class="hot"' : '') + '>' + t + '</li>'; }).join('') + '</ul>';
-    if (n.cta) out += '<button type="button" class="btn primary wide" data-a="' + n.cta.a + '">' + esc(n.cta.label) + '</button>';
+    if (n.cta) out += '<button type="button" class="btn primary wide" data-a="' + n.cta.a + '"' + (n.cta.tab ? ' data-tab="' + n.cta.tab + '"' : '') + '>' + esc(n.cta.label) + '</button>';
     NEWS.filter(function (o) { return o !== n; }).forEach(function (o) {
       out += '<h3>Ranije · ' + esc(o.title) + '</h3><ul class="news-list old">' + o.items.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ul>';
     });
@@ -1518,7 +1573,7 @@ window.MM = window.MM || {};
   }
 
   MM.Views = {
-    danas: danas, plan: planView, ekipa: ekipa, katalog: katalog, ja: ja,
+    danas: danas, plan: planView, igre: igre, gamesOf: gamesOf, ekipa: ekipa, katalog: katalog, ja: ja,
     itemSheet: itemSheet, customSheet: customSheet, filterSheet: filterSheet, rateSheet: rateSheet, profileSheet: profileSheet,
     welcomeSheet: welcomeSheet, chooseSheet: chooseSheet, newsSheet: newsSheet, countdownSheet: countdownSheet, dosadanSheet: dosadanSheet, dosadanLine: dosadanLine, epAvg: epAvg, ogCountdown: ogCountdown, crew: crew, NEWS: NEWS, recapSheet: recapSheet, mondayOf: mondayOf, streakSheet: streakSheet, doomSheet: doomSheet,
     clock: clock, countdownParts: countdownParts, ICON: ICON, scopeName: scopeName

@@ -54,11 +54,11 @@ window.MM = window.MM || {};
   var STONES = ['space', 'mind', 'reality', 'power', 'time', 'soul'];
 
   var box = null, onWin = null, timers = [], L = 0;
-  var only = 0;          // vezba: 0 = sve tri zaredom, 1/2/3 = samo ta igra
+  var only = '';         // vezba: '' = klasika (tri zaredom), inace id jedne igre
   var practice = false;  // vezba iz profila (ne gasi poruke)   // L = nivo: svaka pobeda = teze sledeci put
 
   function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
-  function clearAll() { timers.forEach(clearTimeout); timers = []; }
+  function clearAll() { timers.forEach(function (t) { if (typeof t === 'object') t.valueOf(); else clearTimeout(t); }); timers = []; }
   function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function head(step, title, sub) {
     return '<div class="gm-h"><span class="gm-step">NIVO ' + (L + 1) + (only ? '' : ' · IGRA ' + step + ' / 3') + '</span><h2>' + esc(title) + '</h2><p class="muted">' + esc(sub) + '</p></div>';
@@ -175,7 +175,157 @@ window.MM = window.MM || {};
     ask();
   }
 
-  function first() { return [game1, game1, game2, game3][only](); }
+
+  /* ============================================================
+     dodatne igre (samo u tabu Igre)
+     ============================================================ */
+
+  function solo(title, sub) {
+    return '<div class="gm-h"><span class="gm-step">NIVO ' + (L + 1) + '</span><h2>' + esc(title) + '</h2><p class="muted">' + esc(sub) + '</p></div>';
+  }
+  function countdown(sec, elId, onEnd, isDone) {
+    var left = sec;
+    (function tick() {
+      if (isDone()) return;
+      var el = box && box.querySelector(elId); if (el) el.textContent = left + ' s';
+      if (left-- <= 0) { onEnd(); return; }
+      later(tick, 1000);
+    })();
+  }
+
+  /* --- Memorija: parovi predmeta iz filmova --- */
+  function gMemo() {
+    clearAll();
+    var pairs = Math.min(10, 6 + Math.floor(L / 2)), secs = Math.max(30, 60 - 3 * L), done = false;
+    var pool = shuffle(MM.Cat.all().filter(function (i) { return MM.Badges.ITEMS[i.id] && MM.Badges.spec(i).icon !== 'gauntlet'; }));
+    var icons = {}, picks = [];
+    pool.forEach(function (i) { var ic = MM.Badges.spec(i).icon; if (!icons[ic] && picks.length < pairs) { icons[ic] = 1; picks.push(i); } });
+    var cards = shuffle(picks.concat(picks).map(function (it, k) { return { id: it.id, k: k }; }));
+    box.innerHTML = solo('Memorija', 'Nađi ' + pairs + ' parova predmeta za ' + secs + ' sekundi.') +
+      '<div class="gm-bar"><b id="mmP">0 / ' + pairs + '</b><b id="mmT">' + secs + ' s</b></div>' +
+      '<div class="gm-memo c' + (pairs > 8 ? 5 : 4) + '">' + cards.map(function (c, n) {
+        return '<button type="button" class="mm-c" data-n="' + n + '" data-id="' + esc(c.id) + '"><span class="mm-back">?</span><span class="mm-front">' + MM.Badges.tile(MM.Cat.get(c.id), { size: 'sm' }) + '</span></button>';
+      }).join('') + '</div>';
+    var open1 = null, lock = false, found = 0;
+    Array.prototype.forEach.call(box.querySelectorAll('.mm-c'), function (b) {
+      b.addEventListener('click', function () {
+        if (lock || done || b.classList.contains('up') || b.classList.contains('ok')) return;
+        b.classList.add('up'); UI.buzz(5);
+        if (!open1) { open1 = b; return; }
+        if (open1.getAttribute('data-id') === b.getAttribute('data-id')) {
+          open1.classList.add('ok'); b.classList.add('ok'); open1 = null; found++;
+          box.querySelector('#mmP').textContent = found + ' / ' + pairs;
+          if (found === pairs) { done = true; clearAll(); later(win, 500); }
+        } else {
+          lock = true; var a = open1; open1 = null;
+          later(function () { a.classList.remove('up'); b.classList.remove('up'); lock = false; }, 650);
+        }
+      });
+    });
+    countdown(secs, '#mmT', function () { done = true; fail('Isteklo vreme. Pamćenje kao Drax.'); }, function () { return done; });
+  }
+
+  /* --- Hronologija: poredaj filmove po izlasku --- */
+  function gHrono() {
+    clearAll();
+    var n = Math.min(8, 4 + Math.floor(L / 2)), secs = Math.max(20, 40 - 2 * L), done = false;
+    var films = MM.Cat.all().filter(function (i) { return i.type === 'film' && (i.col === 'mcu' || L >= 3) && i.date <= '2026-08-01'; });
+    var pick = [], years = {};
+    shuffle(films).forEach(function (f) { if (pick.length < n && !years[f.date]) { years[f.date] = 1; pick.push(f); } });
+    var right = pick.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    box.innerHTML = solo('Hronologija', 'Tapni ' + n + ' filmova redom kako su izlazili — od najstarijeg.') +
+      '<div class="gm-bar"><b id="hrP">0 / ' + n + '</b><b id="hrT">' + secs + ' s</b></div><div class="gm-hrono">' +
+      shuffle(pick).map(function (f) { return '<button type="button" class="hr-b" data-id="' + esc(f.id) + '"><i></i>' + esc(MM.Cat.cleanTitle(f)) + '</button>'; }).join('') + '</div>';
+    var pos = 0;
+    Array.prototype.forEach.call(box.querySelectorAll('.hr-b'), function (b) {
+      b.addEventListener('click', function () {
+        if (done || b.classList.contains('ok')) return;
+        if (b.getAttribute('data-id') !== right[pos].id) {
+          done = true; b.classList.add('bad'); UI.buzz([20, 40, 20]);
+          later(function () { fail('Pre njega je bio „' + MM.Cat.cleanTitle(right[pos]) + '“ (' + right[pos].year + ').'); }, 600);
+          return;
+        }
+        pos++; b.classList.add('ok'); b.querySelector('i').textContent = pos + ' · ' + right[pos - 1].year; UI.buzz(8);
+        box.querySelector('#hrP').textContent = pos + ' / ' + n;
+        if (pos === n) { done = true; clearAll(); later(win, 600); }
+      });
+    });
+    countdown(secs, '#hrT', function () { done = true; fail('Isteklo vreme.'); }, function () { return done; });
+  }
+
+  /* --- Mjolnir: zaustavi strelicu u zlatnoj zoni --- */
+  function gMjolnir() {
+    clearAll();
+    var need = Math.min(10, 5 + Math.floor(L / 2)), lives = 3, ok = 0, done = false;
+    var zone = Math.max(9, 22 - 1.5 * L), speed = Math.min(2.6, 1.1 + .15 * L);   // % sirine, % po frejmu
+    box.innerHTML = solo('Podigni Mjolnir', 'Tapni kad je strelica u zlatnoj zoni. ' + need + ' puta, imaš 3 života.') +
+      '<div class="gm-bar"><b id="mjP">0 / ' + need + '</b><b id="mjL">❤️❤️❤️</b></div>' +
+      '<button type="button" class="gm-mj" id="mjB"><span class="mj-zone" id="mjZ"></span><span class="mj-arrow" id="mjA"></span><span class="mj-ham">🔨</span></button>';
+    var z = box.querySelector('#mjZ'), a = box.querySelector('#mjA'), x = 0, dir = 1, zx = 0;
+    function newZone() { zx = 5 + Math.random() * (90 - zone); z.style.left = zx + '%'; z.style.width = zone + '%'; }
+    newZone();
+    var raf;
+    (function step() {
+      if (done || !box) return;
+      x += dir * speed; if (x >= 100) { x = 100; dir = -1; } if (x <= 0) { x = 0; dir = 1; }
+      a.style.left = x + '%';
+      raf = requestAnimationFrame(step);
+    })();
+    timers.push({ valueOf: function () { cancelAnimationFrame(raf); return 0; } });
+    box.querySelector('#mjB').addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      if (done) return;
+      if (x >= zx && x <= zx + zone) {
+        ok++; UI.buzz(10); box.querySelector('#mjP').textContent = ok + ' / ' + need;
+        z.classList.remove('hit'); void z.offsetWidth; z.classList.add('hit');
+        speed *= 1.06; newZone();
+        if (ok >= need) { done = true; cancelAnimationFrame(raf); later(win, 500); }
+      } else {
+        lives--; UI.buzz([30, 30, 30]); box.querySelector('#mjL').textContent = '❤️❤️❤️'.slice(0, lives * 2) || '—';
+        if (lives <= 0) { done = true; cancelAnimationFrame(raf); fail('Nisi dostojan Mjolnira.'); }
+      }
+    });
+  }
+
+  /* --- Refleks: tapni čim Thanos pucne --- */
+  function gSnap() {
+    clearAll();
+    var rounds = 5, limit = Math.max(330, 650 - 30 * L), r = 0, times = [], state = 'wait', done = false;
+    box.innerHTML = solo('Pucanj prstima', 'Tapni čim ekran pozeleni. Ne pre! Imaš ' + limit + ' ms.') +
+      '<div class="gm-bar"><b id="snR">1 / ' + rounds + '</b><b id="snT"></b></div><button type="button" class="gm-snap" id="snB"><span>čekaj…</span></button>';
+    var b = box.querySelector('#snB'), t0 = 0;
+    function arm() {
+      state = 'wait'; b.className = 'gm-snap'; b.querySelector('span').textContent = 'čekaj…';
+      later(function () { if (done) return; state = 'go'; t0 = performance.now(); b.className = 'gm-snap go'; b.querySelector('span').textContent = '💥 SAD!';
+        later(function () { if (state === 'go' && !done) { done = true; fail('Prespor. Pola univerzuma je nestalo.'); } }, limit);
+      }, 1100 + Math.random() * 2400);
+    }
+    b.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      if (done) return;
+      if (state === 'wait') { done = true; clearAll(); fail('Prerano! Thanos nije ni pucnuo.'); return; }
+      if (state !== 'go') return;
+      var ms = Math.round(performance.now() - t0); times.push(ms); state = 'idle'; clearAll(); UI.buzz(8);
+      b.className = 'gm-snap hit'; b.querySelector('span').textContent = ms + ' ms';
+      r++; box.querySelector('#snR').textContent = Math.min(r + 1, rounds) + ' / ' + rounds;
+      box.querySelector('#snT').textContent = 'najbolje ' + Math.min.apply(null, times) + ' ms';
+      if (r >= rounds) { done = true; later(win, 700); } else later(arm, 700);
+    });
+    arm();
+  }
+
+  /** Sve igre: id -> { naziv, ikonica, opis, funkcija } */
+  var REG = {
+    doom: { name: 'Uhvati Dooma', emo: '🎯', desc: 'brzina i preciznost', fn: function () { return game1(); } },
+    stones: { name: 'Kamenje', emo: '💎', desc: 'pamćenje niza', fn: function () { return game2(); } },
+    quiz: { name: 'Marvel kviz', emo: '❓', desc: 'znanje, na vreme', fn: function () { return game3(); } },
+    memo: { name: 'Memorija', emo: '🃏', desc: 'parovi predmeta', fn: gMemo },
+    hrono: { name: 'Hronologija', emo: '📅', desc: 'filmovi po izlasku', fn: gHrono },
+    mjolnir: { name: 'Mjolnir', emo: '🔨', desc: 'tajming', fn: gMjolnir },
+    snap: { name: 'Pucanj prstima', emo: '🫰', desc: 'refleks', fn: gSnap }
+  };
+
+  function first() { return (only ? REG[only].fn : game1)(); }
 
   function fail(why) {
     clearAll();
@@ -193,7 +343,12 @@ window.MM = window.MM || {};
         '<p class="muted">' + (only ? 'Probaj teži nivo.' : 'Sve tri igre zaredom. Ozbiljno.') + '</p>' +
         '<button type="button" class="btn primary wide" id="gmNext">Nivo ' + (L + 2) + '</button><button type="button" class="btn ghost wide" data-a="sheet-close">Zatvori</button></div>';
       box.querySelector('#gmNext').onclick = function () { L++; first(); };
-      if (onWin) onWin(L + 1);
+      var r = onWin ? onWin(L + 1) : null;
+      if (r && r.xp) {
+        var p = box.querySelector('.gm-end p');
+        p.innerHTML = '<b class="gm-xp">+' + r.xp + ' XP</b>' + (r.up ? '<br><b class="gm-up">NOVI NIVO: ' + r.lvl + ' · ' + esc(r.title) + '</b>' : '') +
+          (r.rec ? '<br>Novi rekord u ovoj igri!' : '');
+      }
       return;
     }
     box.innerHTML = '<div class="gm-end"><div class="gm-emo">🏆</div><h2>Zaslužio si tišinu.</h2><p class="muted">Poruke su isključene 24 sata. Posle se vraćaju, a sledeći put je nivo ' + (L + 2) + ' — teže.</p>' +
@@ -206,7 +361,7 @@ window.MM = window.MM || {};
     L = level || 0;
     onWin = cb;
     opts = opts || {};
-    practice = !!opts.practice; only = opts.only || 0;
+    practice = !!opts.practice; only = opts.only || '';
     UI.openSheet({
       id: 'games', full: true, cls: 'gm-sheet',
       render: function () {
@@ -225,5 +380,17 @@ window.MM = window.MM || {};
     });
   }
 
-  MM.Games = { open: open };
+  /* ---------------- nivo igraca ---------------- */
+  var TITLES = ['Rekrut', 'Kadet S.H.I.E.L.D.-a', 'Agent', 'Specijalni agent', 'Defender', 'Guardian', 'Avenger',
+    'Revenger', 'Sorcerer Supreme', 'Vrhovni Avenger', 'Asgardijanac', 'Celestial', 'Doomov rival'];
+  /** Nivo iz XP: nivo n trazi 100 + 200 + ... + 100*(n-1) XP. */
+  function lvlOf(xp) {
+    var n = Math.floor((Math.sqrt(1 + 8 * (xp || 0) / 100) - 1) / 2) + 1;
+    var from = 100 * (n - 1) * n / 2, to = 100 * n * (n + 1) / 2;
+    return { n: n, title: TITLES[Math.min(TITLES.length - 1, n - 1)], from: from, to: to, pct: Math.round(((xp || 0) - from) / (to - from) * 100) };
+  }
+  /** XP za predjen nivo: klasika (tri zaredom) vredi trostruko. */
+  function xpFor(id, level) { return (id === 'classic' ? 60 : 20) * level; }
+
+  MM.Games = { open: open, REG: REG, lvlOf: lvlOf, xpFor: xpFor, TITLES: TITLES };
 })();

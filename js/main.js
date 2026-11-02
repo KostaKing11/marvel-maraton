@@ -6,14 +6,14 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.13.0';
+MM.VERSION = '2.14.0';
 
 (function () {
   'use strict';
 
   var UI = MM.UI, Cat = MM.Cat, P = MM.Plan, Store = MM.Store, V = MM.Views;
   var $ = UI.$, esc = UI.esc;
-  var TABS = ['danas', 'plan', 'ekipa', 'katalog', 'ja'];
+  var TABS = ['danas', 'plan', 'igre', 'ekipa', 'katalog', 'ja'];
 
   var UIS = {
     tab: 'danas',
@@ -55,7 +55,7 @@ MM.VERSION = '2.13.0';
     raf = requestAnimationFrame(function () { raf = 0; render(); });
   }
 
-  var VIEW = { danas: 'danas', plan: 'plan', ekipa: 'ekipa', katalog: 'katalog', ja: 'ja' };
+  var VIEW = { danas: 'danas', plan: 'plan', igre: 'igre', ekipa: 'ekipa', katalog: 'katalog', ja: 'ja' };
 
   function render() {
     if (!started) return;
@@ -121,7 +121,7 @@ MM.VERSION = '2.13.0';
     } else if (same) {
       pane.scrollTo({ top: 0, behavior: 'smooth' });   // drugi tap na tab = na vrh
     }
-    if (t === 'ekipa') loadReviews(false);
+    if (t === 'ekipa' || t === 'igre') loadReviews(false);
   }
 
   /* ============================================================
@@ -665,12 +665,21 @@ MM.VERSION = '2.13.0';
     /* --- ocene / ekipa --- */
     'rate': function (el) { openRate(el.getAttribute('data-id'), 0); },
     'play-game': function (el) {
-      var only = +el.getAttribute('data-g') || 0, lvl = (UIS.gameLvl || 1) - 1;
-      MM.Games.open(lvl, function (passed) {
-        Store.mutate(function (s) { s.gameBest = s.gameBest || {}; var k = 'g' + only; if ((s.gameBest[k] || 0) < passed) s.gameBest[k] = passed; });
-      }, { practice: true, only: only });
+      var id = el.getAttribute('data-g') || 'classic';
+      var g = V.gamesOf(state()), lvl = Math.min(10, (g.best[id] || 0) + 1);
+      MM.Games.open(lvl - 1, function (passed) {
+        var before = MM.Games.lvlOf(V.gamesOf(state()).xp), xp = MM.Games.xpFor(id, passed), rec = false;
+        Store.mutate(function (s) {
+          var gg = s.games = V.gamesOf(s);
+          gg.xp += xp; gg.wins = (gg.wins || 0) + 1;
+          if ((gg.best[id] || 0) < passed) { gg.best[id] = passed; rec = true; }
+        });
+        var after = MM.Games.lvlOf(V.gamesOf(state()).xp);
+        publishProgress();
+        if (after.n > before.n) UI.buzz([20, 60, 40]);
+        return { xp: xp, up: after.n > before.n, lvl: after.n, title: after.title, rec: rec };
+      }, { practice: true, only: id === 'classic' ? '' : id });
     },
-    'game-lvl': function (el) { UIS.gameLvl = Math.max(1, Math.min(10, (UIS.gameLvl || 1) + (+el.getAttribute('data-d')))); UI.buzz(6); render(); },
     'mute-games': function () {
       MM.Games.open(state().dosadanLevel || 0, function () {
         Store.mutate(function (s) { s.dosadanUntil = Date.now() + 24 * 3600 * 1000; s.dosadanLevel = (s.dosadanLevel || 0) + 1; });
@@ -1223,7 +1232,9 @@ MM.VERSION = '2.13.0';
     clearTimeout(profTimer);
     profTimer = setTimeout(function () {
       var s = state(), p = P.progress(s);
-      Store.publishProfile({ watched: p.watched, total: p.total, minutes: p.watchedMin, percent: p.percent, streak: P.streak(s).n });
+      var g = V.gamesOf(s);
+      Store.publishProfile({ watched: p.watched, total: p.total, minutes: p.watchedMin, percent: p.percent, streak: P.streak(s).n,
+        gxp: g.xp, gbest: g.best });
     }, 2500);
   }
 

@@ -61,6 +61,7 @@ window.MM = window.MM || {};
       dosadan: false,       // obelezen nalog (ostaje i kad promeni ime)
       dosadanUntil: 0,      // do kad su poruke iskljucene (presao igre; traje 24 h)
       dosadanLevel: 0,
+      games: null,          // igre: { xp, wins, best: { doom: 3, quiz: 5, classic: 2 } }
       gameBest: {},         // mini igre iz profila: najvisi predjeni nivo { g0: 3, g1: 5 }      // koliko puta je presao igre - svaki put je teze
       skin: 'dark',         // stil: 'dark' | 'retro' (strip: papir, crni obrisi, POW!)
       updatedAt: 0
@@ -214,6 +215,8 @@ window.MM = window.MM || {};
         minutes: data.minutes | 0,
         percent: data.percent | 0,
         streak: data.streak | 0,
+        gxp: data.gxp | 0,                    // igre: ukupno XP
+        gbest: data.gbest || {},              // igre: najvisi predjeni nivo po igri
         at: Date.now()
       }), 12000);
     } catch (e) {

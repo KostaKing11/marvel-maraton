@@ -4,10 +4,10 @@
    VAZNO: podigni CACHE verziju na svaki deploy, inace se
    korisnik zaglavi na staroj verziji app-a.
    ============================================================ */
-const CACHE = 'marvel-maraton-v74';
+const CACHE = 'marvel-maraton-v75';
 
 // App shell — cache-first. Isti ?v= broj kao u index.html.
-const V = '224';
+const V = '225';
 const SHELL = [
   './',
   './index.html',
