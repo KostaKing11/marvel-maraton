@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.10.3';
+MM.VERSION = '2.11.0';
 
 (function () {
   'use strict';
@@ -664,6 +664,9 @@ MM.VERSION = '2.10.3';
 
     /* --- ocene / ekipa --- */
     'rate': function (el) { openRate(el.getAttribute('data-id'), 0); },
+    'mute-games': function () {
+      MM.Games.open(function () { Store.mutate(function (s) { s.dosadanOff = true; }); });
+    },
     'ep-star': function (el) {
       setEpStar(el.getAttribute('data-id'), +el.getAttribute('data-ep'), +el.getAttribute('data-n'));
       UI.buzz(8);
@@ -1351,8 +1354,9 @@ MM.VERSION = '2.10.3';
   /** Poruke koje stalno lete preko ekrana (ne blokiraju dodir). */
   var flameTimer = null;
   function startFlames() {
-    if (flameTimer || !isVicovac()) return;
+    if (flameTimer || !isVicovac() || state().dosadanOff) return;
     flameTimer = setInterval(function () {
+      if (state().dosadanOff) { clearInterval(flameTimer); flameTimer = null; return; }
       if (document.visibilityState !== 'visible') return;
       var el = document.createElement('div');
       el.className = 'flame-pop';
@@ -1367,6 +1371,8 @@ MM.VERSION = '2.10.3';
   }
   function maybeDosadan() {
     if (!isVicovac()) return;
+    if (!UIS.vic) { UIS.vic = true; schedule(); }
+    if (state().dosadanOff) return;
     startFlames();
     if (dosadanShown) return;
     if (UI.topSheet()) { setTimeout(maybeDosadan, 1500); return; }

@@ -975,6 +975,15 @@ window.MM = window.MM || {};
     }
     out += '</section>';
 
+    /* poruke o dosadi (samo za Vicovca) */
+    if (ctx.ui.vic) {
+      out += '<section class="card mute-card" data-k="mute"><div class="card-h"><h2>Poruke o dosadi</h2><span class="' + (s.dosadanOff ? 'ok-line' : 'mute-on') + '">' +
+        (s.dosadanOff ? 'isključene' : 'UKLJUČENE') + '</span></div>' +
+        (s.dosadanOff ? '<p class="muted small">Prešao si sve tri igre. Tišina je zaslužena.</p>'
+          : '<p class="muted small">Isključuju se samo ako pređeš tri igre zaredom: uhvati Dooma, ponovi kamenje i Marvel kviz bez greške.</p>' +
+            '<button type="button" class="btn primary wide" data-a="mute-games">🎮 Isključi (3 igre)</button>') + '</section>';
+    }
+
     /* izgled */
     var look = s.look === 'mini' ? 'mini' : 'full';
     out += '<section class="card" data-k="look" id="ja-look"><div class="card-h"><h2>Izgled</h2></div><div class="look-opts">' +
