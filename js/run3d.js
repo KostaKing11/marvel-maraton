@@ -693,7 +693,8 @@ window.MM = window.MM || {};
       if (S.roll > 0) S.roll -= dt;
       if (S.landT > 0) S.landT -= dt;
 
-      var magnetOn = S.pw.magnet > 0 || S.pw.jet > 0 || ((BP === 'magnet' || BP === 'strip') && S.board > 0);
+      // let NIJE magnet: novcici u vazduhu stoje, ti proletis kroz njih
+      var magnetOn = S.pw.magnet > 0 || ((BP === 'magnet' || BP === 'strip') && S.board > 0);
       S.objs = S.objs.filter(function (o) {
         if (o.gone) return false;
         o.m.position.z += dz + (o.v ? o.v * dt : 0);
