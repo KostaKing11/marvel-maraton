@@ -1007,14 +1007,14 @@ window.MM = window.MM || {};
 
     // mini igre: svaka ima svoj meni
     var ids = Object.keys(G.REG);
-    out += '<section class="card" data-k="gxlist"><div class="card-h"><h2>Mini igre</h2><span class="muted">10 nivoa svaka</span></div><div class="mg-grid">';
+    out += '<section class="card" data-k="gxlist"><div class="card-h"><h2>Mini igre</h2><span class="muted">20 nivoa + beskonačno</span></div><div class="mg-grid">';
     ids.forEach(function (id) {
       var r = G.REG[id], best = g.best[id] || 0;
       out += '<button type="button" class="mg-c" style="--gc:' + r.col + '" data-a="play-game" data-g="' + id + '"><span class="mg-emo">' + r.emo + '</span><b>' + esc(r.name) + '</b>' +
-        '<i>' + esc(r.desc) + '</i><span class="mg-dots">' + Array.apply(null, Array(10)).map(function (x, k) { return '<s class="' + (k < best ? 'on' : '') + '"></s>'; }).join('') + '</span></button>';
+        '<i>' + esc(r.desc) + '</i><span class="mg-prog"><u><q style="width:' + (best / 20 * 100) + '%"></q></u>' + best + '/20' + (g.best[id + '_e'] ? ' · ♾️ ' + g.best[id + '_e'] : '') + '</span></button>';
     });
     out += '<button type="button" class="mg-c wide" style="--gc:#ffb400" data-a="play-game" data-g="classic"><span class="mg-emo">🏆</span><b>Klasika: tri zaredom</b>' +
-      '<i>Dooma, Kamenje i Kviz bez pada · trostruki XP</i><span class="mg-dots">' + Array.apply(null, Array(10)).map(function (x, k) { return '<s class="' + (k < (g.best.classic || 0) ? 'on' : '') + '"></s>'; }).join('') + '</span></button>';
+      '<i>Dooma, Kamenje i Kviz bez pada · trostruki XP</i><span class="mg-prog"><u><q style="width:' + ((g.best.classic || 0) / 20 * 100) + '%"></q></u>' + (g.best.classic || 0) + '/20' + (g.best.classic_e ? ' · ♾️ ' + g.best.classic_e : '') + '</span></button>';
     out += '</div></section>';
 
     // rang lista ekipe
@@ -1415,6 +1415,16 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.20', title: 'Runner: board, let i teža staza', big: true, items: [
+      '<b>Hoverboard kao u SSC</b> — novi board sa crtežom i tragom, junak čuči i surfuje. Tokeni dolaze u grupi od 5; treba ti 8, a svaki token dok si na boardu dodaje 3 s.',
+      '<b>Mjolnir let</b> — junak leti kao Supermen, kamera ide gore, novčići u vazduhu vijugaju po trakama i nestanu kad let prestane.',
+      '<b>×2 se vidi</b> — dok traje, svaki novčić je dupli (dva jedan pored drugog).',
+      '<b>Teže</b> — brže ubrzava, deonice su zbijenije, teže deonice dolaze ranije, vozovi u susret su brži.',
+      '<b>Sporiji napredak</b> — manje XP-a, manje novčića za daljinu, pass traži više. Tvoj nivo passa je preračunat, ništa ne gubiš.',
+      '<b>Pass sa dve trake</b> — levo besplatno, desno Maraton: nivo n traži n odgledanih naslova. Gledaj, pa uzimaj.',
+      '<b>Lepša staza</b> — nebo sa oblacima, drveće, hidranti, debeli pragovi, crtani obris oko junaka. Nema više stajanja posle koluta.',
+      '<b>Mini igre</b> — 20 nivoa umesto 10 i novi beskonačni mod sa svojim rekordom.'
+    ], cta: { a: 'runner', label: 'Igraj' } },
     { id: '2.19', title: 'Runner: pravi 3D junaci', big: true, items: [
       '<b>Pravi 3D junaci</b> — profesionalne animacije (sprint, skok, kolut, ples, pad), kostim za svakog: Kepov štit, Torov plašt, Iron Manova kaciga, Spajdijeve oči…',
       '<b>Kolekcija kao u Subway Surfers City</b> — junaci i boardovi imaju nivo i množilac poena (×). Diže se za novčiće + tokene; svaki nivo daje i bonus kolekcije.',

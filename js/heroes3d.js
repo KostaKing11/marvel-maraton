@@ -32,7 +32,7 @@ window.MM = window.MM || {};
     thor: { head: '#e0ac86', torso: '#2a2f3a', waist: '#3a3f48', armU: '#2a2f3a', armL: '#e0ac86', hand: '#e0ac86', legU: '#2a2f3a', legL: '#2a2f3a', foot: '#1a1d22', joint: '#9aa7b8',
       acc: { hair: '#e7c35a', tail: '#e7c35a', cape: '#b3141b', eyes: 1, discs: '#c9d0d8' } },
     hulk: { head: '#4f9a3a', torso: '#4f9a3a', waist: '#5b3a8a', armU: '#4f9a3a', armL: '#4f9a3a', hand: '#4f9a3a', legU: '#5b3a8a', legL: '#4f9a3a', foot: '#3f7f2e', joint: '#3f7f2e',
-      acc: { hair: '#15170f', eyes: 1 }, big: 1.18 },
+      acc: { hair: '#15170f', shortHair: 1, eyes: 1 }, big: 1.18 },
     widow: { head: '#f0c4a2', torso: '#15171c', waist: '#3a3f48', armU: '#15171c', armL: '#15171c', hand: '#15171c', legU: '#15171c', legL: '#15171c', foot: '#0d0e10', joint: '#3a3f48',
       acc: { hair: '#b3311b', tail: '#b3311b', eyes: 1 } },
     spidey: { head: '#c8202b', torso: '#c8202b', waist: '#1f4fa8', armU: '#1f4fa8', armL: '#c8202b', hand: '#c8202b', legU: '#1f4fa8', legL: '#c8202b', foot: '#c8202b', joint: '#1f4fa8',
@@ -72,7 +72,7 @@ window.MM = window.MM || {};
     if (gltf) return Promise.resolve(gltf);
     if (loadP) return loadP;
     loadP = new Promise(function (ok, no) {
-      new THREE.GLTFLoader().load('models/hero.glb?v=1', function (g) { gltf = g; ok(g); }, null, function (e) { loadP = null; no(e); });
+      new THREE.GLTFLoader().load('models/hero.glb?v=2', function (g) { gltf = g; ok(g); }, null, function (e) { loadP = null; no(e); });
     });
     return loadP;
   }
@@ -81,6 +81,15 @@ window.MM = window.MM || {};
     var d = new Uint8Array([110, 110, 110, 255, 190, 190, 190, 255, 255, 255, 255, 255]);
     TOON = new THREE.DataTexture(d, 3, 1, THREE.RGBAFormat); TOON.minFilter = TOON.magFilter = THREE.NearestFilter; TOON.needsUpdate = true;
     return TOON;
+  }
+  var OUTLINE = null;
+  function outlineMat() {
+    if (OUTLINE) return OUTLINE;
+    OUTLINE = new THREE.MeshBasicMaterial({ color: 0x15121a, side: THREE.BackSide });
+    OUTLINE.onBeforeCompile = function (sh) {
+      sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  transformed += normalize(objectNormal) * 0.018;');
+    };
+    return OUTLINE;
   }
   function col(hex) { return new THREE.Color(hex); }
   function mat(hex, extra) { return new THREE.MeshToonMaterial(Object.assign({ color: hex, gradientMap: toon() }, extra || {})); }
@@ -121,6 +130,10 @@ window.MM = window.MM || {};
     geo.setAttribute('color', new THREE.BufferAttribute(c, 3));
     mesh.geometry = geo;
     mesh.material = new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: toon() });
+    // crtani obris: isto telo, malo naduvano po normali, crtano samo iznutra (crno)
+    var ol = new THREE.SkinnedMesh(geo, outlineMat());
+    ol.bind(mesh.skeleton, mesh.bindMatrix); ol.frustumCulled = false;
+    mesh.parent.add(ol);
     mesh.castShadow = false;
 
     // dodaci: pravim ih u svetskim koordinatama (poza mirovanja), pa ih kacim za kost
@@ -132,7 +145,7 @@ window.MM = window.MM || {};
       var o = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), m || mat(hex)); o.scale.set(sx, sy, sz); o.position.set(x, y, z); return put(o, boneName || 'Head');
     }
     var chest = bone.spine_03.getWorldPosition(new THREE.Vector3());
-    if (A.hair) sph(A.hair, R * 1.08, hs.y * .42, R * 1.08, hc.x, hc.y + hs.y * .14, hc.z + R * .12);
+    if (A.hair) { if (A.shortHair) sph(A.hair, R * .98, hs.y * .26, R * 1.0, hc.x, hc.y + hs.y * .26, hc.z + R * .08); else sph(A.hair, R * 1.08, hs.y * .42, R * 1.08, hc.x, hc.y + hs.y * .14, hc.z + R * .12); }
     if (A.tail) { var t = sph(A.tail, R * .42, hs.y * .62, R * .42, hc.x, hc.y - hs.y * .15, hc.z + R * 1.05); t.rotation.x = .25; }
     if (A.helmet) sph(A.helmet, R * 1.07, hs.y * .4, R * 1.07, hc.x, hc.y + hs.y * .2, hc.z + R * .12);
     if (A.hood) sph(A.hood, R * 1.22, hs.y * .62, R * 1.2, hc.x, hc.y + hs.y * .06, hc.z + R * .2);
@@ -163,7 +176,8 @@ window.MM = window.MM || {};
     if (A.patches) [-1, 1].forEach(function (s) { sph(A.patches, R * .32, R * .34, R * .1, hc.x + s * R * .38, hc.y + hs.y * .06, front + R * .1); });
 
     // crtani stil: veca glava; krupniji Hulk
-    bone.Head.scale.setScalar(1.28);
+    bone.Head.scale.setScalar(1.34);
+    ['hand_l', 'hand_r'].forEach(function (b) { if (bone[b]) bone[b].scale.setScalar(1.25); });
     var big = pal.big || 1;
     if (big !== 1) ['spine_03', 'upperarm_l', 'upperarm_r', 'thigh_l', 'thigh_r'].forEach(function (b) { if (bone[b]) bone[b].scale.setScalar(big); });
 
@@ -199,17 +213,47 @@ window.MM = window.MM || {};
     var t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t;
   }
 
-  /** Hoverboard: zaobljena daska, traka u boji i plamen ispod. bc = { c1, c2 } */
+  /** Hoverboard: zaobljena daska sa crtezom, svetla, plamen i trag iza. bc = { c1, c2 } */
+  var BTEX = {};
+  function deckTex(bc) {
+    var k = bc.c1 + bc.c2; if (BTEX[k]) return BTEX[k];
+    var c = document.createElement('canvas'); c.width = 128; c.height = 320; var g = c.getContext('2d');
+    var gr = g.createLinearGradient(0, 0, 0, 320); gr.addColorStop(0, bc.c1); gr.addColorStop(1, shade(bc.c1, -40));
+    g.fillStyle = gr; g.fillRect(0, 0, 128, 320);
+    g.fillStyle = bc.c2;
+    for (var i = -2; i < 8; i++) { g.beginPath(); g.moveTo(0, i * 50); g.lineTo(128, i * 50 - 40); g.lineTo(128, i * 50 - 25); g.lineTo(0, i * 50 + 15); g.closePath(); g.globalAlpha = .55; g.fill(); }
+    g.globalAlpha = 1;
+    // zvezda u sredini
+    g.fillStyle = '#fff'; g.beginPath();
+    for (var j = 0; j < 10; j++) { var a2 = -Math.PI / 2 + j * Math.PI / 5, rr = j % 2 ? 13 : 30; g.lineTo(64 + Math.cos(a2) * rr, 160 + Math.sin(a2) * rr); }
+    g.closePath(); g.fill(); g.strokeStyle = shade(bc.c1, -60); g.lineWidth = 4; g.stroke();
+    // svetla na krajevima
+    [40, 280].forEach(function (y) { g.fillStyle = '#fff6c0'; g.beginPath(); g.arc(64, y, 14, 0, 7); g.fill(); g.strokeStyle = '#555'; g.lineWidth = 4; g.stroke(); });
+    var t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; BTEX[k] = t; return t;
+  }
+  function shade(hex, d) {
+    var n = parseInt(hex.slice(1), 16), r = Math.max(0, Math.min(255, (n >> 16) + d)), g = Math.max(0, Math.min(255, ((n >> 8) & 255) + d)), b = Math.max(0, Math.min(255, (n & 255) + d));
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
   function boardMesh(bc) {
-    var g = new THREE.Group(), sh = new THREE.Shape(), w = .23, l = .6;
+    var g = new THREE.Group(), sh = new THREE.Shape(), w = .3, l = .82;
     sh.moveTo(-w, -l + w); sh.absarc(0, -l + w, w, Math.PI, 0, false); sh.lineTo(w, l - w); sh.absarc(0, l - w, w, 0, Math.PI, false); sh.closePath();
-    var geo = new THREE.ExtrudeGeometry(sh, { depth: .05, bevelEnabled: true, bevelThickness: .02, bevelSize: .025, bevelSegments: 2 });
+    var geo = new THREE.ExtrudeGeometry(sh, { depth: .05, bevelEnabled: true, bevelThickness: .025, bevelSize: .03, bevelSegments: 2 });
+    // UV: oblik je od -w..w i -l..l -> 0..1
+    var uv = geo.attributes.uv, pos = geo.attributes.position;
+    for (var i = 0; i < uv.count; i++) uv.setXY(i, (pos.getX(i) + w) / (2 * w), (pos.getY(i) + l) / (2 * l));
     geo.rotateX(-Math.PI / 2);
-    g.add(new THREE.Mesh(geo, new THREE.MeshPhongMaterial({ color: bc.c1, shininess: 80 })));
-    var st = new THREE.Mesh(new THREE.BoxGeometry(.12, .02, 1.05), new THREE.MeshBasicMaterial({ color: bc.c2 })); st.position.y = .11; g.add(st);
-    var fl = new THREE.MeshBasicMaterial({ color: bc.c2, transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false });
+    var top = new THREE.MeshToonMaterial({ map: deckTex(bc), gradientMap: toon() }), edge = new THREE.MeshToonMaterial({ color: shade(bc.c1, -70), gradientMap: toon() });
+    g.add(new THREE.Mesh(geo, [top, edge]));
+    var ol = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x15121a, side: THREE.BackSide })); ol.scale.set(1.06, 1.4, 1.03); g.add(ol);
+    var fl = new THREE.MeshBasicMaterial({ color: bc.c2, transparent: true, opacity: .85, blending: THREE.AdditiveBlending, depthWrite: false });
     g.userData.jets = [];
-    [-.36, .36].forEach(function (z) { var j = new THREE.Mesh(new THREE.ConeGeometry(.09, .32, 10), fl); j.rotation.x = Math.PI; j.position.set(0, -.14, z); g.add(j); g.userData.jets.push(j); });
+    [-.5, .5].forEach(function (z) { var j = new THREE.Mesh(new THREE.ConeGeometry(.1, .36, 10), fl); j.rotation.x = Math.PI; j.position.set(0, -.16, z); g.add(j); g.userData.jets.push(j); });
+    // trag iza boarda
+    var tc = document.createElement('canvas'); tc.width = 16; tc.height = 128; var tg = tc.getContext('2d');
+    var tgr = tg.createLinearGradient(0, 0, 0, 128); tgr.addColorStop(0, 'rgba(255,255,255,.9)'); tgr.addColorStop(1, 'rgba(255,255,255,0)'); tg.fillStyle = tgr; tg.fillRect(0, 0, 16, 128);
+    var trail = new THREE.Mesh(new THREE.PlaneGeometry(.45, 2.6), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(tc), color: bc.c2, transparent: true, opacity: .6, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    trail.rotation.x = -Math.PI / 2; trail.position.set(0, -.12, .82 + 1.3); g.add(trail); g.userData.trail = trail;
     return g;
   }
 
@@ -246,7 +290,7 @@ window.MM = window.MM || {};
     var floor = new THREE.Mesh(new THREE.CircleGeometry(.9, 40), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .4 }));
     floor.rotation.x = -Math.PI / 2; floor.position.y = .01; sc.add(floor);
     var h = null, bd = null, alive = true, last = performance.now(), turn = 0, danceT = 0;
-    if (opts.board) { bd = boardMesh(opts.board); bd.position.y = .22; sc.add(bd); }
+    if (opts.board) { bd = boardMesh(opts.board); bd.userData.trail.visible = false; bd.position.y = .22; sc.add(bd); }
     function set(nid) {
       if (h) sc.remove(h.root);
       h = make(nid); h.root.rotation.y = Math.PI; h.root.position.y = bd ? .32 : 0; sc.add(h.root); h.play('Idle_Loop');

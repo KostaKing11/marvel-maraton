@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.19.0';
+MM.VERSION = '2.20.0';
 
 (function () {
   'use strict';
@@ -669,8 +669,8 @@ MM.VERSION = '2.19.0';
     'rate': function (el) { openRate(el.getAttribute('data-id'), 0); },
     'runner': function () {
       MM.Runner.open(function (res) {
-        // XP: 1 na svakih 50 m, najvise 60 po trci
-        var before = MM.Games.lvlOf(V.gamesOf(state()).xp), xp = Math.min(60, Math.round(res.dist / 50)), rec = false;
+        // XP: 1 na svakih 120 m, najvise 40 po trci
+        var before = MM.Games.lvlOf(V.gamesOf(state()).xp), xp = Math.min(40, Math.round(res.dist / 120)), rec = false;
         Store.mutate(function (s) {
           var gg = s.games = V.gamesOf(s);
           gg.xp += xp; gg.runs = (gg.runs || 0) + 1;
@@ -691,17 +691,31 @@ MM.VERSION = '2.19.0';
       var id = el.getAttribute('data-g') || 'classic';
       var best = function () { return V.gamesOf(state()).best[id] || 0; };
       var team = V.teamBest(V.gamePeople({ s: state(), user: Store.user && Store.user() }), id);
-      MM.Games.open(Math.min(9, best()), function (passed) {
-        var before = MM.Games.lvlOf(V.gamesOf(state()).xp), xp = MM.Games.xpFor(id, passed), rec = false;
-        Store.mutate(function (s) {
-          var gg = s.games = V.gamesOf(s);
-          gg.xp += xp; gg.wins = (gg.wins || 0) + 1;
-          if ((gg.best[id] || 0) < passed) { gg.best[id] = passed; rec = true; }
-        });
+      function award(xp, fn) {
+        var before = MM.Games.lvlOf(V.gamesOf(state()).xp), rec = false;
+        Store.mutate(function (s) { var gg = s.games = V.gamesOf(s); gg.xp += xp; rec = fn(gg); });
         var after = MM.Games.lvlOf(V.gamesOf(state()).xp);
         publishProgress();
+        if (after.n > before.n) UI.buzz([20, 60, 40]);
         return { xp: xp, up: after.n > before.n, lvl: after.n, title: after.title, rec: rec };
-      }, { only: id === 'classic' ? '' : id, best: best, team: team ? { n: team.n, v: 'nivo ' + team.v } : null });
+      }
+      MM.Games.open(Math.min(19, best()), function (passed) {
+        return award(MM.Games.xpFor(id, passed), function (gg) {
+          gg.wins = (gg.wins || 0) + 1;
+          if ((gg.best[id] || 0) < passed) { gg.best[id] = passed; return true; }
+          return false;
+        });
+      }, {
+        only: id === 'classic' ? '' : id, best: best, team: team ? { n: team.n, v: 'nivo ' + team.v } : null,
+        endlessBest: function () { return V.gamesOf(state()).best[id + '_e'] || 0; },
+        // beskonacno: 2 XP po predjenom nivou (klasika 6), rekord u best[id_e]
+        onEndless: function (n) {
+          return award(n * (id === 'classic' ? 6 : 2), function (gg) {
+            if ((gg.best[id + '_e'] || 0) < n) { gg.best[id + '_e'] = n; return true; }
+            return false;
+          });
+        }
+      });
     },
     'ep-star': function (el) {
       setEpStar(el.getAttribute('data-id'), +el.getAttribute('data-ep'), +el.getAttribute('data-n'));

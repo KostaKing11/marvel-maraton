@@ -1,7 +1,7 @@
 /* ============================================================
    games.js  -  mini igre (tab Igre)
    ------------------------------------------------------------
-   Svaka igra ima 10 nivoa; predjen nivo daje XP. Klasika su
+   Svaka igra ima 20 nivoa (predjen nivo daje XP) i beskonacni mod. Klasika su
    prve tri zaredom (Dooma, Kamenje, Kviz). Igra se crta sama u
    kontejner sa data-keep (morph je ne dira).
    ============================================================ */
@@ -292,8 +292,8 @@ window.MM = window.MM || {};
   // Mamci (Ultron, Loki) oduzimaju 2, promasaj 1. Glava je sve manja i brza.
   function game1() {
     clearAll();
-    var need = Math.min(24, 12 + 2 * L), left = 15, delay = Math.max(480, 760 - 30 * L), minDelay = Math.max(360, 460 - 15 * L);
-    var size = Math.max(42, 58 - 3 * L), bait = Math.round(size * .62), decoys = Math.min(3, 1 + Math.floor(L / 2)), hits = 0, done = false;
+    var need = Math.min(32, 12 + 2 * L), left = 15, delay = Math.max(380, 760 - 30 * L), minDelay = Math.max(290, 460 - 15 * L);
+    var size = Math.max(36, 58 - 2 * L), bait = Math.round(size * .62), decoys = Math.min(3, 1 + Math.floor(L / 2)), hits = 0, done = false;
     box.innerHTML = head(1, 'Uhvati Dooma', 'Tapni Dooma ' + need + ' puta za 15 s. Mamci −2. Sve je brži.') +
       '<div class="gm-bar"><b id="g1h">0 / ' + need + '</b><b id="g1t">15 s</b></div><div class="gm-arena" id="g1a">' +
       '<button type="button" class="gm-doom" id="g1d" style="width:' + size + 'px;height:' + size + 'px"><img src="img/map/doomhead.jpg" alt="" draggable="false"></button>' +
@@ -338,8 +338,8 @@ window.MM = window.MM || {};
   /* ---------------- 2. Kamenje (Simon) ---------------- */
   function game2() {
     clearAll();
-    var seq = [], len = Math.min(12, 7 + L), pos = 0, input = false;
-    var step = Math.max(400, 620 - 25 * L), lit = Math.max(260, 400 - 15 * L);
+    var seq = [], len = Math.min(17, 7 + L), pos = 0, input = false;
+    var step = Math.max(320, 620 - 20 * L), lit = Math.max(200, 400 - 12 * L);
     // bez istog kamena dvaput zaredom (tesko je, ali posteno)
     for (var i = 0; i < len; i++) { var n; do { n = Math.floor(Math.random() * 6); } while (n === seq[i - 1]); seq.push(n); }
     box.innerHTML = head(2, 'Kamenje beskonačnosti', 'Zapamti ' + len + ' kamenja, pa ponovi. Prikazuje se jednom' + (L >= 2 ? ', a posle se kamenje izmeša.' : '.')) +
@@ -375,7 +375,7 @@ window.MM = window.MM || {};
   /* ---------------- 3. Kviz ---------------- */
   function game3() {
     clearAll();
-    var total = Math.min(10, 6 + L), secs = Math.max(6, 12 - Math.floor(L / 2)), qs = shuffle(QUIZ).slice(0, total), k = 0, answered = false;
+    var total = Math.min(15, 6 + L), secs = Math.max(5, 12 - Math.floor(L / 2)), qs = shuffle(QUIZ).slice(0, total), k = 0, answered = false;
     function ask() {
       answered = false;
       var q = qs[k];
@@ -431,7 +431,7 @@ window.MM = window.MM || {};
   /* --- Memorija: parovi predmeta iz filmova --- */
   function gMemo() {
     clearAll();
-    var pairs = Math.min(10, 6 + Math.floor(L / 2)), secs = Math.max(30, 60 - 3 * L), done = false;
+    var pairs = Math.min(10, 6 + Math.floor(L / 2)), secs = Math.max(22, 60 - 2.5 * L), done = false;
     var pool = shuffle(MM.Cat.all().filter(function (i) { return MM.Badges.ITEMS[i.id] && MM.Badges.spec(i).icon !== 'gauntlet'; }));
     var icons = {}, picks = [];
     pool.forEach(function (i) { var ic = MM.Badges.spec(i).icon; if (!icons[ic] && picks.length < pairs) { icons[ic] = 1; picks.push(i); } });
@@ -463,7 +463,7 @@ window.MM = window.MM || {};
   /* --- Hronologija: poredaj filmove po izlasku --- */
   function gHrono() {
     clearAll();
-    var n = Math.min(8, 4 + Math.floor(L / 2)), secs = Math.max(20, 40 - 2 * L), done = false;
+    var n = Math.min(10, 4 + Math.floor(L / 2)), secs = Math.max(16, 40 - 1.5 * L), done = false;
     var films = MM.Cat.all().filter(function (i) { return i.type === 'film' && (i.col === 'mcu' || L >= 3) && i.date <= '2026-08-01'; });
     var pick = [], years = {};
     shuffle(films).forEach(function (f) { if (pick.length < n && !years[f.date]) { years[f.date] = 1; pick.push(f); } });
@@ -500,11 +500,11 @@ window.MM = window.MM || {};
   /** 3 - 2 - 1 pa igra, da te ne iznenadi. */
   function intro(fn) {
     clearAll();
-    var n = 3;
+    var n = endless && streak > 0 ? 1 : 3;
     (function tick() {
       if (!box) return;
       if (n === 0) { fn(); return; }
-      box.innerHTML = '<div class="gm-cnt"><b>' + n + '</b><span>' + esc(only ? REG[only].name : 'Klasika: tri zaredom') + '</span></div>';
+      box.innerHTML = '<div class="gm-cnt"><b>' + (endless && streak > 0 ? 'NIVO ' + (L + 1) : n) + '</b><span>' + esc((only ? REG[only].name : 'Klasika: tri zaredom') + (endless ? ' · beskonačno' : '')) + '</span></div>';
       UI.buzz(6); n--;
       later(tick, 650);
     })();
@@ -514,6 +514,16 @@ window.MM = window.MM || {};
 
   function fail(why) {
     clearAll();
+    if (endless) {
+      var res = menuInfo.onEndless ? menuInfo.onEndless(streak) : null;
+      box.innerHTML = '<div class="gm-end"><div class="gm-emo">♾️</div><h2>' + streak + ' ' + (streak === 1 ? 'nivo' : 'nivoa') + '</h2><p class="muted">' + esc(why) + '</p>' +
+        (res && res.rec ? '<p><b class="gm-up">Novi rekord u beskonačnom!</b></p>' : '') + (res && res.xp ? '<p><b class="gm-xp">+' + res.xp + ' XP</b></p>' : '') +
+        '<button type="button" class="btn primary wide" id="gmRe">Ponovo</button><button type="button" class="btn ghost wide" id="gmMenu">Meni igre</button></div>';
+      box.querySelector('#gmRe').onclick = startEndless;
+      box.querySelector('#gmMenu').onclick = menuView;
+      if (res && res.up) setTimeout(function () { levelUp(res.lvl, res.title); }, 700);
+      return;
+    }
     box.innerHTML = '<div class="gm-end"><div class="gm-emo">😵</div><h2>Pao si.</h2><p class="muted">' + esc(why) +
       (only ? '' : ' Kreće se od prve igre.') + '</p>' +
       '<button type="button" class="btn primary wide" id="gmRe">Ponovo</button><button type="button" class="btn ghost wide" id="gmMenu">Meni igre</button></div>';
@@ -531,15 +541,22 @@ window.MM = window.MM || {};
 
   function win() {
     clearAll();
+    if (endless) {
+      // beskonacno: odmah sledeci nivo, sve teze
+      streak++; UI.buzz([10, 30]);
+      box.innerHTML = '<div class="gm-cnt"><b>✓</b><span>' + streak + ' ' + (streak === 1 ? 'nivo' : 'nivoa') + ' zaredom</span></div>';
+      L++; later(first, 700);
+      return;
+    }
     confetti(); UI.buzz([15, 40, 25]);
     var r = onWin ? onWin(L + 1) : null;
     box.innerHTML = '<div class="gm-end"><div class="gm-emo">🏆</div><h2>Prešao si nivo ' + (L + 1) + '!</h2>' +
       '<p class="muted">' + (r && r.xp ? '<b class="gm-xp">+' + r.xp + ' XP</b>' +
         (r.rec ? '<br>Novi rekord u ovoj igri!' : '') : (only ? 'Probaj teži nivo.' : 'Sve tri igre zaredom. Ozbiljno.')) + '</p>' +
-      (L < 9 ? '<button type="button" class="btn primary wide" id="gmNext">Nivo ' + (L + 2) + '</button>' : '<p class="muted">To je bio poslednji nivo. Legenda.</p>') +
+      (L < MAXLV - 1 ? '<button type="button" class="btn primary wide" id="gmNext">Nivo ' + (L + 2) + '</button>' : '<p class="muted">To je bio poslednji nivo. Probaj beskonačni mod.</p>') +
       '<button type="button" class="btn ghost wide" id="gmMenu">Meni igre</button></div>';
     var nx = box.querySelector('#gmNext');
-    if (nx) nx.onclick = function () { L = Math.min(9, L + 1); first(); };
+    if (nx) nx.onclick = function () { L = Math.min(MAXLV - 1, L + 1); first(); };
     box.querySelector('#gmMenu').onclick = menuView;
     if (r && r.up) setTimeout(function () { levelUp(r.lvl, r.title); }, 700);
   }
@@ -547,21 +564,26 @@ window.MM = window.MM || {};
   /* ---------------- meni igre ----------------
      Svaka igra ima svoj ekran: opis, staza od 10 nivoa (predjeni,
      sledeci, zakljucani), rekord ekipe i veliko dugme Igraj. */
-  var menuInfo = null;   // { id, best(), team }
+  var menuInfo = null;   // { id, best(), team, endlessBest(), onEndless(n) }
+  var MAXLV = 20, endless = false, streak = 0;
+  function startEndless() { endless = true; streak = 0; L = 0; UI.buzz(8); first(); }
   function menuView() {
     clearAll();
+    endless = false;
     var id = only, r = only ? REG[only] : { name: 'Klasika', emo: '🏆', col: '#ffb400', how: 'Uhvati Dooma, Kamenje i Kviz zaredom, bez pada. Vredi trostruko XP.' };
-    var best = menuInfo.best(), next = Math.min(10, best + 1), team = menuInfo.team || null;
+    var best = menuInfo.best(), next = Math.min(MAXLV, best + 1), team = menuInfo.team || null, eb = menuInfo.endlessBest ? menuInfo.endlessBest() : 0;
     box.innerHTML = '<div class="gmm" style="--gc:' + r.col + '">' +
       '<div class="gmm-hero"><span class="gmm-emo">' + r.emo + '</span><h2>' + esc(r.name) + '</h2><p>' + esc(r.how) + '</p></div>' +
-      '<div class="gmm-path">' + Array.apply(null, Array(10)).map(function (x, i) {
+      '<div class="gmm-path">' + Array.apply(null, Array(MAXLV)).map(function (x, i) {
         var n = i + 1, st = n <= best ? 'done' : n === next ? 'next' : 'lock';
         return '<button type="button" class="gmm-n ' + st + '" data-l="' + n + '"' + (st === 'lock' ? ' disabled' : '') + '><b>' + n + '</b>' + (st === 'done' ? '<i>★</i>' : '') + '</button>';
       }).join('') + '</div>' +
-      '<div class="gmm-stats"><div><b>' + best + '/10</b><i>tvoj rekord</i></div><div><b>+' + xpFor(id || 'classic', next) + ' XP</b><i>za nivo ' + next + '</i></div>' +
+      '<div class="gmm-stats"><div><b>' + best + '/' + MAXLV + '</b><i>tvoj rekord</i></div><div><b>+' + xpFor(id || 'classic', next) + ' XP</b><i>za nivo ' + next + '</i></div>' +
         '<div><b>' + (team ? esc(team.n) : '—') + '</b><i>' + (team ? 'najbolji u ekipi · ' + team.v : 'rekord ekipe') + '</i></div></div>' +
-      '<button type="button" class="gmm-play" id="gmmGo"><b>IGRAJ</b><span>nivo ' + next + '</span></button></div>';
+      '<button type="button" class="gmm-play" id="gmmGo"><b>IGRAJ</b><span>nivo ' + next + '</span></button>' +
+      '<button type="button" class="gmm-endless" id="gmmInf"><b>♾️ Beskonačno</b><span>nivoi idu dok ne pogrešiš · rekord ' + eb + '</span></button></div>';
     box.querySelector('#gmmGo').onclick = function () { L = next - 1; UI.buzz(8); first(); };
+    box.querySelector('#gmmInf').onclick = startEndless;
     Array.prototype.forEach.call(box.querySelectorAll('.gmm-n:not([disabled])'), function (b) {
       b.onclick = function () { L = +b.getAttribute('data-l') - 1; UI.buzz(8); first(); };
     });
@@ -573,7 +595,8 @@ window.MM = window.MM || {};
     onWin = cb;
     opts = opts || {};
     only = opts.only || '';
-    menuInfo = { best: opts.best || function () { return L; }, team: opts.team };
+    menuInfo = { best: opts.best || function () { return L; }, team: opts.team, endlessBest: opts.endlessBest, onEndless: opts.onEndless };
+    endless = false;
     UI.openSheet({
       id: 'games', full: true, cls: 'gm-sheet',
       render: function () {
