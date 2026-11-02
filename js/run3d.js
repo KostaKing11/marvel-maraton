@@ -658,12 +658,12 @@ window.MM = window.MM || {};
       while (S.secEnd > SPAWN_Z) spawnSection();
       if (S.pw.jet > 0) {
         S.jetAcc = (S.jetAcc || 0) + dz;
-        var ahead = 40, lead = ahead / S.speed;          // koliko treba novcicu da stigne do tebe
+        var ahead = 22, lead = ahead / S.speed;          // koliko treba novcicu da stigne do tebe
         while (S.jetAcc >= 2.6) {
           S.jetAcc -= 2.6;
           if (S.pw.jet - lead < .4) continue;            // ne stize pre kraja leta: ne pravi ga
-          if (S.jetN > 0 && S.jetN % 14 === 0) S.jetLane = Math.max(0, Math.min(2, S.jetLane + (Math.random() < .5 ? -1 : 1)));
-          var cc = mkCoin(S.jetLane, -ahead + S.jetAcc, JET_Y + 1); cc.air = true; S.jetN++;
+          // novcici dolaze u traci u kojoj letis (promenis traku = staza ide za tobom)
+          var cc = mkCoin(S.lane, -ahead + S.jetAcc, JET_Y + 1); cc.air = true; S.jetN++;
         }
       }
       for (var i = 0; i < decor.length; i++) decor[i].m.position.z += dz;
@@ -706,6 +706,8 @@ window.MM = window.MM || {};
           else if (o.t === 'btok') o.m.rotation.y += dt * 4;
           else o.m.position.y = o.y + Math.sin(S.t * 3 + z) * .15;
           if (o.air && (S.pw.jet <= 0 || z > 1.5)) { scene.remove(o.m); return false; }
+          // u letu novcici idu u tvoju traku, pa ih uvek pokupis
+          if (o.air) o.m.position.x += (S.x - o.m.position.x) * Math.min(1, dt * 5);
           if (o.t === 'coin' && (o.pulled || (magnetOn && z > -16 && z < .5 && (S.pw.jet > 0 ? o.air : !o.air)))) {
             o.pulled = true;
             var kk = Math.min(1, dt * 10);
@@ -713,6 +715,7 @@ window.MM = window.MM || {};
           }
           var p = o.m.position;
           var near = o.pulled ? (p.z > -1.5 || Math.hypot(p.x - S.x, p.y - S.y - 1, p.z) < 1.6)
+            : o.air ? (Math.abs(p.z) < 1.1 && Math.abs(p.x - S.x) < 1.4 && Math.abs(p.y - (S.y + 1)) < 2.2)
             : (Math.abs(p.z) < .9 && Math.abs(p.x - S.x) < 1 && Math.abs(p.y - (S.y + 1)) < 1.4);
           if (near) {
             scene.remove(o.m);
