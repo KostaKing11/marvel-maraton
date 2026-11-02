@@ -24,7 +24,7 @@ window.MM = window.MM || {};
   function fmt(n) { return Math.round(n || 0).toLocaleString('sr-RS'); }
   function sfx(n, o) { if (MM.Sfx) MM.Sfx.play(n, o); }
   function music(n) { if (MM.Sfx) MM.Sfx.music(n); }
-  function ico(name, cls) { return '<img class="ri ' + (cls || '') + '" src="' + (name === 'coin' ? 'img/run/coin.webp' : 'img/ui/' + name + '.webp') + '" alt="">'; }
+  function ico(name, cls) { return '<img class="ri ' + (cls || '') + '" src="' + (name === 'coin' ? 'img/run/coin.webp' : name.indexOf('map:') === 0 ? 'img/map/' + name.slice(4) + '.webp' : 'img/ui/' + name + '.webp') + '" alt="">'; }
   var SVG = {
     back: '<svg viewBox="0 0 24 24"><path d="M15.4 4.6 8 12l7.4 7.4-1.4 1.4L5.2 12 14 3.2z"/></svg>',
     pause: '<svg viewBox="0 0 24 24"><path d="M7 4h4v16H7zM13 4h4v16h-4z"/></svg>',
@@ -47,6 +47,11 @@ window.MM = window.MM || {};
     { id: 'ant', name: 'Ant-Man', film: 'ant-man', perk: '+10% poena.', p: { score: 1.1 } },
     { id: 'marvel', name: 'Captain Marvel', film: 'captain-marvel', perk: 'Moći se pojavljuju 30% češće.', p: { pwRate: 1.3 } },
     { id: 'deadpool', name: 'Deadpool', film: 'deadpool', perk: 'Prvi nastavak u trci je besplatan.', p: { freeRevive: 1 } },
+    { id: 'loki', name: 'Loki', film: 'loki-s1', perk: 'Kreće sa štitom (iluzija).', p: { startShield: 1 } },
+    { id: 'wanda', name: 'Scarlet Witch', film: 'wandavision', perk: 'Magnet, ×2 i Kamen vremena traju 20% duže.', p: { magnet: 1.2, x2: 1.2, time: 1.2 } },
+    { id: 'wolverine', name: 'Wolverine', film: 'x-men-2000', perk: 'Brzo zaceljuje: posle saplitanja Doom odustaje duplo brže.', p: { heal: 1 } },
+    { id: 'starlord', name: 'Star-Lord', film: 'guardians', perk: '+50% novčića za svakih pređenih 1.000 m.', p: { miles: 1.5 } },
+    { id: 'shangchi', name: 'Shang-Chi', film: 'shang-chi', perk: 'Board tokeni vrede 50% više — board se puni brže.', p: { tok: 1.5 } },
     { id: 'doom', name: 'Doctor Doom', film: 'avengers-doomsday', perk: '+10% poena i +10% novčića.', p: { score: 1.1, coin: 1.1 } },
     // tajni: samo iz Kostinog koda (codes.js)
     { id: 'stanlee', name: 'Stan Lee', secret: true, perk: 'Excelsior! Kreće sa štitom, sve moći traju 50% duže, češće se pojavljuju i +25% poena.',
@@ -71,6 +76,8 @@ window.MM = window.MM || {};
     { id: 'vibra', name: 'Vibranijum', c1: '#2a1d4a', c2: '#c46bff', pp: 'hits', perk: 'Izdrži 2 udarca umesto jednog.' },
     { id: 'kosmik', name: 'Kosmik', c1: '#1b3a8f', c2: '#ffd23f', pp: 'coins', perk: 'Dupli novčići dok voziš.' },
     { id: 'stark', name: 'Stark', c1: '#b3141b', c2: '#ffcf3f', pp: 'meter', perk: 'Puni se sa 11 tokena umesto 15.' },
+    { id: 'bifrost', name: 'Bifrost', c1: '#ff3d8b', c2: '#3bd5ff', pp: 'shield', perk: 'Kad se vožnja završi, dobiješ štit.' },
+    { id: 'kvant', name: 'Kvant', c1: '#c8202b', c2: '#cfd6e0', pp: 'score', perk: '+50% poena dok voziš.' },
     { id: 'doom', name: 'Doom', passOnly: true, c1: '#2e4a2e', c2: '#9dffbc', pp: 'start', perk: 'Kreneš sa punim boardom.' },
     { id: 'strip', name: 'Strip', secret: true, comic: true, c1: '#ffd23f', c2: '#e62429', pp: 'strip', perk: 'Tajni board: magnet i dupli novčići dok voziš, traje 40 s, kreće pun.' }
   ];
@@ -95,7 +102,9 @@ window.MM = window.MM || {};
     { id: 'magnet', name: 'Magnet', ic: 'magnet', desc: 'Privlači novčiće iz svih traka.', base: 10 },
     { id: 'jet', name: 'Mjolnir let', ic: 'hammer', desc: 'Letiš iznad svega i kupiš novčiće u vazduhu.', base: 7 },
     { id: 'x2', name: '×2 poeni', ic: 'x2', desc: 'Dupli poeni i novčići.', base: 12 },
-    { id: 'jump', name: 'Spider skok', ic: 'web', desc: 'Skačeš duplo više, pravo na vozove.', base: 10 }
+    { id: 'jump', name: 'Spider skok', ic: 'web', desc: 'Skačeš duplo više, pravo na vozove — sa saltom.', base: 10 },
+    { id: 'time', name: 'Kamen vremena', ic: 'map:stone-time', desc: 'Sve se uspori — lakše provučeš kroz gužvu.', base: 7 },
+    { id: 'power', name: 'Kamen moći', ic: 'map:stone-power', desc: 'Razbijaš sve prepreke na putu, čak i vozove.', base: 6 }
   ];
   var UP_COST = [300, 700, 1500, 3000, 6000];
   function upDur(u, lvl) { return Math.round(u.base * (1 + .2 * (lvl || 0))); }
@@ -607,7 +616,7 @@ window.MM = window.MM || {};
 
   // nagrade za daljinu u jednoj trci
   var MILES = [[500, 10], [1000, 25], [2000, 50], [3000, 80], [5000, 120], [7500, 200], [10000, 300], [15000, 500]];
-  var PW_IC = { magnet: 'magnet', jet: 'hammer', x2: 'x2', jump: 'web' };
+  var PW_IC = { magnet: 'magnet', jet: 'hammer', x2: 'x2', jump: 'web', time: 'map:stone-time', power: 'map:stone-power' };
   function hud(h) {
     if (!host || !run) return;
     var q = function (id) { return host.querySelector(id); };
@@ -625,11 +634,12 @@ window.MM = window.MM || {};
     bd.classList.toggle('ready', h.meter >= 3 && !(h.board > 0)); bd.classList.toggle('active', h.board > 0);
     var fp = h.board > 0 ? h.board / h.max.board : h.meter / h.meterMax;
     q('#r3BF').style.height = Math.round(fp * 100) + '%';
-    q('#r3BT').textContent = h.board > 0 ? Math.ceil(h.board) + ' s' : h.meter >= h.meterMax ? 'TAPNI' : h.meter + '/' + h.meterMax;
+    q('#r3BT').textContent = h.board > 0 ? Math.ceil(h.board) + ' s' : h.meter >= h.meterMax ? 'TAPNI' : Math.floor(h.meter) + '/' + h.meterMax;
     if (run.battle) { battleHud(h); return; }
     while (run.ms < MILES.length && h.dist >= MILES[run.ms][0]) {
-      run.msCoins += MILES[run.ms][1];
-      flash(fmt(MILES[run.ms][0]) + ' m · +' + MILES[run.ms][1], 'coin');
+      var mc = Math.round(MILES[run.ms][1] * (run.c.p.miles || 1));
+      run.msCoins += mc;
+      flash(fmt(MILES[run.ms][0]) + ' m · +' + mc, 'coin');
       run.ms++;
     }
   }
@@ -637,7 +647,7 @@ window.MM = window.MM || {};
     var el = host && host.querySelector('#r3T'); if (!el) return;
     el.innerHTML = (ic ? ico(ic) : '') + '<span>' + esc(t) + '</span>'; el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
   }
-  var PW_TXT = { magnet: ['magnet', 'Magnet'], jet: ['hammer', 'Mjolnir let'], x2: ['x2', '×2 poeni'], jump: ['web', 'Spider skok'], shield: ['shield', 'Štit'] };
+  var PW_TXT = { magnet: ['magnet', 'Magnet'], jet: ['hammer', 'Mjolnir let'], x2: ['x2', '×2 poeni'], jump: ['web', 'Spider skok'], shield: ['shield', 'Štit'], time: ['map:stone-time', 'Kamen vremena — usporeno'], power: ['map:stone-power', 'Kamen moći — ruši sve!'] };
   var ARROW = { side: SVG.left + SVG.right, up: SVG.up, down: '<svg viewBox="0 0 24 24" style="transform:rotate(180deg)"><path d="M12 3 3 12h6v9h6v-9h6z"/></svg>' };
   function onEvent(n, x) {
     var tip = host && host.querySelector('#r3Tip');

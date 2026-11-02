@@ -49,6 +49,16 @@ window.MM = window.MM || {};
       acc: { swords: 1, lenses: '#ffffff', patches: '#1a1a1a' } },
     stanlee: { head: '#e8b896', torso: '#22305a', waist: '#3a2e24', armU: '#22305a', armL: '#22305a', hand: '#e8b896', legU: '#9c875c', legL: '#9c875c', foot: '#5a3420', joint: '#22305a',
       acc: { hair: '#e6e6e6', backHair: 1, shades: '#3a2a1a', stache: '#eeeeee', pocket: '#c8202b', eyes: 1 } },
+    loki: { head: '#e8c0a0', torso: '#1d5b33', waist: '#c9a24a', armU: '#1d5b33', armL: '#16181c', hand: '#16181c', legU: '#16181c', legL: '#16181c', foot: '#2a1f14', joint: '#c9a24a',
+      acc: { hair: '#14110f', tail: '#14110f', horns: '#d9a93a', cape: '#1d5b33', eyes: 1 } },
+    wanda: { head: '#f0c4a2', torso: '#9a1420', waist: '#5e0c14', armU: '#9a1420', armL: '#9a1420', hand: '#5e0c14', legU: '#2a0a10', legL: '#2a0a10', foot: '#5e0c14', joint: '#c8202b',
+      acc: { hair: '#8a2a1a', tail: '#8a2a1a', tiara: '#d1222f', cape: '#8a0f1a', eyes: 1, glow: '#ff3b5c' } },
+    wolverine: { head: '#f0c419', torso: '#f0c419', waist: '#1f3a8a', armU: '#1f3a8a', armL: '#f0c419', hand: '#1f3a8a', legU: '#f0c419', legL: '#1f3a8a', foot: '#1f3a8a', joint: '#c8202b',
+      acc: { helmet: '#1f3a8a', fins: '#1f3a8a', lenses: '#ffffff', claws: '#d6dde6' }, big: 1.06 },
+    starlord: { head: '#3a3f48', torso: '#6b1d1d', waist: '#3a2a1a', armU: '#6b1d1d', armL: '#6b1d1d', hand: '#2a1f14', legU: '#2a2d33', legL: '#2a2d33', foot: '#3a2a1a', joint: '#9aa7b8',
+      acc: { helmet: '#4a505a', lenses: '#ff3b30', pack: '#9aa7b8' } },
+    shangchi: { head: '#e3b48c', torso: '#a8141b', waist: '#16181c', armU: '#a8141b', armL: '#16181c', hand: '#e3b48c', legU: '#16181c', legL: '#16181c', foot: '#16181c', joint: '#c9a24a',
+      acc: { hair: '#101010', shortHair: 1, eyes: 1, rings: '#e9b84a' } },
     doom: { head: '#9aa3ad', torso: '#5c636e', waist: '#2e5a2e', armU: '#5c636e', armL: '#5c636e', hand: '#5c636e', legU: '#5c636e', legL: '#5c636e', foot: '#3a3f48', joint: '#2e5a2e',
       acc: { hood: '#2e5a2e', cape: '#2e5a2e', doomeyes: 1 }, big: 1.05 }
   };
@@ -182,6 +192,44 @@ window.MM = window.MM || {};
     }
     if (A.stache) sph(A.stache, R * .42, R * .12, R * .1, hc.x, hc.y - hs.y * .12, front + R * .12);
     if (A.pocket) { var pk = new THREE.Mesh(new THREE.BoxGeometry(R * .32, R * .2, R * .05), mat(A.pocket)); pk.position.set(chest.x + R * .45, chest.y + hs.y * .1, chest.z - R * 1.02); put(pk, 'spine_03'); }
+    if (A.horns) [-1, 1].forEach(function (s2) {
+      // Lokijevi rogovi: dugi zlatni, povijeni unazad
+      var h = new THREE.Mesh(new THREE.ConeGeometry(R * .24, hs.y * 1.5, 10), mat(A.horns));
+      h.position.set(hc.x + s2 * R * .45, top + hs.y * .32, front + R * .65); h.rotation.set(-.9, 0, -s2 * .22); put(h, 'Head');
+      var b = new THREE.Mesh(new THREE.TorusGeometry(R * 1.02, R * .09, 6, 24, Math.PI), mat(A.horns));
+      b.position.set(hc.x, hc.y + hs.y * .22, hc.z); b.rotation.set(0, 0, 0); put(b, 'Head');
+    });
+    if (A.tiara) {
+      var tc = new THREE.Mesh(new THREE.ConeGeometry(R * .3, hs.y * .8, 8), mat(A.tiara)); tc.position.set(hc.x, hc.y + hs.y * .5, front + R * .25); tc.rotation.x = -.25; put(tc, 'Head');
+      [-1, 1].forEach(function (s2) { var c2 = new THREE.Mesh(new THREE.ConeGeometry(R * .2, hs.y * .55, 8), mat(A.tiara)); c2.position.set(hc.x + s2 * R * .5, hc.y + hs.y * .38, front + R * .35); c2.rotation.set(-.2, 0, -s2 * .55); put(c2, 'Head'); });
+    }
+    if (A.fins) [-1, 1].forEach(function (s2) { var f = new THREE.Mesh(new THREE.ConeGeometry(R * .2, hs.y * .7, 8), mat(A.fins)); f.position.set(hc.x + s2 * R * .7, top + hs.y * .05, hc.z + R * .1); f.rotation.z = -s2 * .55; put(f, 'Head'); });
+    if (A.claws) ['hand_l', 'hand_r'].forEach(function (bn) {
+      // tri sečiva iz šake, u pravcu podlaktice
+      if (!bone[bn] || !bone[bn.replace('hand', 'lowerarm')]) return;
+      var hp = bone[bn].getWorldPosition(new THREE.Vector3()), lp = bone[bn.replace('hand', 'lowerarm')].getWorldPosition(new THREE.Vector3());
+      var dir = hp.clone().sub(lp).normalize(), q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+      [-1, 0, 1].forEach(function (k) {
+        var cl = new THREE.Mesh(new THREE.BoxGeometry(R * .05, hs.y * .95, R * .12), mat(A.claws, { emissive: '#ffffff', emissiveIntensity: .15 }));
+        cl.quaternion.copy(q); cl.position.copy(hp).add(dir.clone().multiplyScalar(hs.y * .75)); cl.position.z += k * R * .12; cl.position.y += R * .05;
+        put(cl, bn);
+      });
+    });
+    if (A.rings) ['lowerarm_l', 'lowerarm_r'].forEach(function (bn) {
+      // Deset prstenova oko podlaktica
+      var hb2 = bn.replace('lowerarm', 'hand'); if (!bone[bn] || !bone[hb2]) return;
+      var a = bone[bn].getWorldPosition(new THREE.Vector3()), b = bone[hb2].getWorldPosition(new THREE.Vector3()), dir = b.clone().sub(a).normalize();
+      var q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
+      [.35, .55, .75].forEach(function (t) {
+        var rg = new THREE.Mesh(new THREE.TorusGeometry(R * .5, R * .09, 6, 18), mat(A.rings, { emissive: A.rings, emissiveIntensity: .3 }));
+        rg.quaternion.copy(q); rg.position.copy(a.clone().lerp(b, t)); put(rg, bn);
+      });
+    });
+    if (A.glow) ['hand_l', 'hand_r'].forEach(function (bn) {
+      if (!bone[bn]) return;
+      var g = new THREE.Mesh(new THREE.SphereGeometry(R * .5, 12, 10), new THREE.MeshBasicMaterial({ color: A.glow, transparent: true, opacity: .7 }));
+      g.position.copy(bone[bn].getWorldPosition(new THREE.Vector3())); put(g, bn);
+    });
     if (A.patches) [-1, 1].forEach(function (s) { sph(A.patches, R * .32, R * .34, R * .1, hc.x + s * R * .38, hc.y + hs.y * .06, front + R * .1); });
 
     // crtani stil: veca glava; krupniji Hulk

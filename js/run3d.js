@@ -361,7 +361,7 @@ window.MM = window.MM || {};
     /* ---------- ikonice za moci i tokene (Figma) ---------- */
     var ICON = {}, GLOW = null;
     function iconMat(name) {
-      if (!ICON[name]) ICON[name] = new THREE.SpriteMaterial({ map: imgTex('img/ui/' + name + '.webp'), transparent: true, depthWrite: false });
+      if (!ICON[name]) ICON[name] = new THREE.SpriteMaterial({ map: imgTex(name.indexOf('map:') === 0 ? 'img/map/' + name.slice(4) + '.webp' : 'img/ui/' + name + '.webp'), transparent: true, depthWrite: false });
       return ICON[name];
     }
     function glowMat() {
@@ -385,13 +385,13 @@ window.MM = window.MM || {};
     var S = {
       t: 0, speed: 12, dist: 0, coins: 0, coinAcc: 0, score: 0, lane: 1, x: 0, y: 0, vy: 0, roll: 0, ground: 0,
       shield: 0, invuln: 0, stumbleAt: -99, stumbleT: 0, bump: 0, bumpT: 0, doomT: 3, over: false, paused: false, why: '',
-      pw: { magnet: 0, jet: 0, x2: 0, jump: 0 }, board: 0, meter: 0, smash: !!opts.smash, anim: 'run', animT: 0,
+      pw: { magnet: 0, jet: 0, x2: 0, jump: 0, time: 0, power: 0 }, board: 0, meter: 0, smash: !!opts.smash, anim: 'run', animT: 0,
       stats: { jumps: 0, rolls: 0, trains: 0, barriers: 0, powerups: 0, coins: 0, btok: 0, sections: 0 },
-      objs: [], secEnd: -30, lastSec: [], tips: [], freeze: null, tut: !!opts.tutorial, landT: 0
+      objs: [], secEnd: -30, lastSec: [], tips: [], freeze: null, tut: !!opts.tutorial, landT: 0, jumpT: 0, flip: 0, overT: 0
     };
     var up = opts.up || {}, perk = opts.perk || {};
     var BP = opts.boardPerk || '';           // mala moc boarda
-    var BASE = { magnet: 10, jet: 7, x2: 12, jump: 10, board: BP === 'time' ? 35 : BP === 'strip' ? 40 : 30 }, METER = BP === 'meter' ? 11 : 15;
+    var BASE = { magnet: 10, jet: 7, x2: 12, jump: 10, time: 7, power: 6, board: BP === 'time' ? 35 : BP === 'strip' ? 40 : 30 }, METER = BP === 'meter' ? 11 : 15;
     if (BP === 'start' || BP === 'strip') S.meter = METER;
     if (opts.startShield) S.shield = 1;
     function dur(k) { return BASE[k] * (1 + .2 * (up[k] || 0)) * (perk[k] || 1); }
@@ -490,8 +490,8 @@ window.MM = window.MM || {};
       m.userData.one.position.x = on ? -.26 : 0; m.userData.dbl.position.x = .26;
       m.userData.one.scale.setScalar(on ? .85 : 1); m.userData.dbl.scale.setScalar(.85);
     }
-    var PW_ICON = { magnet: 'magnet', jet: 'hammer', x2: 'x2', jump: 'web', shield: 'shield', btok: 'btoken' };
-    var PW_COL = { magnet: 0xff3b30, shield: 0x5fd3ff, jet: 0xffd23f, x2: 0x39d97a, jump: 0xc46bff, btok: 0x3b8bff };
+    var PW_ICON = { magnet: 'magnet', jet: 'hammer', x2: 'x2', jump: 'web', shield: 'shield', btok: 'btoken', time: 'map:stone-time', power: 'map:stone-power' };
+    var PW_COL = { magnet: 0xff3b30, shield: 0x5fd3ff, jet: 0xffd23f, x2: 0x39d97a, jump: 0xc46bff, btok: 0x3b8bff, time: 0x39ff8a, power: 0xb46bff };
     var btokMat = null;
     function mkPickup(lane, z, kind) {
       if (kind === 'btok') {
@@ -552,7 +552,7 @@ window.MM = window.MM || {};
         else if (o.t === 'E' || o.t === 'U') mkLaser(o.lane, z, o.t === 'U');
         else if (o.t === 'c') for (var j = 0; j < o.n; j++) mkCoin(o.lane, z - j * 2.6, 1);
         else if (o.t === 'C') for (var q = 0; q < 7; q++) mkCoin(o.lane, z + 6 - q * 2, 1 + Math.sin(q / 6 * Math.PI) * 1.9);
-        else if (o.t === 'p') mkPickup(o.lane, z, rpick(['magnet', 'jet', 'x2', 'jump', 'shield']));
+        else if (o.t === 'p') mkPickup(o.lane, z, rpick(['magnet', 'jet', 'x2', 'jump', 'shield', 'magnet', 'x2', 'jet', 'jump', 'time', 'power']));
         else if (o.t === 'k') { var tk = mkPickup(o.lane, z, 'btok'); if (sec === SEC.TUT) tk.val = 3; }
       });
       if (sec.tips) sec.tips.forEach(function (tp) { S.tips.push({ z: z0 - tp.d * k, need: tp.need, t: tp.t, done: false }); });
@@ -593,6 +593,7 @@ window.MM = window.MM || {};
       if (dir === 'up' && onG && S.pw.jet <= 0) {
         S.vy = S.pw.jump > 0 || (BP === 'jump' && S.board > 0) ? 20 : 14.2; S.roll = 0; S.stats.jumps++;
         hero.play('Jump_Start', { once: true, ts: 2.4, fade: .06, restart: true }); S.anim = 'jump'; S.animT = .3; snd('jump');
+        S.jumpT = .2; if (S.vy > 15) S.flip = .0001;
       }
       if (dir === 'down' && S.pw.jet <= 0) {
         S.roll = .72; S.stats.rolls++; if (!onG) S.vy = -28;
@@ -630,8 +631,8 @@ window.MM = window.MM || {};
       if (S.invuln > 0) return;
       S.stumbleT = .45;
       hero.play('Hit_Chest', { once: true, ts: 1.8, fade: .05, restart: true }); S.anim = 'hit'; S.animT = .4;
-      if (S.t - S.stumbleAt < 8 && S.doomT > 0) { crash('Doom te je uhvatio!'); return; }
-      S.stumbleAt = S.t; S.doomT = 5; S.invuln = .5; ev('stumble'); snd('land', { vol: 2.5, rate: .8 });
+      if (S.t - S.stumbleAt < (perk.heal ? 4 : 8) && S.doomT > 0) { crash('Doom te je uhvatio!'); return; }
+      S.stumbleAt = S.t; S.doomT = perk.heal ? 2.5 : 5; S.invuln = .5; ev('stumble'); snd('land', { vol: 2.5, rate: .8 });
     }
     function clearNear() {
       // skloni prepreke ispred; novcici sa krova sklonjenog voza idu sa njim (inace lebde)
@@ -662,7 +663,7 @@ window.MM = window.MM || {};
       if (kind === 'btok') {
         S.stats.btok++;
         if (S.board > 0) { S.board = Math.min(dur('board'), S.board + 2); ev('btokplus'); snd('token'); return; }
-        if (S.meter < METER) { S.meter = Math.min(METER, S.meter + (val || 1)); ev(S.meter === METER ? 'boardready' : 'btok'); snd(S.meter === METER ? 'power' : 'token'); }
+        if (S.meter < METER) { S.meter = Math.min(METER, S.meter + (val || 1) * (perk.tok || 1)); ev(S.meter === METER ? 'boardready' : 'btok'); snd(S.meter === METER ? 'power' : 'token'); }
         return;
       }
       S.stats.powerups++;
@@ -687,9 +688,9 @@ window.MM = window.MM || {};
         }
       }
       S.speed = Math.min(33, 13 + S.t * .14 * (opts.accel || 1));
-      var dz = S.speed * dt, x2 = S.pw.x2 > 0;
+      var dz = S.speed * (S.pw.time > 0 ? .62 : 1) * dt, x2 = S.pw.x2 > 0;
       if (x2 !== S.x2vis) { S.x2vis = x2; S.objs.forEach(function (o) { if (o.t === 'coin') setDouble(o.m, x2); }); }
-      var mul = (opts.mul || 1) * (x2 ? 2 : 1);
+      var mul = (opts.mul || 1) * (x2 ? 2 : 1) * (BP === 'score' && S.board > 0 ? 1.5 : 1);
       S.dist += dz;
       S.score += dz * mul;
       sleepOff += dz;
@@ -703,7 +704,7 @@ window.MM = window.MM || {};
           if (k === 'jet' && S.pw[k] === 0) S.invuln = Math.max(S.invuln, 1.4);
         }
       });
-      if (S.board > 0) { S.board = Math.max(0, S.board - dt); if (!S.board) board.visible = false; }
+      if (S.board > 0) { S.board = Math.max(0, S.board - dt); if (!S.board) { board.visible = false; if (BP === 'shield' && !S.shield) { S.shield = 1; ev('pw:shield'); snd('power'); } } }
       if (S.invuln > 0) S.invuln -= dt;
       if (S.doomT > 0) S.doomT -= dt;
 
@@ -792,6 +793,14 @@ window.MM = window.MM || {};
           var front = z, back = z - o.len;
           if (Math.abs(LX[o.lane] - S.x) < 1.05 && front > -.35 && back < .35) {
             var feet = S.y, flying = S.pw.jet > 0;
+            if (S.pw.power > 0 && !flying && (o.t !== 'train' || feet < o.top - .4)) {
+              // Kamen moci: sve sto ti stane na put leti u stranu
+              scene.remove(o.m); o.gone = true;
+              if (o.roofCoins) o.roofCoins.forEach(function (c) { scene.remove(c.m); c.gone = true; });
+              pop(o.m.position.x, 1.2, 0, 0xb46bff); shake = Math.max(shake, .18); snd('crash', { vol: .45, rate: 1.4 });
+              S.score += 25 * mul; S.stats.barriers++;
+              return false;
+            }
             if (o.t === 'train') {
               if (feet < o.top - .4) { o.hit = true; if (S.invuln <= 0) crash(o.v ? 'Voz ti je došao u susret!' : 'Udario si u voz!', o); }
               else if (!o.counted) { o.counted = true; S.stats.trains++; }
@@ -833,6 +842,27 @@ window.MM = window.MM || {};
       hero.update(S.freeze ? dt * .15 : dt);
     }
 
+    /* ---------- efekti: prasina pri doskoku, linije brzine ---------- */
+    var puffs = [], lines = [], linesOn = 0, dustMat = null;
+    function dust(x, y) {
+      if (!dustMat) dustMat = new THREE.SpriteMaterial({ map: glowMat(), color: 0xd8d2c4, transparent: true, depthWrite: false, opacity: .5 });
+      for (var i = 0; i < 6; i++) {
+        var m = new THREE.Sprite(dustMat.clone()); m.position.set(x + (Math.random() - .5) * .8, y + .25, .2 + (Math.random() - .5) * .4);
+        scene.add(m); puffs.push({ m: m, t: Math.random() * .08, vx: (Math.random() - .5) * 2.4 });
+      }
+    }
+    function resetLine(ln, z) {
+      var side = Math.random() < .5 ? -1 : 1;
+      ln.position.set(side * (3.2 + Math.random() * 4), .6 + Math.random() * 5.5, z);
+    }
+    (function () {
+      var g = new THREE.PlaneGeometry(.035, 3.2); g.rotateX(-Math.PI / 2);
+      for (var i = 0; i < 34; i++) {
+        var ln = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+        ln.rotation.y = 0; resetLine(ln, -Math.random() * 60); scene.add(ln); lines.push(ln);
+      }
+    })();
+
     /* ---------- crtanje ---------- */
     function draw(dt) {
       placeSleepers();
@@ -840,6 +870,20 @@ window.MM = window.MM || {};
       var lean = (LX[S.lane] - S.x), riding = onBoard && S.anim === 'ride';
       hero.root.position.set(S.x + bx, S.y + (onBoard ? .26 : 0), 0);
       hero.root.rotation.x = S.pw.jet > 0 ? -.15 : 0;
+      // istezanje u skoku, gnjecenje pri doskoku (crtani stil)
+      if (S.jumpT > 0) S.jumpT = Math.max(0, S.jumpT - dt);
+      var sq = S.jumpT > 0 ? 1 + S.jumpT / .2 * .14 : S.landT > 0 ? 1 - S.landT / .14 * .16 : 1;
+      hero.root.scale.set(.86 / Math.sqrt(sq), .86 * sq, .86 / Math.sqrt(sq));
+      // salto sa Spider skokom (okrece se oko sredine tela, ne oko stopala)
+      if (S.flip > 0) {
+        S.flip += dt / .82;
+        if (S.flip >= 1 || (S.y <= S.ground + .06 && S.flip > .3)) S.flip = 0;
+        else {
+          var fa = -Math.PI * 2 * (1 - Math.pow(1 - S.flip, 2)), hh = .95;
+          hero.root.rotation.x = fa; hero.root.position.y += hh - hh * Math.cos(fa); hero.root.position.z += -hh * Math.sin(fa);
+        }
+      }
+      if (S.landT > 0 && !S.dusted) { S.dusted = true; dust(S.x, S.ground); } else if (S.landT <= 0) S.dusted = false;
       hero.root.rotation.z = lean * (riding ? .22 : .08);
       hero.root.rotation.y = riding ? -.35 + lean * -.15 + Math.sin(S.t * 2) * .06 : lean * -.18;
       animate(dt);
@@ -867,15 +911,35 @@ window.MM = window.MM || {};
         return true;
       });
 
+      // prasina
+      puffs = puffs.filter(function (pf) {
+        pf.t += dt; var k = pf.t / .5;
+        pf.m.position.x += pf.vx * dt; pf.m.position.y += dt * .8; pf.m.position.z += (S.over ? 0 : S.speed * dt * .6);
+        pf.m.scale.setScalar(.5 + k * 1.4); pf.m.material.opacity = Math.max(0, .5 * (1 - k));
+        if (k >= 1) { scene.remove(pf.m); pf.m.material.dispose(); return false; }
+        return true;
+      });
+      // linije brzine (board, let, velika brzina, Kamen moci)
+      var wantLines = !S.over && (onBoard || S.pw.jet > 0 || S.speed > 24 || S.pw.power > 0) ? 1 : 0;
+      linesOn += (wantLines - linesOn) * Math.min(1, dt * 3);
+      lines.forEach(function (ln) {
+        ln.position.z += (S.over ? 0 : S.speed * 2.2) * dt;
+        if (ln.position.z > 8) resetLine(ln, -40 - Math.random() * 30);
+        ln.material.opacity = linesOn * .35 * (S.pw.power > 0 ? 1.6 : 1);
+        ln.material.color.setHex(S.pw.power > 0 ? 0xc89bff : S.pw.time > 0 ? 0x9dffc0 : 0xffffff);
+      });
+
       // kamera prati
       var fly = S.pw.jet > 0, cy = fly ? S.y + 3.4 : 4.0 + S.y * .7, cz = 6.7 + (fly ? 1.5 : 0);
+      if (S.over) { cz = 5.2; cy = 3.2 + S.y * .6; }
       cam.position.x += (S.x * .55 - cam.position.x) * Math.min(1, dt * 6);
       cam.position.y += (cy - cam.position.y) * Math.min(1, dt * 4);
       cam.position.z += (cz - cam.position.z) * Math.min(1, dt * 3);
-      var fov = 60 + (S.speed - 12) * .35;
+      var fov = 60 + (S.speed * (S.pw.time > 0 ? .62 : 1) - 12) * .35 + (onBoard ? 3 : 0) + (S.pw.power > 0 ? 4 : 0);
       if (Math.abs(cam.fov - fov) > .05) { cam.fov = fov; cam.updateProjectionMatrix(); }
       if (shake > 0) { shake -= dt; cam.position.x += (Math.random() - .5) * shake; cam.position.y += (Math.random() - .5) * shake; }
       cam.lookAt(S.x * .45, fly ? S.y : 1.5 + S.y * .6, -12);
+      cam.rotation.z += lean * .035;      // blago naginjanje kamere pri promeni trake
       renderer.render(scene, cam);
     }
 
@@ -883,6 +947,7 @@ window.MM = window.MM || {};
     function loop(now) {
       if (!alive) return;
       var dt = Math.max(0, Math.min(.05, (now - last) / 1000)); last = now;
+      if (S.over) { S.overT += dt; if (S.overT < .9) dt *= .35; }
       if (!S.paused) { step(dt); draw(dt); }
       hudT -= dt;
       if (hudT <= 0 && opts.onHud) { hudT = .1; opts.onHud(hudState()); }
@@ -891,7 +956,7 @@ window.MM = window.MM || {};
     function hudState() {
       return { score: Math.round(S.score), coins: S.coins, mul: (opts.mul || 1) * (S.pw.x2 > 0 ? 2 : 1), x2: S.pw.x2 > 0, pw: S.pw, shield: S.shield,
         dist: Math.round(S.dist), board: S.board, meter: S.meter, meterMax: METER, freeze: S.freeze,
-        max: { magnet: dur('magnet'), jet: dur('jet'), x2: dur('x2'), jump: dur('jump'), board: dur('board') } };
+        max: { magnet: dur('magnet'), jet: dur('jet'), x2: dur('x2'), jump: dur('jump'), time: dur('time'), power: dur('power'), board: dur('board') } };
     }
     fillDecor();
     while (S.secEnd > SPAWN_Z) spawnSection();
