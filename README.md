@@ -65,6 +65,14 @@ crni obrisi, tvrde senke, „POW!“ kad odgledaš). Stil ide uz oba rasporeda.
 Fontovi su lokalno u `fonts/` (Bangers i Patrick Hand, SIL Open Font License,
 preuzeti iz paketa @fontsource).
 
+### Igre (tab Igre)
+
+`js/games.js`: 10 mini igara (Uhvati Dooma, Kamenje, Marvel kviz, Memorija,
+Hronologija, Mjolnir, Pucanj prstima, Čiji je predmet?, Hulk razbija,
+Portali) po 10 nivoa, plus Klasika (prve tri zaredom). Pređen nivo daje XP
+(`s.games`), nivo igrača ima titule, a rang lista ekipe čita `gxp`/`gbest`
+iz profila.
+
 „Šta je novo" (`NEWS` u `js/views.js`) iskače samo za velike promene
 (`big: true`); ostalo čeka u profilu, a slika gore desno ima tačkicu dok ne
 pročitaš.

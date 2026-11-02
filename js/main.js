@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.14.0';
+MM.VERSION = '2.15.0';
 
 (function () {
   'use strict';
@@ -680,11 +680,6 @@ MM.VERSION = '2.14.0';
         return { xp: xp, up: after.n > before.n, lvl: after.n, title: after.title, rec: rec };
       }, { practice: true, only: id === 'classic' ? '' : id });
     },
-    'mute-games': function () {
-      MM.Games.open(state().dosadanLevel || 0, function () {
-        Store.mutate(function (s) { s.dosadanUntil = Date.now() + 24 * 3600 * 1000; s.dosadanLevel = (s.dosadanLevel || 0) + 1; });
-      });
-    },
     'ep-star': function (el) {
       setEpStar(el.getAttribute('data-id'), +el.getAttribute('data-ep'), +el.getAttribute('data-n'));
       UI.buzz(8);
@@ -1174,10 +1169,6 @@ MM.VERSION = '2.14.0';
     });
 
     document.addEventListener('visibilitychange', function () {
-      if (document.visibilityState === 'hidden') hiddenAt = Date.now();
-      // vratio se posle 10+ minuta = "ponovo usao"
-      if (document.visibilityState === 'visible' && hiddenAt && Date.now() - hiddenAt > 600000) { dosadanShown = false; }
-      if (document.visibilityState === 'visible') setTimeout(maybeDosadan, 800);
       if (document.visibilityState === 'visible') { render(); if (UIS.tab === 'ekipa') loadReviews(false); }
     });
 
@@ -1354,60 +1345,8 @@ MM.VERSION = '2.14.0';
      start
      ============================================================ */
 
-  /** Kad god Vićovac otvori aplikaciju: obaveštenje da je dosadan. */
-  var dosadanShown = false, hiddenAt = 0;
-  // Kad se jednom prepozna, Vicovac ostaje obelezen: na uredjaju (localStorage)
-  // i na nalogu (s.dosadan se sinhronizuje), pa promena imena ne pomaze.
-  function isVicovac() {
-    var u = Store.user() || {};
-    var n = [state().displayName, u.name, u.email].join(' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    var marked = state().dosadan === true;
-    try { marked = marked || localStorage.getItem('mm-dosadan') === '1'; } catch (e) { /* */ }
-    if (/vicovac/.test(n) || marked) {
-      try { localStorage.setItem('mm-dosadan', '1'); } catch (e) { /* */ }
-      if (state().dosadan !== true) Store.mutate(function (s) { s.dosadan = true; });
-      return true;
-    }
-    return false;
-  }
-
-  function muted() { return Date.now() < (state().dosadanUntil || 0); }
-
-  /** Poruke koje stalno lete preko ekrana (ne blokiraju dodir). */
-  var flameTimer = null;
-  function startFlames() {
-    if (flameTimer || !isVicovac()) return;
-    // tajmer radi stalno: dok traje tisina samo preskace, posle 24 h poruke se same vrate
-    flameTimer = setInterval(function () {
-      if (muted()) return;
-      if (document.visibilityState !== 'visible') return;
-      var top = UI.topSheet();
-      if (top && top.id === 'games') return;            // dok igra - mir (i u vezbi)
-      var el = document.createElement('div');
-      el.className = 'flame-pop';
-      el.style.left = (6 + Math.random() * 46).toFixed(1) + '%';
-      el.style.top = (10 + Math.random() * 70).toFixed(1) + '%';
-      el.style.setProperty('--r', (Math.random() * 16 - 8).toFixed(1) + 'deg');
-      el.innerHTML = ['🥱', '😴', '💤', '🙄', '🗿'][Math.floor(Math.random() * 5)] + ' ' + esc(V.dosadanLine());
-      document.body.appendChild(el);
-      setTimeout(function () { el.remove(); }, 2600);
-      if (Math.random() < .25) UI.buzz(15);
-    }, 1200);
-  }
-  function maybeDosadan() {
-    if (!isVicovac()) return;
-    if (!UIS.vic) { UIS.vic = true; schedule(); }
-    startFlames();
-    if (muted()) return;
-    if (dosadanShown) return;
-    if (UI.topSheet()) { setTimeout(maybeDosadan, 1500); return; }
-    dosadanShown = true;
-    startFlames();
-    UI.buzz([30, 60, 30]);
-    UI.openSheet({ id: 'dosadan', center: true, cls: 'ds-sheet', render: function () { return V.dosadanSheet(); } });
-  }
-
   function boot() {
+    try { localStorage.removeItem('mm-dosadan'); } catch (e) { /* stara sala, vise ne postoji */ }
     var fresh = !localStorage.getItem('mm-state-v1');
     fitShell();
     window.addEventListener('resize', fitShell, { passive: true });
@@ -1427,7 +1366,6 @@ MM.VERSION = '2.14.0';
           if (!state().displayName) setTimeout(function () { if (!UI.topSheet()) A.profile(); }, 1200);
           publishProgress();
           if (!firstAuth) setTimeout(maybeNews, 1500);
-          setTimeout(maybeDosadan, 1200);
         }
         firstAuth = false;
         schedule();
@@ -1453,7 +1391,6 @@ MM.VERSION = '2.14.0';
       setTimeout(refreshSeasonPosters, 6000);
       setTimeout(function () { dailyNotification(); idleWarning(); writeMeta(); registerPeriodic(); }, 2500);
       setTimeout(function () { if (!UI.topSheet()) checkNotice(); }, 3500);
-      setTimeout(maybeDosadan, 1100);
     }).catch(function (e) {
       console.error(e);
       var b = $('#boot');

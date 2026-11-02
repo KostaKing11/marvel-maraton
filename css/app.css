@@ -1668,6 +1668,40 @@ body.skin-og {
 .gm-up { color: var(--green2); }
 
 /* nove igre */
+.gm-cnt { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; height: 60vh; }
+.gm-cnt b { font-size: 120px; font-weight: 900; line-height: 1; color: var(--red); animation: gmCnt .65s ease; }
+.gm-cnt span { font-size: 16px; font-weight: 800; color: var(--mu); }
+@keyframes gmCnt { 0% { transform: scale(2); opacity: 0; } 40% { transform: scale(1); opacity: 1; } 100% { opacity: .3; } }
+.gm-plus { position: absolute; z-index: 5; pointer-events: none; font-style: normal; font-size: 20px; font-weight: 900; color: var(--green2);
+  transform: translate(-50%, -50%); animation: gmPlus .7s ease-out forwards; text-shadow: 0 2px 6px rgba(0, 0, 0, .7); }
+.gm-plus.bad { color: var(--red2); }
+@keyframes gmPlus { to { transform: translate(-50%, -150%); opacity: 0; } }
+.gm-st.wrong { border-color: var(--red); background: rgba(230, 36, 41, .25); }
+.gm-st.should { border-color: var(--green); animation: gmShould .45s ease 2; }
+.gm-st.should img { opacity: 1; }
+@keyframes gmShould { 50% { transform: scale(1.12); box-shadow: 0 0 22px var(--green); } }
+.gm-conf { position: fixed; inset: 0; z-index: 99; pointer-events: none; overflow: hidden; }
+.gm-conf i { position: absolute; top: -12px; width: 8px; height: 14px; border-radius: 2px; animation: gmConf 2s cubic-bezier(.2, .6, .4, 1) forwards; }
+@keyframes gmConf { to { transform: translate(var(--x), 105vh) rotate(var(--r)); } }
+.gm-item { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 6px 0 14px; }
+.gm-item b { font-size: 17px; }
+.gm-hulk { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 100%; height: min(50vh, 380px); margin-top: 14px;
+  border-radius: 22px; overflow: hidden; background: #1a2a14; border: 2px solid #3f7a2a; touch-action: none; padding-bottom: 18px; }
+.hk-wall { position: absolute; inset: 0; --crack: 0;
+  background: repeating-linear-gradient(0deg, transparent 0 38px, rgba(0, 0, 0, .35) 38px 41px), repeating-linear-gradient(90deg, #6b5a4a 0 78px, #5a4a3b 78px 81px);
+  opacity: calc(1 - var(--crack) * .6); filter: brightness(calc(1 - var(--crack) * .4)); }
+.hk-fist { position: relative; font-size: 72px; }
+.gm-hulk i { position: relative; font-style: normal; font-size: 18px; font-weight: 900; color: #b9ff8a; text-shadow: 0 2px 6px #000; }
+.gm-hulk.bump .hk-fist { animation: hkBump .12s ease; }
+@keyframes hkBump { 50% { transform: translateY(-14px) scale(1.12); } }
+.gm-hulk.smash .hk-wall { animation: hkSmash .6s ease forwards; }
+@keyframes hkSmash { to { transform: scale(1.4); opacity: 0; } }
+.gm-portals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 14px; }
+.pt-h { aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, #15151c 55%, #0b0b10); border: 2px solid var(--line); display: flex; align-items: center; justify-content: center; touch-action: none; }
+.pt-h span { width: 0; height: 0; border-radius: 50%; transition: width .15s, height .15s; }
+.pt-h.on span { width: 82%; height: 82%; background: conic-gradient(from 0deg, #ffb300, #ff6a00, #ffd36b, #ffb300); box-shadow: 0 0 22px #ff8a00; animation: ptSpin 1s linear infinite; }
+.pt-h.on.evil span { background: conic-gradient(from 0deg, #7c3aed, #c084fc, #4c1d95, #7c3aed); box-shadow: 0 0 22px #a855f7; }
+@keyframes ptSpin { to { transform: rotate(360deg); } }
 .gm-memo { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
 .gm-memo.c5 { grid-template-columns: repeat(5, 1fr); }
 .mm-c { position: relative; aspect-ratio: 1; border-radius: 14px; perspective: 600px; }
@@ -1706,8 +1740,7 @@ body.skin-og {
 .game-b.all { grid-column: 1 / -1; background: linear-gradient(100deg, rgba(230, 36, 41, .16), rgba(230, 36, 41, .04)), var(--s2); border-color: rgba(230, 36, 41, .4); }
 .game-b:active { transform: scale(.97); }
 
-/* Vicovac: igre za iskljucivanje */
-.mute-on { font-size: 12px; font-weight: 900; letter-spacing: 1px; color: var(--red2); }
+/* igre (ceo ekran) */
 .gm-sheet .sheet { background: var(--bg); height: var(--appH); }
 .gm-sheet .grab { display: none; }
 .gm-top { display: flex; justify-content: flex-end; padding: calc(var(--safeT) + 10px) 12px 0; }
@@ -1740,17 +1773,6 @@ body.skin-og {
 .gm-emo { font-size: 72px; }
 .gm-end h2 { font-size: 28px; font-weight: 900; }
 
-.flame-pop { position: fixed; z-index: 96; pointer-events: none; max-width: 70vw; padding: 9px 14px; border-radius: 16px;
-  background: #fff; color: #111; font-weight: 900; font-size: 15px; line-height: 1.25; box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
-  transform: rotate(var(--r)) scale(.3); opacity: 0; animation: flamePop 2.6s cubic-bezier(.2, 1.4, .4, 1) forwards; }
-@keyframes flamePop { 12% { opacity: 1; transform: rotate(var(--r)) scale(1.05); } 20% { transform: rotate(var(--r)) scale(1); }
-  80% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--r)) translateY(-30px) scale(.95); } }
-.dosadan { padding: 26px 20px 20px; text-align: center; cursor: pointer; }
-.ds-emoji { font-size: 64px; line-height: 1; animation: dsYawn 2.4s ease-in-out infinite; }
-@keyframes dsYawn { 50% { transform: scale(1.12) rotate(-6deg); } }
-.ds-k { margin-top: 10px; font-size: 11px; font-weight: 900; letter-spacing: 2.5px; color: var(--red); }
-.dosadan h2 { margin-top: 6px; font-size: 24px; font-weight: 900; line-height: 1.2; }
-.dosadan .btn { margin-top: 16px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }

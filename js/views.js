@@ -1035,17 +1035,6 @@ window.MM = window.MM || {};
     }
     out += '</section>';
 
-    /* poruke o dosadi (samo za Vicovca) */
-    if (ctx.ui.vic) {
-      var off = Date.now() < (s.dosadanUntil || 0), lvl = (s.dosadanLevel || 0) + 1;
-      var left = off ? Math.ceil((s.dosadanUntil - Date.now()) / 60000) : 0;
-      out += '<section class="card mute-card" data-k="mute"><div class="card-h"><h2>Poruke o dosadi</h2><span class="' + (off ? 'ok-line' : 'mute-on') + '">' +
-        (off ? 'isključene' : 'UKLJUČENE') + '</span></div>' +
-        (off ? '<p class="muted small">Tišina još <b>' + Math.floor(left / 60) + 'h ' + (left % 60) + 'm</b>. Posle se vraćaju, a sledeći put je <b>nivo ' + lvl + '</b>.</p>'
-          : '<p class="muted small">Isključuju se na 24 sata ako pređeš tri igre zaredom. <b>Nivo ' + lvl + '</b>' + (lvl > 1 ? ' — teže nego prošli put.' : '.') + '</p>' +
-            '<button type="button" class="btn primary wide" data-a="mute-games">🎮 Isključi (nivo ' + lvl + ')</button>') + '</section>';
-    }
-
     /* izgled */
     var look = s.look === 'mini' ? 'mini' : 'full';
     out += '<section class="card" data-k="look" id="ja-look"><div class="card-h"><h2>Izgled</h2></div><div class="look-opts">' +
@@ -1364,57 +1353,6 @@ window.MM = window.MM || {};
       '<button type="button" class="btn primary" data-a="profile-save">Sačuvaj</button></div></div>';
   }
 
-  /** Svaki put kad Vićovac otvori aplikaciju. */
-  var DOSADAN = [
-    'Vićovac, dosadan si.', 'Opet ti? Dosadan si, Vićovac.', 'Vićovac je ušao. Atmosfera je pala.',
-    'Upozorenje: Vićovac je dosadan.', 'Doom je video ko je ušao. Zevnuo je.', 'Vićovac, čak i Howard the Duck je zanimljiviji.',
-    'Ulogovao se Vićovac. Svi glumimo da nismo primetili.', 'Vićovac, dosadan si kao Eternals.',
-    'Vićovac, promena imena ne pomaže. Znamo da si to ti.', 'I dalje dosadan.', 'Vićovac.exe je prestao da bude zanimljiv.',
-    'Thanos je pucnuo i nestala je polovina tvoje harizme.', 'Vićovac, čak ni Doom ne može ovoliko da čeka.',
-    'Dosadniji si od reklama pre filma.', 'Vićovac gleda Marvel na 0.5x.', 'Groot je rekao više zanimljivih stvari od tebe.',
-    'Vićovac, preskoči sebe.', 'Odgledano: ništa zanimljivo. — Vićovac', 'Kraven the Hunter ima bolje ocene od tvog humora.',
-    'Ovo je poruka broj ∞. Dosadan si.', 'Vićovac, ni Loki ne bi lagao da si zanimljiv.', 'Morbius time? Ne, Vićovac time. Isto dosadno.',
-    'Vidimo te, Vićovac. Sa svakog uređaja.', 'Vićovac, Ultron je imao više emocija.', 'Spojler: i dalje si dosadan.',
-    'Vićovac, Hulk je pametniji kad je ljut nego ti inače.', 'Ni post-credits scena ne bi čekala tebe.', 'Vićovac, Captain America bi te zamrzao još 70 godina.',
-    'Doctor Strange je video 14 miliona budućnosti. U svim si dosadan.', 'Vićovac, ti si filler epizoda.', 'Dosadniji si od Inhumans.',
-    'Vićovac, čak ti je i Venom pobegao.', 'Tony Stark je napravio odelo u pećini. Ti ne možeš rečenicu.', 'Vićovac, ti si Iron Man 2 među ljudima.',
-    'Black Widow je umrla za kamen. Šta si ti uradio danas?', 'Vićovac, Wakanda ne prima dosadne.', 'Ant-Man je mali. Tvoja harizma je manja.',
-    'Vićovac, Thor bi bacio čekić na tebe da te razbudi.', 'Peter Parker zaboravljen od celog sveta. Ti, nažalost, nisi.', 'Vićovac, ti si skip naslov.',
-    'Hawkeye ima više uzbuđenja sa lukom nego ti sa životom.', 'Vićovac, Groot ima veći rečnik.', 'Rocket bi te prodao za bateriju.',
-    'Vićovac, Nick Fury je zatvorio i drugo oko da te ne gleda.', 'Kang zna sve vremenske linije. Ni u jednoj nisi zabavan.',
-    'Vićovac, Deadpool je probio četvrti zid samo da ne priča sa tobom.', 'Wolverine se regeneriše brže nego što ti dođeš do poente.',
-    'Vićovac, tvoj streak je kao Eternals: niko ne priča o tome.', 'Doom je prešao celu mapu dok si ti pričao jednu priču.',
-    'Vićovac, Madame Web je bila zanimljivija. Razmisli o tome.', 'Ovo nije bug. Ovo je feature: dosadan si.', 'Vićovac, ni Mjolnir te ne bi podigao.',
-    'Multiverzum ima beskonačno Vićovaca. Svi su dosadni.', 'Vićovac, Quicksilver bi zaspao dok pričaš.', 'Galactus bi te vratio u restoran.',
-    'Vićovac, ti si razlog zašto su izmislili dugme za preskakanje uvoda.', 'Bucky je imao težak život. Ti si mu ga otežao.',
-    'Vićovac, Jarvis je ugasio sebe kad si ušao.', 'Ovde ni Loki nema šta da laže. Sve je istina: dosadan si.',
-    'Vićovac, Shang-Chi ima deset prstenova. Ti ni jednu šalu.', 'Gledaš Marvel, a i dalje si DC.', 'Vićovac, ovo je poruka 50+. Nisi se promenio.',
-    'Vićovac, Silver Surfer bi radije surfovao kroz crnu rupu.', 'Ti si ono kad film ima 3 sata i nijednu scenu posle špice.',
-    'Vićovac, She-Hulk bi te tužila za dosadu.', 'Moon Knight ima tri ličnosti. Ti nemaš ni jednu.', 'Vićovac, Wanda je prepravila stvarnost. Tebe nije mogla.',
-    'Daredevil je slep, a i on vidi koliko si dosadan.', 'Vićovac, Punisher je imao milost. Prema svima osim tebi.', 'Ms. Marvel bi napisala fan fiction o bilo kom drugom.',
-    'Vićovac, ti si tutorial nivo.', 'Falcon leti. Tvoje priče puze.', 'Vićovac, Agatha je bacila kletvu dosade i ispalo je da je već bačena.',
-    'Echo je gluva, a i dalje te čuje kako smaraš.', 'Vićovac, Thunderbolts* imaju zvezdicu. Ti imaš upozorenje.', 'Fantastična četvorka. Ti si dosadna jedinica.',
-    'Vićovac, Mister Fantastic se rasteže. Ti rasteš dosadu.', 'Human Torch se zapali od uzbuđenja. Ti od nule.', 'Vićovac, Thing je od kamena i zanimljiviji je.',
-    'Sentry je imao Void. Ti imaš prazninu u razgovoru.', 'Vićovac, Yelena ti ne bi ni odgovorila.', 'Red Guardian priča gluposti, ali bar je zabavan.',
-    'Vićovac, Brand New Day? Ne, isti stari dosadni dan.', 'VisionQuest traži smisao. Kod tebe ga nema.', 'Vićovac, Doomsday dolazi. Ti već jesi kraj sveta za zabavu.',
-    'Ni Kraven ne bi lovio ovako dosadnu metu.', 'Vićovac, Carnage je haos. Ti si pauza.', 'Eddie Brock priča sam sa sobom. I to je zanimljivije.',
-    'Vićovac, Miles bi skočio u drugi univerzum samo da pobegne.', 'Spider-Verse ima 1000 Spajdermena. Nijedan ne zna ko si.',
-    'Vićovac, X-Meni primaju mutante. Moć dosade nije na listi.', 'Profesor X ti je čitao misli. Zaspao je.', 'Vićovac, Magneto privlači metal. Ti odbijaš ljude.',
-    'Mystique može da bude bilo ko. Nikad ne bira tebe.', 'Vićovac, Storm pravi oluju. Ti pravi tišinu.', 'Cyclops ima lasere. Ti imaš monolog.',
-    'Vićovac, Logan je imao 200 godina strpljenja. Potrošio ga je na tebe.', 'Juggernaut ne može da se zaustavi. Tvoja priča isto, nažalost.',
-    'Vićovac, Blade lovi vampire. Ti ubijaš atmosferu.', 'Ghost Rider ima plamenu glavu. Ti hladan humor.', 'Vićovac, Howard the Duck te je blokirao.',
-    'Elektra je umrla i vratila se. Tvoje šale nikad nisu ni došle.', 'Vićovac, Man-Thing bi rekao nešto pametnije, a ne govori.',
-    'Ti si razlog što TVA briše vremenske linije.', 'Vićovac, Miss Minutes ti je skratila vreme za 50%.', 'He Who Remains je ostao. Nažalost, i ti.',
-    'Vićovac, Watcher samo gleda. Zato što nema šta da kaže tebi.', 'What If… Vićovac nije bio dosadan? Ta epizoda ne postoji.',
-    'Vićovac, I Am Groot ima više zapleta od tvojih priča.', 'Ovo je bila poruka 100+. Doom je zaspao, Vićovac.'
-  ];
-  function dosadanLine() { return DOSADAN[Math.floor(Math.random() * DOSADAN.length)]; }
-  function dosadanSheet() {
-    var t = dosadanLine();
-    return '<div class="dosadan" data-a="sheet-close"><div class="ds-emoji">🥱</div><div class="ds-k">OBAVEŠTENJE</div>' +
-      '<h2>' + esc(t) + '</h2><p class="muted">— Kosta</p><button type="button" class="btn primary wide" data-a="sheet-close">Znam, izvini</button></div>';
-  }
-
   function welcomeSheet(ctx) {
     return '<div class="pad-sheet welcome">' +
       '<div class="wl-logo"><span class="logo">MARVEL</span><span class="logo-sub">MARATON</span></div>' +
@@ -1448,6 +1386,11 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.15', title: '10 igara', big: false, items: [
+      '<b>Tri nove igre</b> — Čiji je predmet? (predmet → film), Hulk razbija (brzi prsti) i Portali (pazi na Dormammua).',
+      '<b>Bolje stare igre</b> — odbrojavanje 3-2-1 pre početka, „+1“ kad pogodiš Dooma, kviz i kamenje pokažu tačan odgovor kad pogrešiš, konfete kad pređeš nivo.',
+      'Kviz ima 50 pitanja.'
+    ] },
     { id: '2.14', title: 'Igre: novi tab, nivoi i rang lista', big: true, items: [
       '<b>Novi tab Igre</b> — 7 igara: Uhvati Dooma, Kamenje, Marvel kviz, Memorija, Hronologija, Mjolnir i Pucanj prstima.',
       '<b>Nivoi i XP</b> — svaki pređen nivo daje XP; tvoj nivo raste od Rekruta do Doomovog rivala. Klasika (tri zaredom) daje trostruko.',
@@ -1459,8 +1402,7 @@ window.MM = window.MM || {};
     ] },
     { id: '2.10', title: 'Ocene epizoda', big: false, items: [
       '<b>Oceni svaku epizodu</b> — posle svake epizode iskoči traka sa zvezdicama. Sve ocene su i u detaljima sezone.',
-      '<b>Ocena sezone = prosek</b> tvojih ocena epizoda. Recenziju (tekst) pišeš tek kad odgledaš celu sezonu.',
-      'Vićovac je dosadan. To nije novost, ali sad i aplikacija to zna.'
+      '<b>Ocena sezone = prosek</b> tvojih ocena epizoda. Recenziju (tekst) pišeš tek kad odgledaš celu sezonu.'
     ] },
     { id: '2.9', title: 'OG izgled', big: false, items: [
       '<b>OG</b> — aplikacija izgleda kao prva verzija: crveno odbrojavanje do sekunde, plamen niza, „Dnevno / Ove nedelje“ i veliki poster koji prevlačiš (desno odgledano, levo nazad, gore preskoči).',
@@ -1575,7 +1517,7 @@ window.MM = window.MM || {};
   MM.Views = {
     danas: danas, plan: planView, igre: igre, gamesOf: gamesOf, ekipa: ekipa, katalog: katalog, ja: ja,
     itemSheet: itemSheet, customSheet: customSheet, filterSheet: filterSheet, rateSheet: rateSheet, profileSheet: profileSheet,
-    welcomeSheet: welcomeSheet, chooseSheet: chooseSheet, newsSheet: newsSheet, countdownSheet: countdownSheet, dosadanSheet: dosadanSheet, dosadanLine: dosadanLine, epAvg: epAvg, ogCountdown: ogCountdown, crew: crew, NEWS: NEWS, recapSheet: recapSheet, mondayOf: mondayOf, streakSheet: streakSheet, doomSheet: doomSheet,
+    welcomeSheet: welcomeSheet, chooseSheet: chooseSheet, newsSheet: newsSheet, countdownSheet: countdownSheet, epAvg: epAvg, ogCountdown: ogCountdown, crew: crew, NEWS: NEWS, recapSheet: recapSheet, mondayOf: mondayOf, streakSheet: streakSheet, doomSheet: doomSheet,
     clock: clock, countdownParts: countdownParts, ICON: ICON, scopeName: scopeName
   };
 })();
