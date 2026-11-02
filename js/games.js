@@ -66,19 +66,25 @@ window.MM = window.MM || {};
   // Mamci (Ultron, Loki) oduzimaju 2, promasaj 1. Glava je sve manja i brza.
   function game1() {
     clearAll();
-    var need = 16 + 3 * L, left = 15, delay = Math.max(380, 640 - 40 * L), minDelay = Math.max(240, 330 - 20 * L);
-    var size = Math.max(34, 52 - 4 * L), decoys = Math.min(3, 1 + L), hits = 0, done = false;
-    box.innerHTML = head(1, 'Uhvati Dooma', 'Tapni Dooma ' + need + ' puta za 15 s. Mamci −2, promašaj −1. Sve je brži.') +
+    var need = Math.min(24, 12 + 2 * L), left = 15, delay = Math.max(480, 760 - 30 * L), minDelay = Math.max(360, 460 - 15 * L);
+    var size = Math.max(42, 58 - 3 * L), bait = Math.round(size * .62), decoys = Math.min(3, 1 + Math.floor(L / 2)), hits = 0, done = false;
+    box.innerHTML = head(1, 'Uhvati Dooma', 'Tapni Dooma ' + need + ' puta za 15 s. Mamci −2. Sve je brži.') +
       '<div class="gm-bar"><b id="g1h">0 / ' + need + '</b><b id="g1t">15 s</b></div><div class="gm-arena" id="g1a">' +
       '<button type="button" class="gm-doom" id="g1d" style="width:' + size + 'px;height:' + size + 'px"><img src="img/map/doomhead.jpg" alt="" draggable="false"></button>' +
-      Array.apply(null, Array(decoys)).map(function (x, i) { return '<span class="gm-decoy" data-i="' + i + '" style="width:' + size + 'px;height:' + size + 'px">' + ['🤖', '🐍', '👾'][i] + '</span>'; }).join('') + '</div>';
+      Array.apply(null, Array(decoys)).map(function (x, i) { return '<span class="gm-decoy" data-i="' + i + '" style="width:' + bait + 'px;height:' + bait + 'px;font-size:' + Math.round(bait * .5) + 'px">' + ['🤖', '🐍', '👾'][i] + '</span>'; }).join('') + '</div>';
     var arena = box.querySelector('#g1a'), d = box.querySelector('#g1d'), dec = box.querySelectorAll('.gm-decoy');
-    function place(el) {
-      el.style.left = Math.round(Math.random() * (arena.clientWidth - size)) + 'px';
-      el.style.top = Math.round(Math.random() * (arena.clientHeight - size)) + 'px';
+    function place(el, w, avoid) {
+      // mamac nikad ne stane preko Dooma (inace Doom ne moze da se tapne)
+      var x, y, n = 0;
+      do {
+        x = Math.round(Math.random() * (arena.clientWidth - w));
+        y = Math.round(Math.random() * (arena.clientHeight - w));
+      } while (avoid && n++ < 30 && Math.abs(x - avoid[0]) < size + 12 && Math.abs(y - avoid[1]) < size + 12);
+      el.style.left = x + 'px'; el.style.top = y + 'px';
+      return [x, y];
     }
     function show() { box.querySelector('#g1h').textContent = Math.max(0, hits) + ' / ' + need; }
-    function move() { place(d); Array.prototype.forEach.call(dec, place); }
+    function move() { var at = place(d, size); Array.prototype.forEach.call(dec, function (el) { place(el, bait, at); }); }
     function loop() { if (done) return; move(); later(loop, delay); }
     arena.addEventListener('pointerdown', function (e) {
       e.preventDefault();
@@ -89,7 +95,7 @@ window.MM = window.MM || {};
         d.classList.remove('hit'); void d.offsetWidth; d.classList.add('hit');
         move();
       } else if (e.target.closest('.gm-decoy')) { hits = Math.max(0, hits - 2); UI.buzz([30, 30, 30]); arena.classList.remove('bad'); void arena.offsetWidth; arena.classList.add('bad'); }
-      else { hits = Math.max(0, hits - 1); UI.buzz(20); }
+      else return;
       show();
       if (hits >= need) { done = true; clearAll(); later(game2, 500); }
     });
@@ -105,11 +111,11 @@ window.MM = window.MM || {};
   /* ---------------- 2. Kamenje (Simon) ---------------- */
   function game2() {
     clearAll();
-    var seq = [], len = Math.min(15, 9 + L), pos = 0, input = false;
-    var step = Math.max(320, 520 - 30 * L), lit = Math.max(200, 320 - 20 * L);
+    var seq = [], len = Math.min(12, 7 + L), pos = 0, input = false;
+    var step = Math.max(400, 620 - 25 * L), lit = Math.max(260, 400 - 15 * L);
     // bez istog kamena dvaput zaredom (tesko je, ali posteno)
     for (var i = 0; i < len; i++) { var n; do { n = Math.floor(Math.random() * 6); } while (n === seq[i - 1]); seq.push(n); }
-    box.innerHTML = head(2, 'Kamenje beskonačnosti', 'Zapamti ' + len + ' kamenja, pa ponovi. Prikazuje se jednom' + (L >= 1 ? ', a posle se kamenje izmeša.' : '.')) +
+    box.innerHTML = head(2, 'Kamenje beskonačnosti', 'Zapamti ' + len + ' kamenja, pa ponovi. Prikazuje se jednom' + (L >= 2 ? ', a posle se kamenje izmeša.' : '.')) +
       '<div class="gm-bar"><b id="g2s">Gledaj…</b><b id="g2p">0 / ' + len + '</b></div><div class="gm-stones">' +
       STONES.map(function (s, i) { return '<button type="button" class="gm-st" data-i="' + i + '"><img src="img/map/stone-' + s + '.webp" alt="" draggable="false"></button>'; }).join('') + '</div>';
     var btns = box.querySelectorAll('.gm-st');
@@ -118,7 +124,7 @@ window.MM = window.MM || {};
     seq.forEach(function (n, k) { later(function () { flash(n); }, 700 + k * step); });
     later(function () {
       // od nivoa 2 kamenje promeni mesta pre unosa (pamtis boju, ne poziciju)
-      if (L >= 1) { var wrap = box.querySelector('.gm-stones'); shuffle(Array.prototype.slice.call(btns)).forEach(function (b) { wrap.appendChild(b); }); }
+      if (L >= 2) { var wrap = box.querySelector('.gm-stones'); shuffle(Array.prototype.slice.call(btns)).forEach(function (b) { wrap.appendChild(b); }); }
       input = true; box.querySelector('#g2s').textContent = 'Tvoj red';
     }, 700 + len * step);
     Array.prototype.forEach.call(btns, function (b) {
@@ -137,7 +143,7 @@ window.MM = window.MM || {};
   /* ---------------- 3. Kviz ---------------- */
   function game3() {
     clearAll();
-    var total = Math.min(14, 8 + L), secs = Math.max(4, 8 - Math.floor(L / 2)), qs = shuffle(QUIZ).slice(0, total), k = 0, answered = false;
+    var total = Math.min(10, 6 + L), secs = Math.max(6, 12 - Math.floor(L / 2)), qs = shuffle(QUIZ).slice(0, total), k = 0, answered = false;
     function ask() {
       answered = false;
       var q = qs[k];

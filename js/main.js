@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.12.0';
+MM.VERSION = '2.12.1';
 
 (function () {
   'use strict';
@@ -1363,6 +1363,8 @@ MM.VERSION = '2.12.0';
     flameTimer = setInterval(function () {
       if (muted()) return;
       if (document.visibilityState !== 'visible') return;
+      var top = UI.topSheet();
+      if (top && top.id === 'games') return;            // dok igra - mir
       var el = document.createElement('div');
       el.className = 'flame-pop';
       el.style.left = (6 + Math.random() * 46).toFixed(1) + '%';
