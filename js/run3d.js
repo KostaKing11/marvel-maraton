@@ -615,11 +615,7 @@ window.MM = window.MM || {};
       S.stats.powerups++;
       if (kind === 'shield') { S.shield = 1; bubble.visible = true; }
       else S.pw[kind] = dur(kind);
-      if (kind === 'jet') {
-        S.vy = 0;
-        var ln = S.lane, n = Math.floor(dur('jet') * S.speed / 2.6) - 6;
-        for (var k = 0; k < n; k++) { if (k > 0 && k % 14 === 0) ln = Math.max(0, Math.min(2, ln + (Math.random() < .5 ? -1 : 1))); var cc = mkCoin(ln, -18 - k * 2.6, JET_Y + 1); cc.air = true; }
-      }
+      if (kind === 'jet') { S.vy = 0; S.jetLane = S.lane; S.jetAcc = 0; S.jetN = 0; }
       ev('pw:' + kind);
     }
 
@@ -651,11 +647,7 @@ window.MM = window.MM || {};
       Object.keys(S.pw).forEach(function (k) {
         if (S.pw[k] > 0) {
           S.pw[k] = Math.max(0, S.pw[k] - dt);
-          if (k === 'jet' && S.pw[k] === 0) {
-            S.invuln = Math.max(S.invuln, 1.4);
-            // preostali novcici u vazduhu nestaju
-            S.objs = S.objs.filter(function (o) { if (o.air || (o.t === 'coin' && o.m.position.y > TRAIN_H + 2)) { scene.remove(o.m); return false; } return true; });
-          }
+          if (k === 'jet' && S.pw[k] === 0) S.invuln = Math.max(S.invuln, 1.4);
         }
       });
       if (S.board > 0) { S.board = Math.max(0, S.board - dt); if (!S.board) board.visible = false; }
@@ -664,6 +656,16 @@ window.MM = window.MM || {};
 
       S.secEnd += dz;
       while (S.secEnd > SPAWN_Z) spawnSection();
+      if (S.pw.jet > 0) {
+        S.jetAcc = (S.jetAcc || 0) + dz;
+        var ahead = 40, lead = ahead / S.speed;          // koliko treba novcicu da stigne do tebe
+        while (S.jetAcc >= 2.6) {
+          S.jetAcc -= 2.6;
+          if (S.pw.jet - lead < .4) continue;            // ne stize pre kraja leta: ne pravi ga
+          if (S.jetN > 0 && S.jetN % 14 === 0) S.jetLane = Math.max(0, Math.min(2, S.jetLane + (Math.random() < .5 ? -1 : 1)));
+          var cc = mkCoin(S.jetLane, -ahead + S.jetAcc, JET_Y + 1); cc.air = true; S.jetN++;
+        }
+      }
       for (var i = 0; i < decor.length; i++) decor[i].m.position.z += dz;
       decor = decor.filter(function (o) { if (o.m.position.z - o.len > 22) { scene.remove(o.m); return false; } return true; });
       nextB['-1'] += dz; nextB['1'] += dz; nextPylon += dz; nextLamp += dz; nextProp += dz;
@@ -703,13 +705,16 @@ window.MM = window.MM || {};
           if (o.t === 'coin') o.m.rotation.y = S.x2vis ? Math.sin(S.t * 3) * .5 : o.m.rotation.y + dt * 4;
           else if (o.t === 'btok') o.m.rotation.y += dt * 4;
           else o.m.position.y = o.y + Math.sin(S.t * 3 + z) * .15;
-          if (o.t === 'coin' && (o.pulled || (magnetOn && z > -16 && z < 2 && (S.pw.jet > 0 ? o.air : !o.air)))) {
+          if (o.air && (S.pw.jet <= 0 || z > 1.5)) { scene.remove(o.m); return false; }
+          if (o.t === 'coin' && (o.pulled || (magnetOn && z > -16 && z < .5 && (S.pw.jet > 0 ? o.air : !o.air)))) {
             o.pulled = true;
-            var kk = Math.min(1, dt * 9);
+            var kk = Math.min(1, dt * 10);
             o.m.position.x += (S.x - o.m.position.x) * kk; o.m.position.y += (S.y + 1 - o.m.position.y) * kk; o.m.position.z += (0 - z) * Math.min(1, dt * 12);
           }
           var p = o.m.position;
-          if (Math.abs(p.z) < .9 && Math.abs(p.x - S.x) < 1 && Math.abs(p.y - (S.y + 1)) < 1.4) {
+          var near = o.pulled ? (p.z > -1.5 || Math.hypot(p.x - S.x, p.y - S.y - 1, p.z) < 1.6)
+            : (Math.abs(p.z) < .9 && Math.abs(p.x - S.x) < 1 && Math.abs(p.y - (S.y + 1)) < 1.4);
+          if (near) {
             scene.remove(o.m);
             if (o.t === 'coin') {
               S.coinAcc += (x2 ? 2 : 1) * ((BP === 'coins' || BP === 'strip') && S.board > 0 ? 2 : 1) * (opts.coinMul || 1); var whole = Math.floor(S.coinAcc); S.coins += whole; S.coinAcc -= whole;

@@ -1426,7 +1426,8 @@ window.MM = window.MM || {};
     { id: '2.21.2', title: 'Popravke u Runneru', big: false, items: [
       '<b>Novčići više ne lebde</b> — kad te štit ili board spase od voza, novčići sa njegovog krova nestanu zajedno sa njim.',
       '<b>Hoverboard</b> — tokeni dok voziš dodaju 2 s, ali vreme nikad ne ide preko maksimuma boarda.',
-      '<b>Mjolnir let</b> — novčići u vazduhu stoje u mestu, a ti kroz njih proletiš i biraš traku (ne lete više ka tebi).'
+      '<b>Mjolnir let, iz početka</b> — novčići za let se prave usput ispred tebe, stoje u mestu, nestaju kad let prestane ili kad prođu pored tebe. Ništa više ne lebdi.',
+      '<b>Magnet</b> — vuče samo novčiće ispred tebe i pokupi ih čim stignu (nema više novčića koji lete iza tebe).'
     ] },
     { id: '2.21', title: 'Kodovi i kutije', big: true, items: [
       '<b>Kod za nagradu</b> — u profilu (Ja) unesi kod koji ti pošalje Kosta i dobijaš nagradu u Marvel Runneru.',
