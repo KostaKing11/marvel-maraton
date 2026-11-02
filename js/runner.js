@@ -69,7 +69,7 @@ window.MM = window.MM || {};
     { id: 'vibra', name: 'Vibranijum', c1: '#2a1d4a', c2: '#c46bff', pp: 'hits', perk: 'Izdrži 2 udarca umesto jednog.' },
     { id: 'kosmik', name: 'Kosmik', c1: '#1b3a8f', c2: '#ffd23f', pp: 'coins', perk: 'Dupli novčići dok voziš.' },
     { id: 'stark', name: 'Stark', c1: '#b3141b', c2: '#ffcf3f', pp: 'meter', perk: 'Puni se sa 11 tokena umesto 15.' },
-    { id: 'doom', name: 'Doom', c1: '#2e4a2e', c2: '#9dffbc', pp: 'start', perk: 'Kreneš sa punim boardom.' },
+    { id: 'doom', name: 'Doom', passOnly: true, c1: '#2e4a2e', c2: '#9dffbc', pp: 'start', perk: 'Kreneš sa punim boardom.' },
     { id: 'strip', name: 'Strip', secret: true, comic: true, c1: '#ffd23f', c2: '#e62429', pp: 'strip', perk: 'Tajni board: magnet i dupli novčići dok voziš, traje 40 s, kreće pun.' }
   ];
   function boardById(id) { return BOARDS.filter(function (b) { return b.id === id; })[0] || BOARDS[0]; }
@@ -102,9 +102,10 @@ window.MM = window.MM || {};
   var TIER = 250, TIERS = 40;
   // c = novcici, k = kljucevi, h = tokeni junaka, t = board tokeni, s = novi board
   var PASS = (function () {
-    var r = [], boards = { 3: 'mjolnir', 8: 'gama', 14: 'vibra', 20: 'kosmik', 28: 'stark', 40: 'doom' };
+    var r = [], boards = { 40: 'doom' }, boxes = { 3: 1, 8: 1, 14: 2, 20: 2, 28: 2 };
     for (var i = 1; i <= TIERS; i++) {
       if (boards[i]) r.push({ s: boards[i] });
+      else if (boxes[i]) r.push({ x: boxes[i] });
       else if (i % 5 === 0) r.push({ k: i >= 20 ? 2 : 1 });
       else if (i % 4 === 0) r.push({ c: 150 + Math.floor(i / 4) * 50 });
       else if (i % 2 === 0) r.push({ h: 6 + Math.floor(i / 5) * 2 });
@@ -325,7 +326,7 @@ window.MM = window.MM || {};
           (own && canUpB(r, b.id) ? '<i class="r3-upa">' + SVG.up + '</i>' : '') +
           '<b>' + esc(b.name) + '</b><span class="r3-bp">' + esc(b.perk) + '</span>' +
           (own ? '<span class="r3-lb"><i>Nv. ' + l + '</i>' + (l < MAXL ? '<s>' + ico('btoken') + '<u><q style="width:' + Math.min(100, r.btok / need * 100) + '%"></q></u>' + need + '</s>' : '<s>MAX</s>') + '</span>'
-            : '<span class="r3-lb"><s>Pass nivo ' + tier + '</s></span>') + '</button>';
+            : '<span class="r3-lb"><s>' + (b.passOnly ? 'Finale Passa (nivo ' + tier + ')' : 'Iz misteriozne kutije') + '</s></span>') + '</button>';
       });
     }
     body += '</div>';
@@ -375,7 +376,7 @@ window.MM = window.MM || {};
       '<div class="r3-det"><div class="r3-stage big" id="r3Stage" style="--b1:' + b.c1 + ';--b2:' + b.c2 + '"><span class="r3-deck big' + (b.comic ? ' comic' : '') + '"></span></div>' +
       '<div class="r3-dl"><span class="r3-hex">×' + bMul(l).toFixed(1) + '</span><div><em>NIVO ' + l + '</em><b>' + esc(b.name) + '</b><span><b class="r3-bpk">' + esc(b.perk) + '</b> Skupi 15 plavih tokena u trci i tapni bilo gde: 30 s te jedan udarac ne obara, a svaki token na boardu dodaje 2 s. Nivo boarda diže poene.</span></div></div>' +
       (own ? '<div class="r3-btns"><button type="button" class="r3-sel' + (sel ? ' on' : '') + '" id="r3Sel">' + (sel ? 'Izabran' : 'Izaberi') + '</button>' + cost + '</div>'
-        : '<p class="r3-note center">' + ico('lock') + ' Dobija se na Pass nivou ' + tier + '.</p>') + '</div>', 'col');
+        : '<p class="r3-note center">' + ico('lock') + (b.passOnly ? ' Dobija se samo na kraju Passa (nivo ' + tier + ').' : ' Ispada iz misteriozne kutije (Moći → kutija).') + '</p>') + '</div>', 'col');
     var sb = host.querySelector('#r3Sel'); if (sb) sb.onclick = function () { save(function (r2) { r2.board = id; }); UI.buzz(8); boardDetail(id); };
     var ub = host.querySelector('#r3Up'); if (ub) ub.onclick = function () {
       var ok = false;
@@ -397,7 +398,7 @@ window.MM = window.MM || {};
       }).join('') +
       '<div class="r3-row">' + ico('key', 'big') + '<div class="r3-rt"><b>Ključ</b><span>Nastavak posle pada. Imaš ' + r.keys + '.</span></div>' +
         '<button type="button" class="r3-buy" data-u="key"' + (r.wallet < 1000 ? ' disabled' : '') + '>' + ico('coin') + '1.000</button></div>' +
-      '<div class="r3-row box">' + ico('chest', 'big') + '<div class="r3-rt"><b>Misteriozna kutija</b><span>Nasumična nagrada: novčići, tokeni, ključevi, a možda i board. Imaš ' + r.boxes + '.</span></div>' +
+      '<div class="r3-row box">' + ico('chest', 'big') + '<div class="r3-rt"><b>Misteriozna kutija</b><span>Nasumična nagrada: novčići, tokeni, ključevi ili novi board (svi osim Dooma, on je samo u Passu). Imaš ' + r.boxes + '.</span></div>' +
         '<div class="r3-bx">' + (r.boxes ? '<button type="button" class="r3-buy open" data-u="open">Otvori</button>' : '') +
         '<button type="button" class="r3-buy" data-u="box"' + (r.wallet < 600 ? ' disabled' : '') + '>' + ico('coin') + '600</button></div></div>' +
       '<div class="r3-row">' + ico('htoken', 'big') + '<div class="r3-rt"><b>5 tokena junaka</b><span>Za nivo junaka. Imaš ' + fmt(r.htok) + '.</span></div>' +
@@ -421,8 +422,8 @@ window.MM = window.MM || {};
 
   /* --- misteriozna kutija: nasumicna nagrada sa retkoscu --- */
   function rollBox(r) {
-    var x = Math.random(), notOwned = PASS.filter(function (w) { return w.s && r.owned.indexOf(w.s) < 0; });
-    if (x < .03 && notOwned.length) return { s: notOwned[0].s, rar: 'Legendarno' };
+    var x = Math.random(), notOwned = BOARDS.filter(function (b) { return !b.secret && !b.passOnly && r.owned.indexOf(b.id) < 0; });
+    if (x < .06 && notOwned.length) return { s: notOwned[Math.floor(Math.random() * notOwned.length)].id, rar: 'Legendarno' };
     if (x < .07) return { pack: 1, c: 2000, h: 20, t: 20, rar: 'Legendarno' };
     if (x < .15) return { k: 2, rar: 'Epsko' };
     if (x < .33) return { t: 10 + Math.floor(Math.random() * 9), rar: 'Retko' };
