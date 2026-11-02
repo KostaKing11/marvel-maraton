@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.17.0';
+MM.VERSION = '2.18.0';
 
 (function () {
   'use strict';
@@ -669,7 +669,8 @@ MM.VERSION = '2.17.0';
     'rate': function (el) { openRate(el.getAttribute('data-id'), 0); },
     'runner': function () {
       MM.Runner.open(function (res) {
-        var before = MM.Games.lvlOf(V.gamesOf(state()).xp), xp = Math.min(300, Math.floor(res.score / 40)), rec = false;
+        // XP: 1 na svakih 100 m, najvise 40 po trci
+        var before = MM.Games.lvlOf(V.gamesOf(state()).xp), xp = Math.min(40, Math.round(res.dist / 100)), rec = false;
         Store.mutate(function (s) {
           var gg = s.games = V.gamesOf(s);
           gg.xp += xp; gg.runs = (gg.runs || 0) + 1;
@@ -688,8 +689,9 @@ MM.VERSION = '2.17.0';
     },
     'play-game': function (el) {
       var id = el.getAttribute('data-g') || 'classic';
-      var g = V.gamesOf(state()), lvl = Math.min(10, (g.best[id] || 0) + 1);
-      MM.Games.open(lvl - 1, function (passed) {
+      var best = function () { return V.gamesOf(state()).best[id] || 0; };
+      var team = V.teamBest(V.gamePeople({ s: state(), user: Store.user && Store.user() }), id);
+      MM.Games.open(Math.min(9, best()), function (passed) {
         var before = MM.Games.lvlOf(V.gamesOf(state()).xp), xp = MM.Games.xpFor(id, passed), rec = false;
         Store.mutate(function (s) {
           var gg = s.games = V.gamesOf(s);
@@ -698,9 +700,8 @@ MM.VERSION = '2.17.0';
         });
         var after = MM.Games.lvlOf(V.gamesOf(state()).xp);
         publishProgress();
-        if (after.n > before.n) UI.buzz([20, 60, 40]);
         return { xp: xp, up: after.n > before.n, lvl: after.n, title: after.title, rec: rec };
-      }, { practice: true, only: id === 'classic' ? '' : id });
+      }, { only: id === 'classic' ? '' : id, best: best, team: team ? { n: team.n, v: 'nivo ' + team.v } : null });
     },
     'ep-star': function (el) {
       setEpStar(el.getAttribute('data-id'), +el.getAttribute('data-ep'), +el.getAttribute('data-n'));
@@ -1247,7 +1248,7 @@ MM.VERSION = '2.17.0';
       var s = state(), p = P.progress(s);
       var g = V.gamesOf(s);
       Store.publishProfile({ watched: p.watched, total: p.total, minutes: p.watchedMin, percent: p.percent, streak: P.streak(s).n,
-        gxp: g.xp, gbest: g.best });
+        gxp: g.xp, gbest: Object.assign({ _v: 2 }, g.best) });
     }, 2500);
   }
 

@@ -60,7 +60,8 @@ window.MM = window.MM || {};
       epStars: {},          // ocene epizoda: { 'loki-s1': { '3': 4 } } - prosek je ocena sezone
       runnerChar: 'agent',  // izabran lik u Marvel Runneru
       gamesOff: false,      // sakrij tab Igre (kao da ne postoji)
-      games: null,          // igre: { xp, wins, best: { doom: 3, quiz: 5, classic: 2 } }
+      games: null,          // igre: { xp, xpv, wins, best: { doom: 3, quiz: 5, classic: 2 } }
+      runner: null,         // Marvel Runner: novcici, kljucevi, boardovi, moci, pass, misije (runner.js)
       gameBest: {},         // mini igre iz profila: najvisi predjeni nivo { g0: 3, g1: 5 }      // koliko puta je presao igre - svaki put je teze
       skin: 'dark',         // stil: 'dark' | 'retro' (strip: papir, crni obrisi, POW!)
       updatedAt: 0

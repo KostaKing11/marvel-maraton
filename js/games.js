@@ -488,177 +488,13 @@ window.MM = window.MM || {};
     countdown(secs, '#hrT', function () { done = true; fail('Isteklo vreme.'); }, function () { return done; });
   }
 
-  /* --- Mjolnir: zaustavi strelicu u zlatnoj zoni --- */
-  function gMjolnir() {
-    clearAll();
-    var need = Math.min(10, 5 + Math.floor(L / 2)), lives = 3, ok = 0, done = false;
-    var zone = Math.max(9, 22 - 1.5 * L), speed = Math.min(2.6, 1.1 + .15 * L);   // % sirine, % po frejmu
-    box.innerHTML = solo('Podigni Mjolnir', 'Tapni kad je strelica u zlatnoj zoni. ' + need + ' puta, imaš 3 života.') +
-      '<div class="gm-bar"><b id="mjP">0 / ' + need + '</b><b id="mjL">❤️❤️❤️</b></div>' +
-      '<button type="button" class="gm-mj" id="mjB"><span class="mj-zone" id="mjZ"></span><span class="mj-arrow" id="mjA"></span><span class="mj-ham">🔨</span></button>';
-    var z = box.querySelector('#mjZ'), a = box.querySelector('#mjA'), x = 0, dir = 1, zx = 0;
-    function newZone() { zx = 5 + Math.random() * (90 - zone); z.style.left = zx + '%'; z.style.width = zone + '%'; }
-    newZone();
-    var raf;
-    (function step() {
-      if (done || !box) return;
-      x += dir * speed; if (x >= 100) { x = 100; dir = -1; } if (x <= 0) { x = 0; dir = 1; }
-      a.style.left = x + '%';
-      raf = requestAnimationFrame(step);
-    })();
-    timers.push({ valueOf: function () { cancelAnimationFrame(raf); return 0; } });
-    box.querySelector('#mjB').addEventListener('pointerdown', function (e) {
-      e.preventDefault();
-      if (done) return;
-      if (x >= zx && x <= zx + zone) {
-        ok++; UI.buzz(10); box.querySelector('#mjP').textContent = ok + ' / ' + need;
-        z.classList.remove('hit'); void z.offsetWidth; z.classList.add('hit');
-        speed *= 1.06; newZone();
-        if (ok >= need) { done = true; cancelAnimationFrame(raf); later(win, 500); }
-      } else {
-        lives--; UI.buzz([30, 30, 30]); box.querySelector('#mjL').textContent = '❤️❤️❤️'.slice(0, lives * 2) || '—';
-        if (lives <= 0) { done = true; cancelAnimationFrame(raf); fail('Nisi dostojan Mjolnira.'); }
-      }
-    });
-  }
-
-  /* --- Refleks: tapni čim Thanos pucne --- */
-  function gSnap() {
-    clearAll();
-    var rounds = 5, limit = Math.max(330, 650 - 30 * L), r = 0, times = [], state = 'wait', done = false;
-    box.innerHTML = solo('Pucanj prstima', 'Tapni čim ekran pozeleni. Ne pre! Imaš ' + limit + ' ms.') +
-      '<div class="gm-bar"><b id="snR">1 / ' + rounds + '</b><b id="snT"></b></div><button type="button" class="gm-snap" id="snB"><span>čekaj…</span></button>';
-    var b = box.querySelector('#snB'), t0 = 0;
-    function arm() {
-      state = 'wait'; b.className = 'gm-snap'; b.querySelector('span').textContent = 'čekaj…';
-      later(function () { if (done) return; state = 'go'; t0 = performance.now(); b.className = 'gm-snap go'; b.querySelector('span').textContent = '💥 SAD!';
-        later(function () { if (state === 'go' && !done) { done = true; fail('Prespor. Pola univerzuma je nestalo.'); } }, limit);
-      }, 1100 + Math.random() * 2400);
-    }
-    b.addEventListener('pointerdown', function (e) {
-      e.preventDefault();
-      if (done) return;
-      if (state === 'wait') { done = true; clearAll(); fail('Prerano! Thanos nije ni pucnuo.'); return; }
-      if (state !== 'go') return;
-      var ms = Math.round(performance.now() - t0); times.push(ms); state = 'idle'; clearAll(); UI.buzz(8);
-      b.className = 'gm-snap hit'; b.querySelector('span').textContent = ms + ' ms';
-      r++; box.querySelector('#snR').textContent = Math.min(r + 1, rounds) + ' / ' + rounds;
-      box.querySelector('#snT').textContent = 'najbolje ' + Math.min.apply(null, times) + ' ms';
-      if (r >= rounds) { done = true; later(win, 700); } else later(arm, 700);
-    });
-    arm();
-  }
-
-
-  /* --- Čiji je predmet? --- */
-  function gItem() {
-    clearAll();
-    var total = Math.min(10, 6 + L), secs = Math.max(5, 10 - Math.floor(L / 2)), k = 0, answered = false;
-    var pool = shuffle(MM.Cat.all().filter(function (i) { return MM.Badges.ITEMS[i.id] && (i.col === 'mcu' || L >= 2) && i.type !== 'special'; }));
-    var qs = [], seenIc = {};
-    pool.forEach(function (i) { var ic = MM.Badges.spec(i).icon; if (qs.length < total && !seenIc[ic]) { seenIc[ic] = 1; qs.push(i); } });
-    function ask() {
-      answered = false;
-      var it = qs[k];
-      var wrong = shuffle(pool.filter(function (x) { return x.id !== it.id && MM.Badges.spec(x).icon !== MM.Badges.spec(it).icon; })).slice(0, 3);
-      var opts = shuffle([it].concat(wrong));
-      box.innerHTML = solo('Čiji je predmet?', 'Iz kog naslova je predmet? ' + total + ' pitanja, ' + secs + ' s svako.') +
-        '<div class="gm-bar"><b>' + (k + 1) + ' / ' + total + '</b><b id="itT">' + secs + ' s</b></div>' +
-        '<div class="gm-item">' + MM.Badges.tile(it, { size: 'lg' }) + '<b>' + esc(MM.Badges.spec(it).name) + '</b></div><div class="gm-opts">' +
-        opts.map(function (o) { return '<button type="button" class="btn ghost wide gm-o" data-ok="' + (o.id === it.id ? 1 : 0) + '">' + esc(MM.Cat.cleanTitle(o)) + '</button>'; }).join('') + '</div>';
-      Array.prototype.forEach.call(box.querySelectorAll('.gm-o'), function (b) {
-        b.addEventListener('click', function () {
-          if (answered) return;
-          answered = true;
-          if (b.getAttribute('data-ok') !== '1') {
-            b.classList.add('bad'); box.querySelector('.gm-o[data-ok="1"]').classList.add('good'); UI.buzz([20, 40, 20]);
-            later(function () { fail('To je iz „' + MM.Cat.cleanTitle(it) + '“.'); }, 1000); return;
-          }
-          b.classList.add('good'); UI.buzz(8); k++;
-          later(k === total ? win : ask, 420);
-        });
-      });
-      var t = secs, myK = k;
-      (function tick() {
-        if (answered || k !== myK || !box) return;
-        var el = box.querySelector('#itT'); if (el) el.textContent = t + ' s';
-        if (t-- <= 0) { answered = true; fail('Isteklo vreme — to je iz „' + MM.Cat.cleanTitle(it) + '“.'); return; }
-        later(tick, 1000);
-      })();
-    }
-    ask();
-  }
-
-  /* --- Hulk razbija: lupaj sto brze --- */
-  function gHulk() {
-    clearAll();
-    var need = Math.min(90, 40 + 6 * L), secs = 10, hits = 0, done = false, started = false;
-    box.innerHTML = solo('Hulk razbija', 'Lupaj po zidu što brže — ' + need + ' udaraca za ' + secs + ' sekundi.') +
-      '<div class="gm-bar"><b id="hkP">0 / ' + need + '</b><b id="hkT">' + secs + ' s</b></div>' +
-      '<button type="button" class="gm-hulk" id="hkB"><span class="hk-wall" id="hkW"></span><span class="hk-fist">👊</span><i>tapni da počne</i></button>';
-    var b = box.querySelector('#hkB'), w = box.querySelector('#hkW');
-    b.addEventListener('pointerdown', function (e) {
-      e.preventDefault();
-      if (done) return;
-      if (!started) { started = true; b.querySelector('i').textContent = 'HULK SMASH!'; countdown(secs, '#hkT', function () { done = true; fail('Zid je izdržao. ' + hits + ' / ' + need + '.'); }, function () { return done; }); }
-      hits++; UI.buzz(4);
-      box.querySelector('#hkP').textContent = hits + ' / ' + need;
-      w.style.setProperty('--crack', Math.min(1, hits / need));
-      b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump');
-      if (hits >= need) { done = true; clearAll(); b.classList.add('smash'); later(win, 700); }
-    });
-  }
-
-  /* --- Portali: zatvori portale, ne diraj Dormammua --- */
-  function gPortal() {
-    clearAll();
-    var need = Math.min(30, 14 + 2 * L), secs = 20, up = Math.max(520, 1050 - 50 * L), evil = Math.min(.35, .12 + .03 * L);
-    var hits = 0, lives = 3, done = false;
-    box.innerHTML = solo('Portali', 'Tapni zlatne portale (' + need + '). Ljubičasti je Dormammu — ne diraj. 3 života.') +
-      '<div class="gm-bar"><b id="ptP">0 / ' + need + '</b><b><span id="ptL">❤️❤️❤️</span> · <span id="ptT">' + secs + ' s</span></b></div>' +
-      '<div class="gm-portals">' + Array.apply(null, Array(9)).map(function (x, i) { return '<button type="button" class="pt-h" data-i="' + i + '"><span></span></button>'; }).join('') + '</div>';
-    var holes = box.querySelectorAll('.pt-h');
-    function spawn() {
-      if (done) return;
-      var free = Array.prototype.filter.call(holes, function (h) { return !h.classList.contains('on'); });
-      if (free.length) {
-        var h = free[Math.floor(Math.random() * free.length)], bad = Math.random() < evil;
-        h.classList.add('on'); h.classList.toggle('evil', bad);
-        later(function () { h.classList.remove('on', 'evil'); }, up);
-      }
-      later(spawn, Math.max(260, up * .55));
-    }
-    Array.prototype.forEach.call(holes, function (h) {
-      h.addEventListener('pointerdown', function (e) {
-        e.preventDefault();
-        if (done || !h.classList.contains('on')) return;
-        var bad = h.classList.contains('evil');
-        h.classList.remove('on', 'evil');
-        if (bad) {
-          lives--; UI.buzz([30, 30, 30]); box.querySelector('#ptL').textContent = '❤️❤️❤️'.slice(0, lives * 2) || '—';
-          if (lives <= 0) { done = true; fail('Dormammu, došao si da se pogađaš… i izgubio si.'); }
-          return;
-        }
-        hits++; UI.buzz(6); box.querySelector('#ptP').textContent = hits + ' / ' + need;
-        if (hits >= need) { done = true; clearAll(); later(win, 500); }
-      });
-    });
-    spawn();
-    countdown(secs, '#ptT', function () { done = true; fail('Portali su ostali otvoreni. ' + hits + ' / ' + need + '.'); }, function () { return done; });
-  }
-
-  /** Sve igre: id -> { naziv, ikonica, opis, funkcija } */
+  /** Igre: id -> { naziv, ikonica, kratak opis, uputstvo, boja, funkcija } */
   var REG = {
-    doom: { name: 'Uhvati Dooma', emo: '🎯', desc: 'brzina i preciznost', fn: function () { return game1(); } },
-    stones: { name: 'Kamenje', emo: '💎', desc: 'pamćenje niza', fn: function () { return game2(); } },
-    quiz: { name: 'Marvel kviz', emo: '❓', desc: 'znanje, na vreme', fn: function () { return game3(); } },
-    memo: { name: 'Memorija', emo: '🃏', desc: 'parovi predmeta', fn: gMemo },
-    hrono: { name: 'Hronologija', emo: '📅', desc: 'filmovi po izlasku', fn: gHrono },
-    mjolnir: { name: 'Mjolnir', emo: '🔨', desc: 'tajming', fn: gMjolnir },
-    snap: { name: 'Pucanj prstima', emo: '🫰', desc: 'refleks', fn: gSnap },
-    item: { name: 'Čiji je predmet?', emo: '🛡️', desc: 'predmet → film', fn: gItem },
-    hulk: { name: 'Hulk razbija', emo: '👊', desc: 'brzi prsti', fn: gHulk },
-    portal: { name: 'Portali', emo: '🌀', desc: 'pazi na Dormammua', fn: gPortal }
+    quiz: { name: 'Marvel kviz', emo: '❓', desc: 'znanje, na vreme', col: '#3b82f6', how: '250+ pitanja o celom MCU-u. Što viši nivo, više pitanja i manje vremena.', fn: function () { return game3(); } },
+    doom: { name: 'Uhvati Dooma', emo: '🎯', desc: 'brzina i preciznost', col: '#22c55e', how: 'Tapni Dooma pre nego što pobegne. Mamci oduzimaju poene, a on je sve brži.', fn: function () { return game1(); } },
+    stones: { name: 'Kamenje', emo: '💎', desc: 'pamćenje niza', col: '#a855f7', how: 'Kamenje beskonačnosti zasvetli redom — ponovi niz. Svaki nivo je duži.', fn: function () { return game2(); } },
+    memo: { name: 'Memorija', emo: '🃏', desc: 'parovi predmeta', col: '#f59e0b', how: 'Okreći karte i nađi parove predmeta iz filmova pre isteka vremena.', fn: gMemo },
+    hrono: { name: 'Hronologija', emo: '📅', desc: 'filmovi po izlasku', col: '#e62429', how: 'Poređaj filmove po datumu izlaska. Jedna greška i počinješ ispočetka.', fn: gHrono }
   };
 
   /** 3 - 2 - 1 pa igra, da te ne iznenadi. */
@@ -680,9 +516,9 @@ window.MM = window.MM || {};
     clearAll();
     box.innerHTML = '<div class="gm-end"><div class="gm-emo">😵</div><h2>Pao si.</h2><p class="muted">' + esc(why) +
       (only ? '' : ' Kreće se od prve igre.') + '</p>' +
-      '<button type="button" class="btn primary wide" id="gmRe">Ponovo</button><button type="button" class="btn ghost wide" data-a="sheet-close">' +
-      'Zatvori</button></div>';
+      '<button type="button" class="btn primary wide" id="gmRe">Ponovo</button><button type="button" class="btn ghost wide" id="gmMenu">Meni igre</button></div>';
     box.querySelector('#gmRe').onclick = first;
+    box.querySelector('#gmMenu').onclick = menuView;
   }
 
   function confetti() {
@@ -698,20 +534,46 @@ window.MM = window.MM || {};
     confetti(); UI.buzz([15, 40, 25]);
     var r = onWin ? onWin(L + 1) : null;
     box.innerHTML = '<div class="gm-end"><div class="gm-emo">🏆</div><h2>Prešao si nivo ' + (L + 1) + '!</h2>' +
-      '<p class="muted">' + (r && r.xp ? '<b class="gm-xp">+' + r.xp + ' XP</b>' + (r.up ? '<br><b class="gm-up">NOVI NIVO: ' + r.lvl + ' · ' + esc(r.title) + '</b>' : '') +
+      '<p class="muted">' + (r && r.xp ? '<b class="gm-xp">+' + r.xp + ' XP</b>' +
         (r.rec ? '<br>Novi rekord u ovoj igri!' : '') : (only ? 'Probaj teži nivo.' : 'Sve tri igre zaredom. Ozbiljno.')) + '</p>' +
       (L < 9 ? '<button type="button" class="btn primary wide" id="gmNext">Nivo ' + (L + 2) + '</button>' : '<p class="muted">To je bio poslednji nivo. Legenda.</p>') +
-      '<button type="button" class="btn ghost wide" data-a="sheet-close">Zatvori</button></div>';
+      '<button type="button" class="btn ghost wide" id="gmMenu">Meni igre</button></div>';
     var nx = box.querySelector('#gmNext');
     if (nx) nx.onclick = function () { L = Math.min(9, L + 1); first(); };
+    box.querySelector('#gmMenu').onclick = menuView;
+    if (r && r.up) setTimeout(function () { levelUp(r.lvl, r.title); }, 700);
   }
 
-  /** opts: { only } - id jedne igre; bez njega klasika (tri zaredom). */
+  /* ---------------- meni igre ----------------
+     Svaka igra ima svoj ekran: opis, staza od 10 nivoa (predjeni,
+     sledeci, zakljucani), rekord ekipe i veliko dugme Igraj. */
+  var menuInfo = null;   // { id, best(), team }
+  function menuView() {
+    clearAll();
+    var id = only, r = only ? REG[only] : { name: 'Klasika', emo: '🏆', col: '#ffb400', how: 'Uhvati Dooma, Kamenje i Kviz zaredom, bez pada. Vredi trostruko XP.' };
+    var best = menuInfo.best(), next = Math.min(10, best + 1), team = menuInfo.team || null;
+    box.innerHTML = '<div class="gmm" style="--gc:' + r.col + '">' +
+      '<div class="gmm-hero"><span class="gmm-emo">' + r.emo + '</span><h2>' + esc(r.name) + '</h2><p>' + esc(r.how) + '</p></div>' +
+      '<div class="gmm-path">' + Array.apply(null, Array(10)).map(function (x, i) {
+        var n = i + 1, st = n <= best ? 'done' : n === next ? 'next' : 'lock';
+        return '<button type="button" class="gmm-n ' + st + '" data-l="' + n + '"' + (st === 'lock' ? ' disabled' : '') + '><b>' + n + '</b>' + (st === 'done' ? '<i>★</i>' : '') + '</button>';
+      }).join('') + '</div>' +
+      '<div class="gmm-stats"><div><b>' + best + '/10</b><i>tvoj rekord</i></div><div><b>+' + xpFor(id || 'classic', next) + ' XP</b><i>za nivo ' + next + '</i></div>' +
+        '<div><b>' + (team ? esc(team.n) : '—') + '</b><i>' + (team ? 'najbolji u ekipi · ' + team.v : 'rekord ekipe') + '</i></div></div>' +
+      '<button type="button" class="gmm-play" id="gmmGo"><b>IGRAJ</b><span>nivo ' + next + '</span></button></div>';
+    box.querySelector('#gmmGo').onclick = function () { L = next - 1; UI.buzz(8); first(); };
+    Array.prototype.forEach.call(box.querySelectorAll('.gmm-n:not([disabled])'), function (b) {
+      b.onclick = function () { L = +b.getAttribute('data-l') - 1; UI.buzz(8); first(); };
+    });
+  }
+
+  /** Otvori meni igre. id: kljuc iz REG ili '' za klasiku. opts: { best(), team: {n, v} } */
   function open(level, cb, opts) {
     L = level || 0;
     onWin = cb;
     opts = opts || {};
     only = opts.only || '';
+    menuInfo = { best: opts.best || function () { return L; }, team: opts.team };
     UI.openSheet({
       id: 'games', full: true, cls: 'gm-sheet',
       render: function () {
@@ -720,7 +582,7 @@ window.MM = window.MM || {};
       },
       onOpen: function (el) {
         box = el.querySelector('#gmBox');
-        first();
+        if (opts.direct) first(); else menuView();
       },
       onClose: function () { clearAll(); box = null; }
     });
@@ -729,14 +591,26 @@ window.MM = window.MM || {};
   /* ---------------- nivo igraca ---------------- */
   var TITLES = ['Rekrut', 'Kadet S.H.I.E.L.D.-a', 'Agent', 'Specijalni agent', 'Defender', 'Guardian', 'Avenger',
     'Revenger', 'Sorcerer Supreme', 'Vrhovni Avenger', 'Asgardijanac', 'Celestial', 'Doomov rival'];
-  /** Nivo iz XP: nivo n trazi 100 + 200 + ... + 100*(n-1) XP. */
+  /** Nivo iz XP: nivo n trazi 50 + 100 + ... + 50*(n-1) XP. */
   function lvlOf(xp) {
-    var n = Math.floor((Math.sqrt(1 + 8 * (xp || 0) / 100) - 1) / 2) + 1;
-    var from = 100 * (n - 1) * n / 2, to = 100 * n * (n + 1) / 2;
+    var n = Math.floor((Math.sqrt(1 + 8 * (xp || 0) / 50) - 1) / 2) + 1;
+    var from = 50 * (n - 1) * n / 2, to = 50 * n * (n + 1) / 2;
     return { n: n, title: TITLES[Math.min(TITLES.length - 1, n - 1)], from: from, to: to, pct: Math.round(((xp || 0) - from) / (to - from) * 100) };
   }
-  /** XP za predjen nivo: klasika (tri zaredom) vredi trostruko. */
-  function xpFor(id, level) { return (id === 'classic' ? 60 : 20) * level; }
+  /** XP za predjen nivo igre: klasika (tri zaredom) vredi trostruko. */
+  function xpFor(id, level) { return (id === 'classic' ? 15 : 5) * level; }
 
-  MM.Games = { open: open, REG: REG, lvlOf: lvlOf, xpFor: xpFor, TITLES: TITLES };
+  /** Veliki ekran za novi nivo igraca. */
+  function levelUp(n, title) {
+    var el = document.createElement('div'); el.className = 'lvlup';
+    el.innerHTML = '<div class="lu-rays"></div><div class="lu-box"><em>NOVI NIVO</em><div class="lu-badge"><b>' + n + '</b></div><h2>' + esc(title) + '</h2>' +
+      '<p>' + (TITLES[n] && TITLES[n] !== title ? 'Sledeća titula: ' + esc(TITLES[n]) : 'Nastavi da igraš.') + '</p><button type="button" class="btn primary wide">Super!</button></div>';
+    document.body.appendChild(el);
+    confetti(); UI.buzz([20, 60, 30, 60, 40]);
+    var close = function () { el.classList.add('out'); setTimeout(function () { el.remove(); }, 300); };
+    el.querySelector('button').onclick = close;
+    el.addEventListener('click', function (e) { if (e.target === el) close(); });
+  }
+
+  MM.Games = { open: open, REG: REG, lvlOf: lvlOf, xpFor: xpFor, TITLES: TITLES, levelUp: levelUp };
 })();

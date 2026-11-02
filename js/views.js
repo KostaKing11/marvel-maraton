@@ -956,62 +956,76 @@ window.MM = window.MM || {};
      IGRE: mini igre, nivo igraca i rang lista ekipe
      ============================================================ */
 
-  /** Stanje igara (stari gameBest g0..g3 se prevodi u nove id-jeve). */
+  /** Stanje igara (stari gameBest g0..g3 se prevodi u nove id-jeve).
+      v2: XP je 5x manji nego ranije (bilo je previse naduvano). */
   function gamesOf(s) {
-    var g = s.games && typeof s.games === 'object' ? s.games : { xp: 0, wins: 0, best: {} };
-    g = { xp: g.xp | 0, wins: g.wins | 0, runs: g.runs | 0, best: Object.assign({}, g.best || {}) };
+    var g = s.games && typeof s.games === 'object' ? s.games : { xp: 0, wins: 0, best: {}, xpv: 2 };
+    var xp = g.xp | 0;
+    if (g.xpv !== 2) xp = Math.round(xp / 5);
+    g = { xp: xp, xpv: 2, wins: g.wins | 0, runs: g.runs | 0, best: Object.assign({}, g.best || {}) };
     var old = s.gameBest || {}, map = { g0: 'classic', g1: 'doom', g2: 'stones', g3: 'quiz' };
     Object.keys(map).forEach(function (k) { if ((old[k] || 0) > (g.best[map[k]] || 0)) g.best[map[k]] = old[k]; });
     return g;
   }
+  /** XP drugara: stari profili (bez gbest._v = 2) su na staroj skali. */
+  function peerXp(p) { var x = p.gxp || 0; return p.gbest && p.gbest._v === 2 ? x : Math.round(x / 5); }
+  /** Ekipa sa mojim svezim brojevima, sortirana po XP. */
+  function gamePeople(ctx) {
+    var s = ctx.s, g = gamesOf(s), me = ctx.user && ctx.user.uid;
+    var ppl = MM.Reviews.people().map(function (p) {
+      return p.uid === me ? Object.assign({}, p, { xp: g.xp, gbest: g.best, name: s.displayName || p.name, photo: s.avatar || p.photo, mine: true }) : Object.assign({}, p, { xp: peerXp(p) });
+    });
+    if (!ppl.some(function (p) { return p.mine; })) ppl.push({ uid: me || 'me', name: s.displayName || 'Ti', photo: s.avatar, xp: g.xp, gbest: g.best, mine: true });
+    ppl.sort(function (a, b) { return (b.xp || 0) - (a.xp || 0); });
+    return ppl;
+  }
+  /** Najbolji u ekipi za igru id: { n, v } */
+  function teamBest(ppl, id) {
+    var top = null;
+    ppl.forEach(function (p) { var v = (p.gbest || {})[id] || 0; if (v && (!top || v > top.v)) top = { n: p.name || '?', v: v }; });
+    return top;
+  }
 
   function igre(ctx) {
-    var s = ctx.s, G = MM.Games, g = gamesOf(s), lv = G.lvlOf(g.xp), me = ctx.user && ctx.user.uid;
+    var s = ctx.s, G = MM.Games, g = gamesOf(s), lv = G.lvlOf(g.xp), ppl = gamePeople(ctx);
     var out = '<section class="card gx-me" data-k="gxme">' +
       '<div class="gx-badge"><b>' + lv.n + '</b><i>NIVO</i></div>' +
-      '<div class="gx-t"><em>' + esc(lv.title.toUpperCase()) + '</em><b>' + g.xp + ' XP</b>' +
+      '<div class="gx-t"><em>' + esc(lv.title.toUpperCase()) + '</em>' +
         '<div class="gx-bar"><i style="width:' + lv.pct + '%"></i></div>' +
-        '<span>još ' + (lv.to - g.xp) + ' XP do nivoa ' + (lv.n + 1) + ' · ' + g.wins + ' ' + plural(g.wins, 'pobeda', 'pobede', 'pobeda') + '</span></div></section>';
+        '<span><b>' + (g.xp - lv.from) + '</b> / ' + (lv.to - lv.from) + ' XP do nivoa ' + (lv.n + 1) + (G.TITLES[lv.n] && G.TITLES[lv.n] !== lv.title ? ' · ' + esc(G.TITLES[lv.n]) : '') + '</span></div></section>';
 
-    // Marvel Runner
-    var R = MM.Runner, rc = R.charOf(s), fb = R.filmBonus(s), nUn = R.CHARS.filter(function (c) { return R.unlocked(c, s); }).length;
-    out += '<button type="button" class="card rn-card" data-k="rn" data-a="runner">' +
-      '<span class="rn-ic"><img src="' + R.sprite(rc) + '" alt=""></span>' +
-      '<span class="rn-ct"><em>NOVO · MARVEL RUNNER</em><b>Trči do Doomsdaya</b>' +
-        '<span>' + nUn + '/' + R.CHARS.length + ' likova · bonus od filmova ×' + fb.mul.toFixed(2) + (g.best.runner ? ' · rekord ' + g.best.runner.toLocaleString('sr-RS') : '') + '</span></span>' +
-      '<span class="rn-play">▶</span></button>';
+    // Marvel Runner: glavna igra
+    var R = MM.Runner, rc = R.charOf(s), sm = R.summary(s), nUn = R.CHARS.filter(function (c) { return R.unlocked(c, s); }).length;
+    out += '<button type="button" class="rn-big" data-k="rn" data-a="runner">' +
+      '<span class="rnb-bg"></span><img class="rnb-hero" src="' + R.sprite(rc) + '" alt="">' +
+      '<span class="rnb-t"><em>GLAVNA IGRA</em><b>MARVEL RUNNER</b><span>Trči do Doomsdaya · ' + nUn + '/' + R.CHARS.length + ' likova</span>' +
+        '<span class="rnb-pass"><i>' + sm.tier + '</i><s><u style="width:' + sm.pct + '%"></u></s>PASS' + (sm.claim ? '<em class="rnb-dot">' + sm.claim + '</em>' : '') + '</span>' +
+        (g.best.runner ? '<span class="rnb-rec">🏆 ' + g.best.runner.toLocaleString('sr-RS') + '</span>' : '') +
+      '</span><span class="rnb-go">TRČI ▶</span></button>';
 
-    // igre
+    // mini igre: svaka ima svoj meni
     var ids = Object.keys(G.REG);
-    out += '<section class="card" data-k="gxlist"><div class="card-h"><h2>Igre</h2><span class="muted">pređi nivo = XP</span></div>' +
-      '<button type="button" class="game-b all" data-a="play-game" data-g="classic"><span>🏆</span><b>Klasika: tri zaredom</b>' +
-        '<i>Dooma, Kamenje i Kviz bez pada · trostruki XP · ' + (g.best.classic ? 'rekord nivo ' + g.best.classic : 'još nije pređeno') + '</i>' +
-        '<em class="gx-next">nivo ' + Math.min(10, (g.best.classic || 0) + 1) + ' ›</em></button><div class="game-grid">';
+    out += '<section class="card" data-k="gxlist"><div class="card-h"><h2>Mini igre</h2><span class="muted">10 nivoa svaka</span></div><div class="mg-grid">';
     ids.forEach(function (id) {
       var r = G.REG[id], best = g.best[id] || 0;
-      out += '<button type="button" class="game-b" data-a="play-game" data-g="' + id + '"><span>' + r.emo + '</span><b>' + esc(r.name) + '</b>' +
-        '<i>' + esc(r.desc) + '</i><em class="gx-next">' + (best ? '★ ' + best + ' · ' : '') + 'nivo ' + Math.min(10, best + 1) + ' ›</em></button>';
+      out += '<button type="button" class="mg-c" style="--gc:' + r.col + '" data-a="play-game" data-g="' + id + '"><span class="mg-emo">' + r.emo + '</span><b>' + esc(r.name) + '</b>' +
+        '<i>' + esc(r.desc) + '</i><span class="mg-dots">' + Array.apply(null, Array(10)).map(function (x, k) { return '<s class="' + (k < best ? 'on' : '') + '"></s>'; }).join('') + '</span></button>';
     });
+    out += '<button type="button" class="mg-c wide" style="--gc:#ffb400" data-a="play-game" data-g="classic"><span class="mg-emo">🏆</span><b>Klasika: tri zaredom</b>' +
+      '<i>Dooma, Kamenje i Kviz bez pada · trostruki XP</i><span class="mg-dots">' + Array.apply(null, Array(10)).map(function (x, k) { return '<s class="' + (k < (g.best.classic || 0) ? 'on' : '') + '"></s>'; }).join('') + '</span></button>';
     out += '</div></section>';
 
     // rang lista ekipe
-    var ppl = MM.Reviews.people().map(function (p) {
-      return p.uid === me ? Object.assign({}, p, { gxp: g.xp, gbest: g.best, name: s.displayName || p.name, photo: s.avatar || p.photo }) : p;
-    });
-    if (!ppl.some(function (p) { return p.uid === me; })) ppl.push({ uid: me || 'me', name: s.displayName || 'Ti', photo: s.avatar, gxp: g.xp, gbest: g.best });
-    ppl.sort(function (a, b) { return (b.gxp || 0) - (a.gxp || 0); });
-    out += '<section class="card" data-k="gxrank"><div class="card-h"><h2>Rang lista</h2><span class="muted">ukupno XP</span></div><div class="gx-rank">';
+    out += '<section class="card" data-k="gxrank"><div class="card-h"><h2>Rang lista</h2><span class="muted">nivo igrača</span></div><div class="gx-rank">';
     ppl.forEach(function (p, i) {
-      var l = G.lvlOf(p.gxp || 0), mine = p.uid === (me || 'me');
-      out += '<div class="gx-row' + (mine ? ' me' : '') + '"><span class="rank">' + (i === 0 && p.gxp ? '👑' : i + 1) + '</span>' + avatar(p.name, p.photo) +
-        '<div class="gx-rn"><b>' + esc(p.name || 'Bez imena') + (mine ? ' <em>· ti</em>' : '') + '</b><span>nivo ' + l.n + ' · ' + esc(l.title) + '</span></div>' +
-        '<b class="gx-xp">' + (p.gxp || 0) + '<i>XP</i></b></div>';
+      var l = G.lvlOf(p.xp || 0);
+      out += '<div class="gx-row' + (p.mine ? ' me' : '') + '"><span class="rank">' + (i === 0 && p.xp ? '👑' : i + 1) + '</span>' + avatar(p.name, p.photo) +
+        '<div class="gx-rn"><b>' + esc(p.name || 'Bez imena') + (p.mine ? ' <em>· ti</em>' : '') + '</b><span>' + esc(l.title) + '</span></div>' +
+        '<b class="gx-lv">' + l.n + '<i>nivo</i></b></div>';
     });
     out += '</div>';
-    // rekordi po igri
     var recs = ['runner', 'classic'].concat(ids).map(function (id) {
-      var top = null;
-      ppl.forEach(function (p) { var v = (p.gbest || {})[id] || 0; if (v && (!top || v > top.v)) top = { v: v, n: p.name || '?' }; });
+      var top = teamBest(ppl, id);
       var r = id === 'classic' ? { emo: '🏆', name: 'Klasika' } : id === 'runner' ? { emo: '🏃', name: 'Marvel Runner' } : G.REG[id];
       return '<div class="gx-rec' + (id === 'runner' ? ' wide' : '') + '"><span>' + r.emo + '</span><b>' + esc(r.name) + '</b><i>' +
         (top ? esc(top.n) + ' · ' + (id === 'runner' ? top.v.toLocaleString('sr-RS') + ' poena' : 'nivo ' + top.v) : '—') + '</i></div>';
@@ -1399,6 +1413,16 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.18', title: 'Marvel Runner 3D', big: true, items: [
+      '<b>Prava 3D igra</b> — kamera iza tebe kao u Subway Surfersu, grad, grafiti, šine i vozovi u 3D.',
+      '<b>Penji se na vozove</b> — rampe vode na krov, trčiš po vagonima. Neki vozovi idu ka tebi (upaljeni farovi).',
+      '<b>Pravi pokreti</b> — likovi trče, skaču, prave kolut i naginju se. Doom juri kad se sapleteš.',
+      '<b>Moći u trci</b> — magnet, Mjolnir let, ×2, Spider skok i štit. Dupli tap = hoverboard.',
+      '<b>Marvel Pass</b> — 40 nivoa nagrada (novčići, ključevi, boardovi, izgledi). Što dalje trčiš, više dobiješ.',
+      '<b>Dnevne misije</b>, nadogradnje moći za novčiće i nastavak posle pada za ključ.',
+      '<b>Manje, a bolje mini igre</b> — 5 najboljih, svaka sa svojim menijem i stazom od 10 nivoa.',
+      '<b>XP je smanjen 5×</b> (bio je naduvan) — nivo ostaje pošten, plus novi ekran za level up.'
+    ], cta: { a: 'runner', label: 'Igraj' } },
     { id: '2.17', title: 'Novi Marvel Runner', big: false, items: [
       '<b>Pravi likovi</b> — svih 13 junaka i Doom oslikani u Figmi, vide se s leđa dok trče.',
       '<b>Pošteno</b> — uvek postoji slobodna traka do koje stižeš; nema više zida od vozova.',
@@ -1543,7 +1567,7 @@ window.MM = window.MM || {};
   }
 
   MM.Views = {
-    danas: danas, plan: planView, igre: igre, gamesOf: gamesOf, ekipa: ekipa, katalog: katalog, ja: ja,
+    danas: danas, plan: planView, igre: igre, gamesOf: gamesOf, gamePeople: gamePeople, teamBest: teamBest, ekipa: ekipa, katalog: katalog, ja: ja,
     itemSheet: itemSheet, customSheet: customSheet, filterSheet: filterSheet, rateSheet: rateSheet, profileSheet: profileSheet,
     welcomeSheet: welcomeSheet, chooseSheet: chooseSheet, newsSheet: newsSheet, countdownSheet: countdownSheet, epAvg: epAvg, ogCountdown: ogCountdown, crew: crew, NEWS: NEWS, recapSheet: recapSheet, mondayOf: mondayOf, streakSheet: streakSheet, doomSheet: doomSheet,
     clock: clock, countdownParts: countdownParts, ICON: ICON, scopeName: scopeName
