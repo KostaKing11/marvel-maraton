@@ -367,7 +367,7 @@ window.MM = window.MM || {};
     };
     var up = opts.up || {}, perk = opts.perk || {};
     var BP = opts.boardPerk || '';           // mala moc boarda
-    var BASE = { magnet: 10, jet: 7, x2: 12, jump: 10, board: BP === 'time' ? 35 : 30 }, METER = BP === 'meter' ? 6 : 8;
+    var BASE = { magnet: 10, jet: 7, x2: 12, jump: 10, board: BP === 'time' ? 35 : 30 }, METER = BP === 'meter' ? 11 : 15;
     if (BP === 'start') S.meter = METER;
     function dur(k) { return BASE[k] * (1 + .2 * (up[k] || 0)) * (perk[k] || 1); }
 
@@ -441,7 +441,14 @@ window.MM = window.MM || {};
     }
     var PW_ICON = { magnet: 'magnet', jet: 'hammer', x2: 'x2', jump: 'web', shield: 'shield', btok: 'btoken' };
     var PW_COL = { magnet: 0xff3b30, shield: 0x5fd3ff, jet: 0xffd23f, x2: 0x39d97a, jump: 0xc46bff, btok: 0x3b8bff };
+    var btokMat = null;
     function mkPickup(lane, z, kind) {
+      if (kind === 'btok') {
+        if (!btokMat) btokMat = [new THREE.MeshPhongMaterial({ color: 0x2f7fe8, emissive: 0x0a2a5a, shininess: 90 }),
+          new THREE.MeshPhongMaterial({ map: imgTex('img/ui/btoken.webp'), emissive: 0x0a2040, shininess: 60, transparent: true, alphaTest: .3 })];
+        var tk = new THREE.Mesh(G3.coin, [btokMat[0], btokMat[1], btokMat[1]]); tk.scale.setScalar(.8); tk.position.set(LX[lane], 1, z);
+        return add({ t: 'btok', kind: 'btok', lane: lane, m: tk, y: 1, len: 0 });
+      }
       var g = new THREE.Group();
       var gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowMat(), color: PW_COL[kind], transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
       gl.scale.set(2.2, 2.2, 1); g.add(gl);
@@ -474,7 +481,7 @@ window.MM = window.MM || {};
       if (S.stats.sections > 0 || !S.tut) {
         var bl = Math.floor(Math.random() * 3), r = Math.random(), mid = S.secEnd - gap / 2;
         S.gaps = (S.gaps || 0) + 1;
-        if (S.gaps % 4 === 2 && S.board <= 0) for (var bt = 0; bt < 5; bt++) mkPickup(bl, S.secEnd - 1 - bt * 2.2 * k, 'btok');
+        if (S.gaps % 3 === 2) for (var bt = 0; bt < 8; bt++) mkPickup(bl, S.secEnd - 1 - bt * 1.9 * k, 'btok');
         else if (r < .28 * (opts.pwRate || 1)) mkPickup(bl, mid, pick(['magnet', 'shield', 'jet', 'x2', 'jump', 'magnet', 'x2']));
         else for (var c = 0; c < 4; c++) mkCoin(bl, S.secEnd - 1 - c * 2.4, 1);
       }
@@ -493,7 +500,7 @@ window.MM = window.MM || {};
         else if (o.t === 'c') for (var j = 0; j < o.n; j++) mkCoin(o.lane, z - j * 2.6, 1);
         else if (o.t === 'C') for (var q = 0; q < 7; q++) mkCoin(o.lane, z + 6 - q * 2, 1 + Math.sin(q / 6 * Math.PI) * 1.9);
         else if (o.t === 'p') mkPickup(o.lane, z, pick(['magnet', 'jet', 'x2', 'jump', 'shield']));
-        else if (o.t === 'k') mkPickup(o.lane, z, 'btok');
+        else if (o.t === 'k') { var tk = mkPickup(o.lane, z, 'btok'); if (sec === SEC.TUT) tk.val = 3; }
       });
       if (sec.tips) sec.tips.forEach(function (tp) { S.tips.push({ z: z0 - tp.d * k, need: tp.need, t: tp.t, done: false }); });
       S.secEnd = z0 - sec.duz * k;
@@ -545,6 +552,7 @@ window.MM = window.MM || {};
     }
     var sx = 0, sy = 0, swiped = false;
     function onDown(e) { sx = e.clientX; sy = e.clientY; swiped = false; }
+    function onUp() { if (!swiped && S.meter >= METER && S.board <= 0) useBoard(); }
     function onMove(e) {
       if (swiped) return;
       var dx = e.clientX - sx, dy = e.clientY - sy;
@@ -560,6 +568,7 @@ window.MM = window.MM || {};
     var cv = renderer.domElement;
     cv.addEventListener('pointerdown', onDown);
     cv.addEventListener('pointermove', onMove);
+    cv.addEventListener('pointerup', onUp);
     document.addEventListener('keydown', onKey);
 
     /* ---------- udarci ---------- */
@@ -594,11 +603,11 @@ window.MM = window.MM || {};
     function result() {
       return { score: Math.round(S.score), coins: S.coins, dist: Math.round(S.dist), stats: S.stats, why: S.why };
     }
-    function take(kind) {
+    function take(kind, val) {
       if (kind === 'btok') {
         S.stats.btok++;
-        if (S.board > 0) { S.board = Math.min(dur('board'), S.board + 3); ev('btokplus'); return; }
-        if (S.meter < METER) { S.meter++; ev(S.meter === METER ? 'boardready' : 'btok'); }
+        if (S.board > 0) { S.board = Math.min(dur('board') + 10, S.board + 2); ev('btokplus'); return; }
+        if (S.meter < METER) { S.meter = Math.min(METER, S.meter + (val || 1)); ev(S.meter === METER ? 'boardready' : 'btok'); }
         return;
       }
       S.stats.powerups++;
@@ -643,7 +652,7 @@ window.MM = window.MM || {};
           if (k === 'jet' && S.pw[k] === 0) {
             S.invuln = Math.max(S.invuln, 1.4);
             // preostali novcici u vazduhu nestaju
-            S.objs = S.objs.filter(function (o) { if (o.air) { scene.remove(o.m); return false; } return true; });
+            S.objs = S.objs.filter(function (o) { if (o.air || (o.t === 'coin' && o.m.position.y > TRAIN_H + 2)) { scene.remove(o.m); return false; } return true; });
           }
         }
       });
@@ -666,7 +675,8 @@ window.MM = window.MM || {};
         var o = S.objs[j];
         if (o.t !== 'train' && o.t !== 'ramp') continue;
         if (Math.abs(LX[o.lane] - S.x) > 1.2) continue;
-        var f = o.m.position.z, b = f - o.len;
+        // gde ce biti posle ovog kadra (inace visina rampe kasni jedan kadar)
+        var f = o.m.position.z + dz + (o.v ? o.v * dt : 0), b = f - o.len;
         if (f < -.3 || b > .3) continue;
         support = Math.max(support, o.t === 'train' ? o.top : Math.min(TRAIN_H, Math.max(0, f) / o.len * TRAIN_H));
       }
@@ -688,10 +698,12 @@ window.MM = window.MM || {};
         var z = o.m.position.z;
         if (o.t === 'coin' || o.t === 'pw' || o.t === 'btok') {
           if (o.t === 'coin') o.m.rotation.y = S.x2vis ? Math.sin(S.t * 3) * .5 : o.m.rotation.y + dt * 4;
+          else if (o.t === 'btok') o.m.rotation.y += dt * 4;
           else o.m.position.y = o.y + Math.sin(S.t * 3 + z) * .15;
-          if (o.t === 'coin' && magnetOn && z > -16 && z < 2 && (!o.air || S.pw.jet > 0)) {
+          if (o.t === 'coin' && (o.pulled || (magnetOn && z > -16 && z < 2 && (S.pw.jet > 0 ? o.air : !o.air)))) {
+            o.pulled = true;
             var kk = Math.min(1, dt * 9);
-            o.m.position.x += (S.x - o.m.position.x) * kk; o.m.position.y += (S.y + 1 - o.m.position.y) * kk; o.m.position.z += (0 - z) * kk * .7;
+            o.m.position.x += (S.x - o.m.position.x) * kk; o.m.position.y += (S.y + 1 - o.m.position.y) * kk; o.m.position.z += (0 - z) * Math.min(1, dt * 12);
           }
           var p = o.m.position;
           if (Math.abs(p.z) < .9 && Math.abs(p.x - S.x) < 1 && Math.abs(p.y - (S.y + 1)) < 1.4) {
@@ -699,7 +711,7 @@ window.MM = window.MM || {};
             if (o.t === 'coin') {
               S.coinAcc += (x2 ? 2 : 1) * (BP === 'coins' && S.board > 0 ? 2 : 1) * (opts.coinMul || 1); var whole = Math.floor(S.coinAcc); S.coins += whole; S.coinAcc -= whole;
               S.stats.coins++; S.score += 5 * mul; pop(p.x, p.y, p.z);
-            } else { take(o.kind); pop(p.x, p.y, p.z, PW_COL[o.kind]); }
+            } else { take(o.kind, o.val); pop(p.x, p.y, p.z, PW_COL[o.kind]); }
             return false;
           }
         } else if (!o.hit && !S.over) {

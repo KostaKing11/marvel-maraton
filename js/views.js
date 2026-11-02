@@ -1415,6 +1415,12 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.20.2', title: 'Board i tutorijal popravljeni', big: false, items: [
+      '<b>Board</b> — treba 15 plavih tokena (dolaze u grupi od 8), svaki token dok voziš dodaje 2 s. Aktiviraš ga <b>jednim tapom bilo gde</b> na ekranu.',
+      '<b>Tokeni</b> su sad mali plavi novčići, ne velike svetleće ikonice.',
+      '<b>Jedan brojač</b> za board (samo dugme dole desno).',
+      '<b>Popravljeno</b>: novčići više ne lebde u vazduhu posle Mjolnira i magneta, poruke tutorijala nestaju kad treba, i rampa više ne „udari“ u voz na sporijim telefonima.'
+    ] },
     { id: '2.20.1', title: 'Boardovi imaju moći', big: false, items: [
       '<b>Svaki board ima malu moć</b> — Klasik traje duže, Mjolnir super skok, Gama magnet, Vibranijum 2 udarca, Kosmik dupli novčići, Stark se brže puni, Doom kreće pun.',
       '<b>Popravljeno</b> — aplikacija se više ne osvežava sama posle update-a, pa „Šta je novo“ ne nestane dok ga čitaš.'

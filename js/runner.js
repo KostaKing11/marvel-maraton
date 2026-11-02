@@ -65,7 +65,7 @@ window.MM = window.MM || {};
     { id: 'gama', name: 'Gama', c1: '#2f8f3a', c2: '#9dff6b', pp: 'magnet', perk: 'Magnet dok voziš.' },
     { id: 'vibra', name: 'Vibranijum', c1: '#2a1d4a', c2: '#c46bff', pp: 'hits', perk: 'Izdrži 2 udarca umesto jednog.' },
     { id: 'kosmik', name: 'Kosmik', c1: '#1b3a8f', c2: '#ffd23f', pp: 'coins', perk: 'Dupli novčići dok voziš.' },
-    { id: 'stark', name: 'Stark', c1: '#b3141b', c2: '#ffcf3f', pp: 'meter', perk: 'Puni se sa 6 tokena umesto 8.' },
+    { id: 'stark', name: 'Stark', c1: '#b3141b', c2: '#ffcf3f', pp: 'meter', perk: 'Puni se sa 11 tokena umesto 15.' },
     { id: 'doom', name: 'Doom', c1: '#2e4a2e', c2: '#9dffbc', pp: 'start', perk: 'Kreneš sa punim boardom.' }
   ];
   function boardById(id) { return BOARDS.filter(function (b) { return b.id === id; })[0] || BOARDS[0]; }
@@ -378,7 +378,7 @@ window.MM = window.MM || {};
       '<span>' + ico('coin') + fmt(B_COIN[l - 1]) + ico('btoken') + fmt(r.btok) + '/' + B_TOK[l - 1] + '</span></button>' : '<p class="r3-max">Najviši nivo</p>';
     frame('detail', b.name,
       '<div class="r3-det"><div class="r3-stage big" id="r3Stage" style="--b1:' + b.c1 + ';--b2:' + b.c2 + '"><span class="r3-deck big"></span></div>' +
-      '<div class="r3-dl"><span class="r3-hex">×' + bMul(l).toFixed(1) + '</span><div><em>NIVO ' + l + '</em><b>' + esc(b.name) + '</b><span><b class="r3-bpk">' + esc(b.perk) + '</b> Skupi 8 plavih tokena u trci i tapni dugme: 30 s te jedan udarac ne obara, a svaki token na boardu dodaje 3 s. Nivo boarda diže poene.</span></div></div>' +
+      '<div class="r3-dl"><span class="r3-hex">×' + bMul(l).toFixed(1) + '</span><div><em>NIVO ' + l + '</em><b>' + esc(b.name) + '</b><span><b class="r3-bpk">' + esc(b.perk) + '</b> Skupi 15 plavih tokena u trci i tapni bilo gde: 30 s te jedan udarac ne obara, a svaki token na boardu dodaje 2 s. Nivo boarda diže poene.</span></div></div>' +
       (own ? '<div class="r3-btns"><button type="button" class="r3-sel' + (sel ? ' on' : '') + '" id="r3Sel">' + (sel ? 'Izabran' : 'Izaberi') + '</button>' + cost + '</div>'
         : '<p class="r3-note center">' + ico('lock') + ' Dobija se na Pass nivou ' + tier + '.</p>') + '</div>', 'col');
     var sb = host.querySelector('#r3Sel'); if (sb) sb.onclick = function () { save(function (r2) { r2.board = id; }); UI.buzz(8); boardDetail(id); };
@@ -546,7 +546,6 @@ window.MM = window.MM || {};
       var t = h.pw[k]; if (!(t > 0)) return;
       w += '<div>' + ico(PW_IC[k]) + '<i><s style="width:' + Math.round(t / h.max[k] * 100) + '%"></s></i></div>';
     });
-    if (h.board > 0) w += '<div>' + ico('board') + '<i><s style="width:' + Math.round(h.board / h.max.board * 100) + '%"></s></i></div>';
     if (h.shield) w += '<div>' + ico('shield') + '<i><s style="width:100%"></s></i></div>';
     q('#r3W').innerHTML = w;
     var bd = q('#r3B');
@@ -579,15 +578,15 @@ window.MM = window.MM || {};
     if (n === 'tipdone') { if (tip) tip.hidden = true; UI.buzz(8); return; }
     if (n.indexOf('pw:') === 0) { var p = PW_TXT[n.slice(3)]; if (p) flash(p[1], p[0]); UI.buzz(10); }
     else if (n === 'btok') { /* tiho: puni se dugme */ }
-    else if (n === 'btokplus') { flash('+3 s board', 'btoken'); }
+    else if (n === 'btokplus') { /* +2 s, vidi se na dugmetu */ }
     else if (n === 'boardready') {
-      flash('Hoverboard spreman', 'board'); UI.buzz([10, 30, 10]);
-      if (run.tut && tip) { tip.hidden = false; tip.className = 'r3-tip board'; tip.innerHTML = '<b>Tapni dugme dole desno — hoverboard. Tokeni na boardu ga produžavaju.</b>'; setTimeout(function () { if (tip) tip.hidden = true; }, 4000); }
+      flash('Board spreman — tapni', 'board'); UI.buzz([10, 30, 10]);
+      if (run.tut && tip) { tip.hidden = false; tip.className = 'r3-tip board'; tip.innerHTML = '<b>Tapni bilo gde na ekranu — hoverboard!</b>'; setTimeout(function () { if (tip) tip.hidden = true; }, 4000); }
     }
     else if (n === 'stumble') { flash('Doom je iza tebe!', 'mask'); UI.buzz([20, 30, 20]); }
     else if (n === 'shield') { flash('Štit te spasao!', 'shield'); UI.buzz(30); }
     else if (n === 'boardbreak') { flash('Board te spasao!', 'board'); UI.buzz(30); }
-    else if (n === 'board') { flash('Hoverboard!', 'board'); UI.buzz(10); }
+    else if (n === 'board') { if (tip) tip.hidden = true; flash('Hoverboard!', 'board'); UI.buzz(10); }
     else if (n === 'smash') { flash('Hulk smash!', 'bolt'); UI.buzz(30); }
     else if (n === 'crash') UI.buzz([40, 30, 80]);
   }

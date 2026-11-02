@@ -17,7 +17,7 @@
      H      visoka kapija - provuci se (klizanje)
      X      zid - mora druga traka
      p      moc (magnet, let, x2, skok, stit)
-     k      board token (3 = hoverboard)
+     k      board token (15 = hoverboard)
 
    validate(deonica) proverava da iz SVAKE trake na pocetku postoji
    prolaz do kraja (pomeranje za traku traje 5 m, na krov se ide
@@ -56,13 +56,13 @@
   /* Tutorijal: prva trka. tip = sta treba da uradis (igra stane dok to ne uradis). */
   var TUT = { id: 'tutorijal', ime: 'Tutorijal', nivo: 0, duz: 230, redovi: [
     [26, '. X .'], [44, 'L L L'], [64, 'H H H'], [92, 'R28 R28 R28'],
-    [160, 'k k k'], [176, 'k k k'], [192, 'k k k']
+    [160, 'k k k'], [171, 'k k k'], [182, 'k k k'], [193, 'k k k'], [204, 'k k k']
   ], tips: [
     { d: 26, need: 'side', t: 'Prevuci levo ili desno' },
     { d: 44, need: 'up', t: 'Prevuci gore — skok' },
     { d: 64, need: 'down', t: 'Prevuci dole — klizanje' },
     { d: 92, need: 'none', t: 'Rampa vodi na krov voza!' },
-    { d: 160, need: 'none', t: 'Skupi 3 board tokena' }
+    { d: 152, need: 'none', t: 'Skupi 15 plavih tokena za hoverboard' }
   ] };
 
   /** Tokene pretvara u objekte: [{ lane, d, t: 'T'|'R'|'M'|'L'|'H'|'X'|'c'|'C'|'p'|'k', len, n }] */
