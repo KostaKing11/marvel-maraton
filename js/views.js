@@ -976,7 +976,7 @@ window.MM = window.MM || {};
     // Marvel Runner
     var R = MM.Runner, rc = R.charOf(s), fb = R.filmBonus(s), nUn = R.CHARS.filter(function (c) { return R.unlocked(c, s); }).length;
     out += '<button type="button" class="card rn-card" data-k="rn" data-a="runner">' +
-      '<span class="rn-ic"><img src="' + MM.Badges.dataUrl(Cat.get(rc.icon)) + '" alt=""></span>' +
+      '<span class="rn-ic"><img src="' + R.sprite(rc) + '" alt=""></span>' +
       '<span class="rn-ct"><em>NOVO · MARVEL RUNNER</em><b>Trči do Doomsdaya</b>' +
         '<span>' + nUn + '/' + R.CHARS.length + ' likova · bonus od filmova ×' + fb.mul.toFixed(2) + (g.best.runner ? ' · rekord ' + g.best.runner.toLocaleString('sr-RS') : '') + '</span></span>' +
       '<span class="rn-play">▶</span></button>';
@@ -1399,6 +1399,12 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.17', title: 'Novi Marvel Runner', big: false, items: [
+      '<b>Pravi likovi</b> — svih 13 junaka i Doom oslikani u Figmi, vide se s leđa dok trče.',
+      '<b>Pošteno</b> — uvek postoji slobodna traka do koje stižeš; nema više zida od vozova.',
+      '<b>Lepše</b> — šine, pragovi, pozadina iz mape, oslikani vozovi, barijere, novčići, iskre i plavi štit koji skupljaš za dodatni život.',
+      'Počinje sporije, a ubrzava postepeno.'
+    ] },
     { id: '2.16.1', title: 'Kviz: 250+ pitanja', big: false, items: [
       '<b>Marvel kviz sad ima preko 250 pitanja</b> — glumci, reditelji, negativci, kamenje, X-Meni, Netflix serije, Spider-Verse, Fantastic Four, Thunderbolts* i Doomsday.'
     ] },

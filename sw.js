@@ -4,10 +4,10 @@
    VAZNO: podigni CACHE verziju na svaki deploy, inace se
    korisnik zaglavi na staroj verziji app-a.
    ============================================================ */
-const CACHE = 'marvel-maraton-v78';
+const CACHE = 'marvel-maraton-v79';
 
 // App shell — cache-first. Isti ?v= broj kao u index.html.
-const V = '228';
+const V = '229';
 const SHELL = [
   './',
   './index.html',
@@ -29,6 +29,7 @@ const SHELL = [
   './data.json',
   './img/map/z1.jpg', './img/map/z2.jpg', './img/map/z3.jpg', './img/map/z4.jpg', './img/map/z5.jpg', './img/map/doom.webp',
   './fonts/bangers-latin-400-normal.woff2', './fonts/bangers-latin-ext-400-normal.woff2', './fonts/patrick-hand-latin-400-normal.woff2', './fonts/patrick-hand-latin-ext-400-normal.woff2',
+  './img/run/agent.webp', './img/run/iron.webp', './img/run/cap.webp', './img/run/thor.webp', './img/run/hulk.webp', './img/run/widow.webp', './img/run/spidey.webp', './img/run/panther.webp', './img/run/strange.webp', './img/run/ant.webp', './img/run/marvel.webp', './img/run/deadpool.webp', './img/run/doom.webp', './img/run/train.webp', './img/run/low.webp', './img/run/high.webp', './img/run/coin.webp', './img/run/shield.webp',
   './img/map/doomhead.jpg', './img/map/road.jpg', './img/map/sign.webp', './img/map/start.webp', './img/map/goal.webp', './img/map/gauntlet.webp',
   './img/map/stone-space.webp', './img/map/stone-mind.webp', './img/map/stone-reality.webp', './img/map/stone-power.webp', './img/map/stone-time.webp', './img/map/stone-soul.webp',
   './manifest.json',
