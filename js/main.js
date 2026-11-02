@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.20.0';
+MM.VERSION = '2.20.1';
 
 (function () {
   'use strict';
@@ -346,8 +346,10 @@ MM.VERSION = '2.20.0';
   }
 
   function openNews(focus) {
-    if (state().seenNews !== V.NEWS[0].id) Store.mutate(function (st) { st.seenNews = V.NEWS[0].id; });
-    UI.openSheet({ id: 'news', render: function () { return V.newsSheet(ctx(), focus); }, onClose: function () { setTimeout(checkNotice, 400); } });
+    function seen() { if (state().seenNews !== V.NEWS[0].id) Store.mutate(function (st) { st.seenNews = V.NEWS[0].id; }); }
+    // procitano tek kad zatvoris (ili posle 4 s gledanja), da osvezavanje ne pojede vest
+    var t = setTimeout(seen, 4000);
+    UI.openSheet({ id: 'news', render: function () { return V.newsSheet(ctx(), focus); }, onClose: function () { clearTimeout(t); seen(); setTimeout(checkNotice, 400); } });
   }
 
   /* ============================================================
@@ -1354,11 +1356,21 @@ MM.VERSION = '2.20.0';
 
   function registerSW() {
     if (!('serviceWorker' in navigator)) return;
-    var had = !!navigator.serviceWorker.controller, reloaded = false;
+    // Stranica uvek dolazi sa mreze (network-first), pa je posle update-a vec nova.
+    // Osvezi samo ako novi SW kaze da je verzija drugacija od ove stranice, i to
+    // tek kad aplikacija ode u pozadinu - da ne nestane "Sta je novo" ispred tebe.
+    var had = !!navigator.serviceWorker.controller, pending = false;
+    var mine = ((document.querySelector('script[src*="main.js"]') || {}).src || '').split('v=')[1] || '';
+    function reloadLater() {
+      if (pending) return; pending = true;
+      document.addEventListener('visibilitychange', function () { if (document.hidden) location.reload(); });
+    }
     navigator.serviceWorker.addEventListener('controllerchange', function () {
-      if (!had || reloaded) return;
-      reloaded = true;
-      location.reload();
+      if (!had) return;
+      var ctl = navigator.serviceWorker.controller; if (!ctl || !window.MessageChannel) return;
+      var ch = new MessageChannel();
+      ch.port1.onmessage = function (e) { if (e.data && String(e.data) !== mine) reloadLater(); };
+      ctl.postMessage('ver', [ch.port2]);
     });
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
       .then(function (reg) { reg.update(); })

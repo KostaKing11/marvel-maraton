@@ -4,10 +4,10 @@
    VAZNO: podigni CACHE verziju na svaki deploy, inace se
    korisnik zaglavi na staroj verziji app-a.
    ============================================================ */
-const CACHE = 'marvel-maraton-v83';
+const CACHE = 'marvel-maraton-v84';
 
 // App shell — cache-first. Isti ?v= broj kao u index.html.
-const V = '233';
+const V = '234';
 const SHELL = [
   './',
   './index.html',
@@ -57,6 +57,11 @@ self.addEventListener('install', (e) => {
       .then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' }))))
       .then(() => self.skipWaiting())
   );
+});
+
+// stranica pita koja je verzija (da ne osvezava bez potrebe)
+self.addEventListener('message', (e) => {
+  if (e.data === 'ver' && e.ports && e.ports[0]) e.ports[0].postMessage(V);
 });
 
 self.addEventListener('activate', (e) => {

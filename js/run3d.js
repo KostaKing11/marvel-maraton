@@ -366,7 +366,9 @@ window.MM = window.MM || {};
       objs: [], secEnd: -30, lastSec: [], tips: [], freeze: null, tut: !!opts.tutorial, landT: 0
     };
     var up = opts.up || {}, perk = opts.perk || {};
-    var BASE = { magnet: 10, jet: 7, x2: 12, jump: 10, board: 30 }, METER = 8;
+    var BP = opts.boardPerk || '';           // mala moc boarda
+    var BASE = { magnet: 10, jet: 7, x2: 12, jump: 10, board: BP === 'time' ? 35 : 30 }, METER = BP === 'meter' ? 6 : 8;
+    if (BP === 'start') S.meter = METER;
     function dur(k) { return BASE[k] * (1 + .2 * (up[k] || 0)) * (perk[k] || 1); }
 
     /* ---------- objekti ---------- */
@@ -528,7 +530,7 @@ window.MM = window.MM || {};
       }
       var onG = S.y <= S.ground + .06;
       if (dir === 'up' && onG && S.pw.jet <= 0) {
-        S.vy = S.pw.jump > 0 ? 20 : 14.2; S.roll = 0; S.stats.jumps++;
+        S.vy = S.pw.jump > 0 || (BP === 'jump' && S.board > 0) ? 20 : 14.2; S.roll = 0; S.stats.jumps++;
         hero.play('Jump_Start', { once: true, ts: 2.4, fade: .06, restart: true }); S.anim = 'jump'; S.animT = .3;
       }
       if (dir === 'down' && S.pw.jet <= 0) {
@@ -539,7 +541,7 @@ window.MM = window.MM || {};
     }
     function useBoard() {
       if (S.over || S.paused || S.board > 0 || S.meter < METER) return;
-      S.meter = 0; S.board = dur('board'); board.visible = true; ev('board');
+      S.meter = 0; S.board = dur('board'); S.boardHits = BP === 'hits' ? 2 : 1; board.visible = true; ev('board');
     }
     var sx = 0, sy = 0, swiped = false;
     function onDown(e) { sx = e.clientX; sy = e.clientY; swiped = false; }
@@ -581,7 +583,7 @@ window.MM = window.MM || {};
     function crash(why, obj) {
       if (S.over) return;
       if (S.shield) { S.shield = 0; S.invuln = 1.4; bubble.visible = false; clearNear(); ev('shield'); return; }
-      if (S.board > 0) { S.board = 0; board.visible = false; S.invuln = 1.4; clearNear(); ev('boardbreak'); return; }
+      if (S.board > 0) { S.boardHits = (S.boardHits || 1) - 1; if (S.boardHits <= 0) { S.board = 0; board.visible = false; } S.invuln = 1.4; clearNear(); ev('boardbreak'); return; }
       if (S.smash && obj && (obj.t === 'low' || obj.t === 'high')) { S.smash = false; scene.remove(obj.m); obj.gone = true; ev('smash'); S.invuln = 0; stumble(); return; }
       S.over = true; S.why = why || 'Udario si!'; S.doomT = 3; ev('crash');
       hero.play('Death01', { once: true, ts: 1.4, fade: .08, restart: true }); S.anim = 'dead';
@@ -679,7 +681,7 @@ window.MM = window.MM || {};
       if (S.roll > 0) S.roll -= dt;
       if (S.landT > 0) S.landT -= dt;
 
-      var magnetOn = S.pw.magnet > 0 || S.pw.jet > 0;
+      var magnetOn = S.pw.magnet > 0 || S.pw.jet > 0 || (BP === 'magnet' && S.board > 0);
       S.objs = S.objs.filter(function (o) {
         if (o.gone) return false;
         o.m.position.z += dz + (o.v ? o.v * dt : 0);
@@ -695,7 +697,7 @@ window.MM = window.MM || {};
           if (Math.abs(p.z) < .9 && Math.abs(p.x - S.x) < 1 && Math.abs(p.y - (S.y + 1)) < 1.4) {
             scene.remove(o.m);
             if (o.t === 'coin') {
-              S.coinAcc += (x2 ? 2 : 1) * (opts.coinMul || 1); var whole = Math.floor(S.coinAcc); S.coins += whole; S.coinAcc -= whole;
+              S.coinAcc += (x2 ? 2 : 1) * (BP === 'coins' && S.board > 0 ? 2 : 1) * (opts.coinMul || 1); var whole = Math.floor(S.coinAcc); S.coins += whole; S.coinAcc -= whole;
               S.stats.coins++; S.score += 5 * mul; pop(p.x, p.y, p.z);
             } else { take(o.kind); pop(p.x, p.y, p.z, PW_COL[o.kind]); }
             return false;

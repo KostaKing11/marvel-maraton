@@ -1841,6 +1841,8 @@ body.no-games #tabs .tab[data-tab="igre"] { display: none !important; }
 .r3-upa { position: absolute; top: 8px; left: 8px; width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--green); animation: r3Pulse 1.2s ease-in-out infinite; }
 .r3-upa svg { width: 16px; height: 16px; fill: #04210f; }
 .r3-card > b { padding: 0 10px; font-size: 14px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.r3-bp { padding: 0 10px; font-size: 11px; line-height: 1.25; color: var(--amber); min-height: 28px; }
+.r3-bpk { display: block; color: var(--amber); font-weight: 800; margin-bottom: 3px; }
 .r3-lb { display: flex; align-items: center; gap: 6px; padding: 0 10px; font-size: 11.5px; color: var(--mu); min-width: 0; }
 .r3-lb > i { font-style: normal; font-weight: 900; color: var(--tx); flex: none; }
 .r3-lb s { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }

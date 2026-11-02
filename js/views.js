@@ -1415,6 +1415,10 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.20.1', title: 'Boardovi imaju moći', big: false, items: [
+      '<b>Svaki board ima malu moć</b> — Klasik traje duže, Mjolnir super skok, Gama magnet, Vibranijum 2 udarca, Kosmik dupli novčići, Stark se brže puni, Doom kreće pun.',
+      '<b>Popravljeno</b> — aplikacija se više ne osvežava sama posle update-a, pa „Šta je novo“ ne nestane dok ga čitaš.'
+    ] },
     { id: '2.20', title: 'Runner: board, let i teža staza', big: true, items: [
       '<b>Hoverboard kao u SSC</b> — novi board sa crtežom i tragom, junak čuči i surfuje. Tokeni dolaze u grupi od 5; treba ti 8, a svaki token dok si na boardu dodaje 3 s.',
       '<b>Mjolnir let</b> — junak leti kao Supermen, kamera ide gore, novčići u vazduhu vijugaju po trakama i nestanu kad let prestane.',

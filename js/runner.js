@@ -59,13 +59,14 @@ window.MM = window.MM || {};
 
   /* ---------------- boardovi ---------------- */
   var BOARDS = [
-    { id: 'klasik', name: 'Klasik', c1: '#e62429', c2: '#ffd36b' },
-    { id: 'mjolnir', name: 'Mjolnir', c1: '#8f9cb0', c2: '#5fd3ff' },
-    { id: 'gama', name: 'Gama', c1: '#2f8f3a', c2: '#9dff6b' },
-    { id: 'vibra', name: 'Vibranijum', c1: '#2a1d4a', c2: '#c46bff' },
-    { id: 'kosmik', name: 'Kosmik', c1: '#1b3a8f', c2: '#ffd23f' },
-    { id: 'stark', name: 'Stark', c1: '#b3141b', c2: '#ffcf3f' },
-    { id: 'doom', name: 'Doom', c1: '#2e4a2e', c2: '#9dffbc' }
+    // pp: mala moc boarda (run3d.js); perk: opis
+    { id: 'klasik', name: 'Klasik', c1: '#e62429', c2: '#ffd36b', pp: 'time', perk: 'Traje 5 s duže.' },
+    { id: 'mjolnir', name: 'Mjolnir', c1: '#8f9cb0', c2: '#5fd3ff', pp: 'jump', perk: 'Super skok dok voziš — pravo na krov voza.' },
+    { id: 'gama', name: 'Gama', c1: '#2f8f3a', c2: '#9dff6b', pp: 'magnet', perk: 'Magnet dok voziš.' },
+    { id: 'vibra', name: 'Vibranijum', c1: '#2a1d4a', c2: '#c46bff', pp: 'hits', perk: 'Izdrži 2 udarca umesto jednog.' },
+    { id: 'kosmik', name: 'Kosmik', c1: '#1b3a8f', c2: '#ffd23f', pp: 'coins', perk: 'Dupli novčići dok voziš.' },
+    { id: 'stark', name: 'Stark', c1: '#b3141b', c2: '#ffcf3f', pp: 'meter', perk: 'Puni se sa 6 tokena umesto 8.' },
+    { id: 'doom', name: 'Doom', c1: '#2e4a2e', c2: '#9dffbc', pp: 'start', perk: 'Kreneš sa punim boardom.' }
   ];
   function boardById(id) { return BOARDS.filter(function (b) { return b.id === id; })[0] || BOARDS[0]; }
 
@@ -327,7 +328,7 @@ window.MM = window.MM || {};
           '<span class="r3-ci"><span class="r3-deck"></span></span>' +
           (own ? '<em class="r3-x">×' + bMul(l).toFixed(1) + '</em>' : ico('lock', 'r3-lk')) +
           (own && canUpB(r, b.id) ? '<i class="r3-upa">' + SVG.up + '</i>' : '') +
-          '<b>' + esc(b.name) + '</b>' +
+          '<b>' + esc(b.name) + '</b><span class="r3-bp">' + esc(b.perk) + '</span>' +
           (own ? '<span class="r3-lb"><i>Nv. ' + l + '</i>' + (l < MAXL ? '<s>' + ico('btoken') + '<u><q style="width:' + Math.min(100, r.btok / need * 100) + '%"></q></u>' + need + '</s>' : '<s>MAX</s>') + '</span>'
             : '<span class="r3-lb"><s>Pass nivo ' + tier + '</s></span>') + '</button>';
       });
@@ -377,7 +378,7 @@ window.MM = window.MM || {};
       '<span>' + ico('coin') + fmt(B_COIN[l - 1]) + ico('btoken') + fmt(r.btok) + '/' + B_TOK[l - 1] + '</span></button>' : '<p class="r3-max">Najviši nivo</p>';
     frame('detail', b.name,
       '<div class="r3-det"><div class="r3-stage big" id="r3Stage" style="--b1:' + b.c1 + ';--b2:' + b.c2 + '"><span class="r3-deck big"></span></div>' +
-      '<div class="r3-dl"><span class="r3-hex">×' + bMul(l).toFixed(1) + '</span><div><em>NIVO ' + l + '</em><b>' + esc(b.name) + '</b><span>Skupi 8 plavih tokena u trci i tapni dugme: 30 s te jedan udarac ne obara, a svaki token na boardu dodaje 3 s. Nivo boarda diže poene.</span></div></div>' +
+      '<div class="r3-dl"><span class="r3-hex">×' + bMul(l).toFixed(1) + '</span><div><em>NIVO ' + l + '</em><b>' + esc(b.name) + '</b><span><b class="r3-bpk">' + esc(b.perk) + '</b> Skupi 8 plavih tokena u trci i tapni dugme: 30 s te jedan udarac ne obara, a svaki token na boardu dodaje 3 s. Nivo boarda diže poene.</span></div></div>' +
       (own ? '<div class="r3-btns"><button type="button" class="r3-sel' + (sel ? ' on' : '') + '" id="r3Sel">' + (sel ? 'Izabran' : 'Izaberi') + '</button>' + cost + '</div>'
         : '<p class="r3-note center">' + ico('lock') + ' Dobija se na Pass nivou ' + tier + '.</p>') + '</div>', 'col');
     var sb = host.querySelector('#r3Sel'); if (sb) sb.onclick = function () { save(function (r2) { r2.board = id; }); UI.buzz(8); boardDetail(id); };
@@ -519,7 +520,7 @@ window.MM = window.MM || {};
         '<div class="r3-tip" id="r3Tip" hidden></div></div>';
       game = MM.Run3D.create(host.querySelector('#r3G'), {
         hero: c.id, mul: mul, coinMul: c.p.coin || 1, accel: c.p.accel || 1, pwRate: c.p.pwRate || 1, smash: !!c.p.smash,
-        up: r.up, perk: c.p, board: { c1: b.c1, c2: b.c2 }, tutorial: tutorial,
+        up: r.up, perk: c.p, board: { c1: b.c1, c2: b.c2 }, boardPerk: b.pp, tutorial: tutorial,
         onHud: hud, onEvent: onEvent, onEnd: crashed, onHidden: pause
       });
       host.querySelector('#r3P').onclick = pause;
