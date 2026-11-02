@@ -194,6 +194,22 @@ service cloud.firestore {
       allow delete: if request.auth != null && request.auth.uid == resource.data.uid;
     }
 
+    // Kodovi za nagrade: pravi ih samo Kosta, svi prijavljeni ih koriste
+    match /codes/{code} {
+      allow read: if request.auth != null;
+      allow create, delete: if request.auth != null
+        && request.auth.token.email == 'kostabogdanic@gmail.com';
+      allow update: if request.auth != null && (
+        request.auth.token.email == 'kostabogdanic@gmail.com' || (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['used', 'usedBy'])
+          && !(request.auth.uid in resource.data.usedBy)
+          && request.auth.uid in request.resource.data.usedBy
+          && request.resource.data.used == resource.data.used + 1
+          && (resource.data.max == 0 || resource.data.used < resource.data.max)
+        )
+      );
+    }
+
     match /{document=**} { allow read, write: if false; }
   }
 }
