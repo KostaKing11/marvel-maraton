@@ -244,7 +244,7 @@ window.MM = window.MM || {};
   }
   function wire() {
     each('[data-v]', function (b) { b.onclick = function () { UI.buzz(5); go(b.getAttribute('data-v')); }; });
-    each('[data-back]', function (b) { b.onclick = function () { back(); }; });
+    each('[data-back]', function (b) { b.onclick = function () { if (!back()) UI.closeTop(); }; });
   }
   function each(sel, fn) { Array.prototype.forEach.call(host.querySelectorAll(sel), fn); }
   function go(v) { ({ home: home, col: collection, pass: passView, miss: missView, shop: shopView })[v](); }
@@ -285,9 +285,7 @@ window.MM = window.MM || {};
         '</div>' +
         '<div class="r3-stage" id="r3Stage"><img class="r3-sprite" src="' + sprite(c) + '" alt=""></div>' +
         '<div class="r3-who">' +
-          '<button type="button" class="r3-arr" data-sw="-1" aria-label="Prethodni"' + (un.length < 2 ? ' hidden' : '') + '>' + SVG.left + '</button>' +
           '<div><b>' + esc(c.name) + '</b><span>Nivo ' + (r.hlv[c.id] || 1) + ' · board ' + esc(b.name) + '</span></div>' +
-          '<button type="button" class="r3-arr" data-sw="1" aria-label="Sledeći"' + (un.length < 2 ? ' hidden' : '') + '>' + SVG.right + '</button>' +
         '</div>' +
         '<div class="r3-chips"><span>' + ico('trophy') + '<b>' + fmt(best) + '</b></span><span><b>×' + mul.toFixed(2) + '</b> poeni</span></div>' +
         '<button type="button" class="r3-go" id="r3Go">' + (r.tut ? 'IGRAJ' : 'IGRAJ · TUTORIJAL') + '</button>' +
@@ -295,17 +293,6 @@ window.MM = window.MM || {};
       '</div>');
     host.querySelector('#r3Go').onclick = function () { start(!r.tut); };
     var tb = host.querySelector('#r3Tut'); if (tb) tb.onclick = function () { start(true); };
-    each('[data-sw]', function (bt) {
-      bt.onclick = function () {
-        var i = un.indexOf(c), n = un[(i + +bt.getAttribute('data-sw') + un.length) % un.length];
-        MM.Store.mutate(function (st) { st.runnerChar = n.id; }); UI.buzz(6);
-        if (pv) {
-          pv.set(n.id); c = n;
-          host.querySelector('.r3-who b').textContent = n.name;
-          host.querySelector('.r3-who span').textContent = 'Nivo ' + (R(MM.Store.get()).hlv[n.id] || 1) + ' · board ' + b.name;
-        } else home();
-      };
-    });
     startPreview(host.querySelector('#r3Stage'), { hero: c.id, board: b });
   }
 
