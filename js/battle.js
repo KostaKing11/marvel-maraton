@@ -34,10 +34,10 @@ window.MM = window.MM || {};
     return function () { stop(); };
   }
 
-  async function create() {
+  async function create(extra) {
     var f = await fs(), m = me(); if (!f || !m.uid) throw new Error('login');
     var id = 'B' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-    await f.setDoc(f.doc(f.db, 'battles', id), { host: m.uid, hostName: m.name, state: 'lobby', seed: Math.floor(Math.random() * 4e9), at: Date.now() });
+    await f.setDoc(f.doc(f.db, 'battles', id), Object.assign({ host: m.uid, hostName: m.name, state: 'lobby', seed: Math.floor(Math.random() * 4e9), at: Date.now() }, extra || {}));
     await join(id);
     return id;
   }
@@ -61,9 +61,9 @@ window.MM = window.MM || {};
     return function () { stops.forEach(function (s) { s(); }); };
   }
 
-  async function start(id) {
+  async function start(id, at) {
     var f = await fs(); if (!f) return;
-    await f.updateDoc(f.doc(f.db, 'battles', id), { state: 'run', startAt: Date.now() });
+    await f.updateDoc(f.doc(f.db, 'battles', id), { state: 'run', startAt: at || Date.now() });
   }
   async function report(id, data) {
     var f = await fs(), uid = MM.Store.uid(); if (!f || !uid) return;

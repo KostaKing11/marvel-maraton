@@ -1052,6 +1052,10 @@ window.MM = window.MM || {};
         (g.best.runner ? '<span class="rnb-rec">🏆 ' + g.best.runner.toLocaleString('sr-RS') + '</span>' : '') +
       '</span><span class="rnb-go">TRČI ▶</span></button>';
 
+    // kviz uzivo sa ekipom
+    out += '<button type="button" class="lq-card" data-k="lq" data-a="livequiz"><span class="lqc-bolt">⚡</span><span class="lqc-t"><em>NOVO · SA EKIPOM</em><b>Kviz uživo</b>' +
+      '<i>Svi u isto vreme · brži tačan = više poena · pobednik dobija kutiju</i></span><span class="lqc-go">IGRAJ</span></button>';
+
     // mini igre: svaka ima svoj meni
     var ids = Object.keys(G.REG);
     out += '<section class="card" data-k="gxlist"><div class="card-h"><h2>Mini igre</h2><span class="muted">20 nivoa + beskonačno</span></div><div class="mg-grid">';
@@ -1500,6 +1504,14 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.25', title: 'Kviz uživo, teme i novi junaci', big: true, items: [
+      '<b>Kviz uživo</b> — Igre → Kviz uživo. Napravi kviz, ekipa uđe, ti klikneš KRENI. Svi dobijaju ista pitanja u isto vreme, <b>brži tačan odgovor = više poena</b>. Posle svakog pitanja poredak, na kraju podijum. Pobednik dobija kutiju.',
+      '<b>Podijumi</b> — rang liste su sada pravi podijumi (1, 2, 3), ostali ispod. Ekipa, igre (Nivo · Runner · Beskonačno) i nova lista <b>Najbolje ocenjeno</b> sa posterima.',
+      '<b>Beskonačno, kako treba</b> — Kamenje: jedan kamen, pa dva, pa tri… niz raste za po jedan. Kviz: pitanja do prve greške. Uhvati Dooma: svaki pogodak dodaje vreme, preživi što duže.',
+      '<b>Teme</b> — 8 tema boja (Wakanda, Asgard, Kosmos, Talokan, Gama, Multiverzum, Doomsday…). Otključavaju se gledanjem i igrom. Ja → Izgled, sada i manji i lepši.',
+      '<b>Runner</b> — 5 novih junaka: Loki, Scarlet Witch, Wolverine, Star-Lord i Shang-Chi (otključaš ih gledanjem njihovih filmova). Novi boardovi <b>Bifrost</b> i <b>Kvant</b> u kutijama.',
+      '<b>Nove moći</b> — Kamen vremena (sve se uspori) i Kamen moći (ruši sve prepreke, i vozove). Bolje animacije: salto sa Spider skokom, doskok, prašina, linije brzine i usporen snimak kad padneš.'
+    ], cta: { a: 'livequiz', label: 'Kviz uživo' } },
     { id: '2.24', title: 'Kviz posle filma + zvuk', big: true, items: [
       '<b>Kviz posle filma</b> — kad odgledaš film ili celu sezonu, dobiješ do 5 pitanja o njemu (15 sekundi po pitanju). Ima ih za preko 120 naslova.',
       'Svaki tačan odgovor = <b>40 novčića + 50 Pass poena</b> u Marvel Runneru. Sve tačno = <b>misteriozna kutija</b>. Kviz se radi jednom, a možeš i kasnije iz stranice filma.',
@@ -1716,7 +1728,7 @@ window.MM = window.MM || {};
   }
 
   MM.Views = {
-    danas: danas, plan: planView, igre: igre, gamesOf: gamesOf, gamePeople: gamePeople, teamBest: teamBest, ekipa: ekipa, katalog: katalog, ja: ja,
+    danas: danas, plan: planView, igre: igre, gamesOf: gamesOf, podium: podium, gamePeople: gamePeople, teamBest: teamBest, ekipa: ekipa, katalog: katalog, ja: ja,
     itemSheet: itemSheet, customSheet: customSheet, filterSheet: filterSheet, rateSheet: rateSheet, profileSheet: profileSheet,
     welcomeSheet: welcomeSheet, chooseSheet: chooseSheet, newsSheet: newsSheet, countdownSheet: countdownSheet, epAvg: epAvg, ogCountdown: ogCountdown, crew: crew, NEWS: NEWS, recapSheet: recapSheet, mondayOf: mondayOf, streakSheet: streakSheet, doomSheet: doomSheet,
     clock: clock, countdownParts: countdownParts, ICON: ICON, scopeName: scopeName

@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.24.0';
+MM.VERSION = '2.25.0';
 
 (function () {
   'use strict';
@@ -728,6 +728,7 @@ MM.VERSION = '2.24.0';
     'rate': function (el) { openRate(el.getAttribute('data-id'), 0); },
     'quiz': function (el) { MM.Quiz.open(el.getAttribute('data-id')); },
     'finale': function () { if (MM.Finale) MM.Finale.open(); },
+    'livequiz': function () { MM.LiveQuiz.open(); },
     'runner': function () {
       MM.Runner.open(function (res) {
         // XP: 1 na svakih 120 m, najvise 40 po trci

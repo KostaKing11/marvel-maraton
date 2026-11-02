@@ -802,5 +802,5 @@ window.MM = window.MM || {};
     el.addEventListener('click', function (e) { if (e.target === el) close(); });
   }
 
-  MM.Games = { open: open, REG: REG, lvlOf: lvlOf, xpFor: xpFor, TITLES: TITLES, levelUp: levelUp };
+  MM.Games = { open: open, REG: REG, lvlOf: lvlOf, xpFor: xpFor, TITLES: TITLES, levelUp: levelUp, QUIZ: QUIZ, confetti: confetti };
 })();

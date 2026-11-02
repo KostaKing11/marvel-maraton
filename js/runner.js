@@ -772,6 +772,7 @@ window.MM = window.MM || {};
         .catch(function () { UI.toast('Ne mogu da napravim borbu (internet ili prijava).'); battleView(); });
     };
     bStop = MM.Battle.watchLobbies(function (list) {
+      list = list.filter(function (b) { return b.type !== 'quiz'; });
       var el = host && host.querySelector('#r3BL'); if (!el) return;
       el.innerHTML = list.length ? list.map(function (b) {
         return '<div class="r3-row">' + ico('mask', 'big') + '<div class="r3-rt"><b>Borba: ' + esc(b.hostName || '?') + '</b><span>čeka igrače · ' + agoTxt(b.at) + '</span></div>' +
