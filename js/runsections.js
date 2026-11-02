@@ -16,6 +16,9 @@
      L      niska barijera - skoci
      H      visoka kapija - provuci se (klizanje)
      X      zid - mora druga traka
+     G      Doombot (robot na sinama) - mora druga traka
+     E      niski laser - skoci
+     U      visoki laser - provuci se (klizanje)
      p      moc (magnet, let, x2, skok, stit)
      k      board token (15 = hoverboard)
 
@@ -50,7 +53,18 @@
     /* ---------- nivo 3 ---------- */
     { id: 'ludnica', ime: 'Ludnica', nivo: 3, duz: 72, redovi: [[16, 'M24 R28 M24']] },
     { id: 'slalom', ime: 'Slalom', nivo: 3, duz: 82, redovi: [[10, 'X . X'], [26, '. X .'], [42, 'X . X'], [58, '. X .'], [74, 'X . X']] },
-    { id: 'zamka', ime: 'Zamka', nivo: 3, duz: 70, redovi: [[12, 'T32 L T32'], [26, '. H .'], [46, 'X . M20']] }
+    { id: 'zamka', ime: 'Zamka', nivo: 3, duz: 70, redovi: [[12, 'T32 L T32'], [26, '. H .'], [46, 'X . M20']] },
+    /* ---------- nove (Doombotovi i laseri) ---------- */
+    { id: 'doombotovi', ime: 'Doombotovi', nivo: 0, duz: 50, redovi: [[12, 'G . G'], [12, '. c .'], [32, '. G .'], [32, 'c . c']] },
+    { id: 'laseri', ime: 'Laseri', nivo: 0, duz: 50, redovi: [[12, 'E E E'], [12, 'C C C'], [30, 'U U U']] },
+    { id: 'patrola', ime: 'Patrola', nivo: 1, duz: 64, redovi: [[12, 'G T28 .'], [12, '. . c'], [46, '. U .'], [54, '. . G']] },
+    { id: 'laserski-tunel', ime: 'Laserski tunel', nivo: 1, duz: 60, redovi: [[10, 'T40 . T40'], [18, '. E .'], [28, '. U .'], [38, '. E .']] },
+    { id: 'kontrolni-punkt', ime: 'Kontrolni punkt', nivo: 1, duz: 56, redovi: [[14, 'G U G'], [34, 'E G E']] },
+    { id: 'doomova-vojska', ime: 'Doomova vojska', nivo: 2, duz: 80, redovi: [[10, 'G . G'], [24, '. G .'], [38, 'G . G'], [52, '. G .'], [66, 'G . G']] },
+    { id: 'krov-i-laser', ime: 'Krov i laser', nivo: 2, duz: 72, redovi: [[12, 'R28 G T24'], [12, '. . .'], [48, 'U . G']] },
+    { id: 'mesavina', ime: 'Mešavina', nivo: 2, duz: 74, redovi: [[12, 'E T24 U'], [48, 'G . M20'], [64, '. E .']] },
+    { id: 'tvrdjava', ime: 'Tvrđava', nivo: 3, duz: 78, redovi: [[14, 'T32 R32 T32'], [56, 'G . G'], [66, '. U .']] },
+    { id: 'doomov-dvor', ime: 'Doomov dvor', nivo: 3, duz: 84, redovi: [[12, 'M24 . G'], [38, 'G E .'], [54, '. U G'], [66, 'G . M14']] }
   ];
 
   /* Tutorijal: prva trka. tip = sta treba da uradis (igra stane dok to ne uradis). */
@@ -92,7 +106,7 @@
       var a, b, m;
       if (o.t === 'T' || o.t === 'M') { a = o.d; b = o.d + o.len; for (m = a; m <= b && m <= L; m++) ground[o.lane][m] = false; for (m = a; m <= b && m <= L; m++) roof[o.lane][m] = 'hop'; }
       if (o.t === 'R') { a = o.d + 7; b = a + o.len; for (m = a; m <= b && m <= L; m++) { ground[o.lane][m] = 'ramp'; roof[o.lane][m] = true; } }
-      if (o.t === 'X') { for (m = Math.max(0, o.d - 1); m <= o.d + 1; m++) ground[o.lane][m] = false; }
+      if (o.t === 'X' || o.t === 'G') { for (m = Math.max(0, o.d - 1); m <= o.d + 1; m++) ground[o.lane][m] = false; }
     });
     // stanje: [traka][0 zemlja, 1 krov]; prolaz po metrima
     function okAt(l, lv, m) { return lv ? !!roof[l][m] : ground[l][m] !== false; }

@@ -1875,6 +1875,31 @@ body.no-games #tabs .tab[data-tab="igre"] { display: none !important; }
   background: linear-gradient(90deg, var(--b1), var(--b1) 38%, var(--b2) 38% 62%, var(--b1) 62%); box-shadow: 0 0 24px var(--b2), inset 0 -5px 0 rgba(0, 0, 0, .3); }
 .r3-deck.big { position: absolute; left: 50%; top: 50%; width: 200px; height: 48px; margin: -24px 0 0 -100px; }
 .r3-deck.sm { width: 46px; height: 13px; margin: 0; flex: none; }
+/* borba sa ekipom */
+.r3-battle { display: flex; align-items: center; gap: 10px; padding: 10px 14px 10px 8px; border-radius: 18px; background: var(--s1); border: 1px solid rgba(230, 36, 41, .45); text-align: left; }
+.r3-battle .ri { width: 42px; height: 42px; }
+.r3-battle span { display: flex; flex-direction: column; } .r3-battle b { font-size: 15px; font-weight: 900; } .r3-battle i { font-style: normal; font-size: 11.5px; color: var(--mu); }
+.r3-bwrap { display: flex; flex-direction: column; gap: 10px; }
+.r3-bhero { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 20px; background: radial-gradient(100% 100% at 0% 0%, rgba(230, 36, 41, .2), transparent 70%), var(--s1); border: 1px solid var(--line); }
+.r3-bhero .ri.huge { width: 64px; height: 64px; }
+.r3-bhero > div { display: flex; flex-direction: column; gap: 3px; } .r3-bhero b { font-size: 16px; font-weight: 900; } .r3-bhero span { font-size: 12.5px; color: var(--mu); }
+.r3-count b { font-size: 120px; font-weight: 900; color: var(--red); animation: r3Pop .6s ease; } .r3-count span { color: var(--mu); font-weight: 800; }
+.r3-bstand { position: absolute; right: 12px; top: calc(var(--safeT) + 62px); min-width: 140px; max-width: 46%; display: flex; flex-direction: column; gap: 3px; padding: 7px 9px; border-radius: 14px; background: rgba(8, 8, 11, .72); pointer-events: none; }
+.r3-bstand em { font-style: normal; font-size: 10.5px; font-weight: 900; letter-spacing: 1px; color: var(--red2); text-transform: uppercase; }
+.r3-bstand div { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #fff; }
+.r3-bstand div i { font-style: normal; font-weight: 900; color: var(--amber); min-width: 12px; }
+.r3-bstand div b { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.r3-bstand div span { font-variant-numeric: tabular-nums; color: #cfd3e0; }
+.r3-bstand div.dead { opacity: .45; text-decoration: line-through; }
+.r3-bstand div.me b { color: var(--amber); }
+.r3-bstand.big { position: static; max-width: none; background: var(--s1); border: 1px solid var(--line); padding: 12px; }
+.r3-bstand.big div { font-size: 14px; padding: 3px 0; }
+.r3-bwin { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 18px; border-radius: 22px; background: radial-gradient(80% 80% at 50% 0%, rgba(245, 184, 61, .25), transparent), var(--s1); border: 1px solid rgba(245, 184, 61, .5); }
+.r3-bwin em { font-style: normal; font-size: 12px; font-weight: 900; letter-spacing: 2.5px; color: var(--amber); }
+.r3-bwin b { font-size: 28px; font-weight: 900; } .r3-bwin span { color: var(--mu); }
+.r3-tn2 { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--s2); font-weight: 900; flex: none; }
+.r3-rec.center { align-self: center; }
+
 /* tajne kartice, strip board, kutije */
 .r3-card.secret .r3-ci { background: radial-gradient(70% 60% at 50% 60%, rgba(245, 184, 61, .22), transparent), var(--s2); align-items: center; }
 .r3-q { font-size: 64px; font-weight: 900; color: var(--amber); text-shadow: 0 0 22px rgba(245, 184, 61, .6); }

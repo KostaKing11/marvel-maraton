@@ -1423,6 +1423,12 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.23', title: 'Borba sa ekipom', big: true, items: [
+      '<b>Borba sa ekipom</b> — u Runneru klikni „Borba sa ekipom“, napravi borbu i javi ekipi. Ko uđe, čeka; ti klikneš KRENI. Svi trče <b>istu stazu</b>, a pobeđuje ko <b>poslednji padne</b>.',
+      'U borbi nema novčića, moći likova ni nastavka — fer za sve. Uživo vidiš ko je još živ i ko je dokle stigao.',
+      '<b>Nove prepreke</b> — Doombotovi stoje na šinama (samo druga traka) i crveni laseri (skoči ili se provuci). 10 novih deonica.',
+      '<b>Zone</b> — posle svakih 1.000 m staza se menja: dnevni grad, noćni grad, pa Doomsday ruševine pod crvenim nebom.'
+    ], cta: { a: 'runner', label: 'Igraj' } },
     { id: '2.22', title: 'Boardovi iz kutija', big: false, items: [
       '<b>Doom board</b> je sada samo finale Passa (nivo 40).',
       '<b>Ostali boardovi</b> (Mjolnir, Gama, Vibranijum, Kosmik, Stark) ispadaju iz misterioznih kutija. Na mestima u Passu gde su bili sada su kutije.',

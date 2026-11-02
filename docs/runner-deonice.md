@@ -28,6 +28,9 @@ Sve deonice su u `js/runsections.js`.
 | `L` | niska barijera | skok |
 | `H` | visoka kapija | klizanje |
 | `X` | zid (STOP) | samo druga traka |
+| `G` | Doombot na šinama | samo druga traka |
+| `E` | nizak laser | skok |
+| `U` | visok laser | klizanje |
 | `p` | moć (magnet, let, ×2, skok, štit) | — |
 | `k` | plavi board token | — |
 

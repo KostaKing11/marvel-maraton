@@ -35,12 +35,29 @@ window.MM = window.MM || {};
     if (repeat) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(repeat[0], repeat[1]); }
     return t;
   }
+  /* Zone staze: posle svakih 1.000 m menja se izgled (grad -> noc -> Doomsday -> ...) */
+  var ZONES = [
+    { name: 'Grad', ico: 'mask', sky: ['#2f6fe0', '#6fb2f5', '#bfe0ff', '#f3e7d4'], fog: '#e9e6df', hemi: 1, sun: 1, cloud: '#ffffff',
+      fac: ['#d9825a', '#e6c08f', '#82a9bb', '#c25a50', '#ecc970', '#9a78b3', '#7fb48c'], lit: .2 },
+    { name: 'Noćni grad', ico: 'badge', sky: ['#060a24', '#141c4a', '#2c2f6a', '#5a4a7a'], fog: '#2a2d55', hemi: .55, sun: .3, cloud: '#3a3f6a',
+      fac: ['#3a3550', '#2c3a52', '#4a3a3a', '#2f4048', '#463c5a'], lit: .55 },
+    { name: 'Doomsday', ico: 'bolt', sky: ['#1a0806', '#5a1a0e', '#b5401a', '#f09a4a'], fog: '#8a4a30', hemi: .8, sun: .85, cloud: '#c0704a',
+      fac: ['#5a524c', '#6a5e52', '#4a4642', '#76685a'], lit: .08, ruin: true }
+  ];
+  var skyCv = null;
   function skyTex() {
-    return canvasTex(16, 512, function (g, w, h) {
-      var gr = g.createLinearGradient(0, 0, 0, h);
-      gr.addColorStop(0, '#2f6fe0'); gr.addColorStop(.45, '#6fb2f5'); gr.addColorStop(.75, '#bfe0ff'); gr.addColorStop(1, '#f3e7d4');
-      g.fillStyle = gr; g.fillRect(0, 0, w, h);
-    });
+    skyCv = document.createElement('canvas'); skyCv.width = 16; skyCv.height = 512;
+    var t = new THREE.CanvasTexture(skyCv); t.encoding = THREE.sRGBEncoding; drawSky(ZONES[0].sky); return t;
+  }
+  function drawSky(cols) {
+    var g = skyCv.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 512);
+    gr.addColorStop(0, cols[0]); gr.addColorStop(.45, cols[1]); gr.addColorStop(.75, cols[2]); gr.addColorStop(1, cols[3]);
+    g.fillStyle = gr; g.fillRect(0, 0, 16, 512);
+  }
+  function mixHex(a, b, t) {
+    var x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16);
+    var r = Math.round((x >> 16) + ((y >> 16) - (x >> 16)) * t), gg = Math.round(((x >> 8) & 255) + (((y >> 8) & 255) - ((x >> 8) & 255)) * t), bb = Math.round((x & 255) + ((y & 255) - (x & 255)) * t);
+    return '#' + ((1 << 24) + (r << 16) + (gg << 8) + bb).toString(16).slice(1);
   }
   function ballastTex() {
     return canvasTex(256, 256, function (g, w, h) {
@@ -110,12 +127,13 @@ window.MM = window.MM || {};
       g.fillStyle = '#3a4048'; g.fillRect(0, h - 16, w, 16);
     });
   }
-  function facadeTex(base) {
+  function facadeTex(base, lit, ruin) {
     return canvasTex(128, 256, function (g, w, h) {
       g.fillStyle = base; g.fillRect(0, 0, w, h);
       g.fillStyle = 'rgba(0,0,0,.1)'; for (var y = 0; y < h; y += 8) g.fillRect(0, y, w, 1);
       for (var r = 0; r < 7; r++) for (var c = 0; c < 3; c++) {
-        g.fillStyle = Math.random() < .2 ? '#ffe2a0' : '#33415a'; g.fillRect(14 + c * 38, 16 + r * 34, 24, 22);
+        if (ruin && r < 2 && Math.random() < .6) continue;
+        g.fillStyle = Math.random() < (lit == null ? .2 : lit) ? '#ffe2a0' : (ruin ? '#2a2420' : '#33415a'); g.fillRect(14 + c * 38, 16 + r * 34, 24, 22);
         g.fillStyle = 'rgba(255,255,255,.3)'; g.fillRect(14 + c * 38, 16 + r * 34, 24, 3);
         g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(12 + c * 38, 38 + r * 34, 28, 3);
       }
@@ -171,6 +189,10 @@ window.MM = window.MM || {};
     loader = loader || new THREE.TextureLoader();
     if (THREE.ColorManagement) THREE.ColorManagement.legacyMode = false;
     var SEC = MM.RunSections;
+    // staza iz semena: u borbi svi dobiju iste deonice i iste moci
+    var rr = Math.random;
+    if (opts.seed) { var sd = opts.seed >>> 0; rr = function () { sd = (sd + 0x6D2B79F5) >>> 0; var t = sd; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+    function rpick(a) { return a[Math.floor(rr() * a.length)]; }
     var W = host.clientWidth || 360, H = host.clientHeight || 640;
     var renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(1.75, window.devicePixelRatio || 1));
@@ -185,7 +207,7 @@ window.MM = window.MM || {};
     var cam = new THREE.PerspectiveCamera(60, W / H, .1, 290);
     cam.position.set(0, 4.0, 6.7);
 
-    scene.add(new THREE.HemisphereLight(0xfff4e6, 0x6a5a4a, 1.0));
+    var hemi = new THREE.HemisphereLight(0xfff4e6, 0x6a5a4a, 1.0); scene.add(hemi);
     var sun = new THREE.DirectionalLight(0xffffff, 1.0); sun.position.set(-7, 15, 6); scene.add(sun);
 
     /* ---------- materijali i geometrije ---------- */
@@ -270,13 +292,15 @@ window.MM = window.MM || {};
     placeSleepers();
 
     /* ---------- dekor (reciklira se) ---------- */
-    var facades = ['#d9825a', '#e6c08f', '#82a9bb', '#c25a50', '#ecc970', '#9a78b3', '#7fb48c'].map(function (c) { return L({ map: facadeTex(c) }); });
+    var FAC = ZONES.map(function (zn) { return zn.fac.map(function (c) { return L({ map: facadeTex(c, zn.lit, zn.ruin) }); }); });
+    var facades = FAC[0], zoneI = 0, zoneT = 1, zoneFrom = 0;
     var roofMat = L({ color: 0x5a4a44 }), tankGeo = new THREE.CylinderGeometry(.9, .9, 1.8, 10);
     var decor = [];
     function addBuilding(side, z) {
       var h = rnd(8, 20), w = rnd(6, 10), d = rnd(9, 14), g = new THREE.Group();
       var b = box(pick(facades), w, h, d); b.position.y = h / 2; g.add(b);
       var rf = box(roofMat, w + .4, .5, d + .4); rf.position.y = h + .25; g.add(rf);
+      if (ZONES[zoneI].ruin) { rf.rotation.z = rnd(-.25, .25); rf.position.y = h + .1; var ch = box(pick(facades), w * .5, rnd(2, 5), d * .6); ch.position.set(rnd(-w / 4, w / 4), h + 1, 0); ch.rotation.z = rnd(-.3, .3); g.add(ch); }
       if (Math.random() < .4) { var tank = new THREE.Mesh(tankGeo, roofMat); tank.position.set(rnd(-w / 4, w / 4), h + 1.4, 0); g.add(tank); }
       g.position.set(side * (8.5 + w / 2 + rnd(0, 2.5)), 0, z - d / 2);
       scene.add(g); decor.push({ m: g, len: d / 2 + 2 });
@@ -426,8 +450,34 @@ window.MM = window.MM || {};
       g.position.set(LX[lane], 0, z);
       return add({ t: kind === 'X' ? 'wall' : kind === 'H' ? 'high' : 'low', lane: lane, m: g, len: .2 });
     }
+    /** Doombot: Doom stoji na sinama i gleda ka tebi. Samo druga traka. */
+    function mkBot(lane, z) {
+      var h = MM.Heroes.make('doom'); h.play('Idle_Loop'); h.update(Math.random() * 2);
+      h.root.rotation.y = Math.PI; h.root.scale.multiplyScalar(1.05);
+      var g = new THREE.Group(); g.add(h.root);
+      var ring = new THREE.Mesh(new THREE.RingGeometry(.5, .8, 24), new THREE.MeshBasicMaterial({ color: 0x39d97a, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false }));
+      ring.rotation.x = -Math.PI / 2; ring.position.y = .2; g.add(ring);
+      g.position.set(LX[lane], 0, z);
+      return add({ t: 'wall', bot: true, lane: lane, m: g, len: .4 });
+    }
+    var LASER = null;
+    /** Laser: nizak (skoci) ili visok (provuci se). */
+    function mkLaser(lane, z, high) {
+      if (!LASER) LASER = { beam: new THREE.MeshBasicMaterial({ color: 0xff2a2a, transparent: true, opacity: .9, blending: THREE.AdditiveBlending, depthWrite: false }),
+        glow: new THREE.MeshBasicMaterial({ color: 0xff5a5a, transparent: true, opacity: .25, blending: THREE.AdditiveBlending, depthWrite: false }),
+        geo: new THREE.CylinderGeometry(.06, .06, 2.1, 8), geo2: new THREE.CylinderGeometry(.2, .2, 2.1, 10) };
+      var g = new THREE.Group(), y = high ? 1.95 : .55;
+      [-1, 1].forEach(function (s2) { var p = box(M.post, .18, y + .5, .18); p.position.set(s2 * 1.08, (y + .5) / 2, 0); g.add(p);
+        var em = new THREE.Mesh(G3.bulb, LASER.beam); em.position.set(s2 * 1.08, y, 0); g.add(em); });
+      var b = new THREE.Mesh(LASER.geo, LASER.beam); b.rotation.z = Math.PI / 2; b.position.y = y; g.add(b);
+      var gl = new THREE.Mesh(LASER.geo2, LASER.glow); gl.rotation.z = Math.PI / 2; gl.position.y = y; g.add(gl);
+      if (high) { var b2 = new THREE.Mesh(LASER.geo, LASER.beam); b2.rotation.z = Math.PI / 2; b2.position.y = y + .35; g.add(b2); }
+      g.position.set(LX[lane], 0, z);
+      return add({ t: high ? 'high' : 'low', laser: true, lane: lane, m: g, len: .2 });
+    }
     var coinFace = null;
     function mkCoin(lane, z, y) {
+      if (opts.battle) return { fake: true, m: { position: {} } };      // u borbi nema novcica
       if (!coinFace) coinFace = new THREE.MeshPhongMaterial({ map: imgTex('img/run/coin.webp'), emissive: 0x3a2600, shininess: 60, transparent: true, alphaTest: .3 });
       var m = new THREE.Group(), a = new THREE.Mesh(G3.coin, [M.coin, coinFace, coinFace]), b = new THREE.Mesh(G3.coin, [M.coin, coinFace, coinFace]);
       m.add(a); m.add(b); m.userData.dbl = b; m.userData.one = a;
@@ -469,9 +519,9 @@ window.MM = window.MM || {};
         if (s.nivo > tier || S.lastSec.indexOf(s.id) >= 0) return;
         var w = s.nivo === tier ? 3 : 1; for (var i = 0; i < w; i++) pool.push(s);
       });
-      var s = pick(pool);
+      var s = rpick(pool);
       S.lastSec.push(s.id); if (S.lastSec.length > 3) S.lastSec.shift();
-      return Math.random() < .5 ? SEC.mirror(s) : s;
+      return rr() < .5 ? SEC.mirror(s) : s;
     }
     function spawnSection() {
       var sec, k = Math.max(1, Math.min(1.45, S.speed / 17));
@@ -480,10 +530,10 @@ window.MM = window.MM || {};
       // razmak pre deonice: novcici, a ponekad moc ili board token
       var gap = 10 * k, z0 = S.secEnd - gap;
       if (S.stats.sections > 0 || !S.tut) {
-        var bl = Math.floor(Math.random() * 3), r = Math.random(), mid = S.secEnd - gap / 2;
+        var bl = Math.floor(rr() * 3), r = rr(), mid = S.secEnd - gap / 2;
         S.gaps = (S.gaps || 0) + 1;
         if (S.gaps % 3 === 2) for (var bt = 0; bt < 8; bt++) mkPickup(bl, S.secEnd - 1 - bt * 1.9 * k, 'btok');
-        else if (r < .28 * (opts.pwRate || 1)) mkPickup(bl, mid, pick(['magnet', 'shield', 'jet', 'x2', 'jump', 'magnet', 'x2']));
+        else if (r < .28 * (opts.pwRate || 1)) mkPickup(bl, mid, rpick(opts.battle ? ['magnet', 'shield', 'jet', 'jump', 'shield'] : ['magnet', 'shield', 'jet', 'x2', 'jump', 'magnet', 'x2']));
         else for (var c = 0; c < 4; c++) mkCoin(bl, S.secEnd - 1 - c * 2.4, 1);
       }
       SEC.parse(sec).forEach(function (o) {
@@ -495,12 +545,14 @@ window.MM = window.MM || {};
         }
         else if (o.t === 'M') {
           // krece dalje i brze: stigne do reda kad i ti
-          var v = rnd(7, 10), tr = mkTrain(o.lane, z * (S.speed + v) / S.speed, o.len, true); tr.v = v;
+          var v = 7 + rr() * 3, tr = mkTrain(o.lane, z * (S.speed + v) / S.speed, o.len, true); tr.v = v;
         }
         else if (o.t === 'L' || o.t === 'H' || o.t === 'X') mkBarrier(o.lane, z, o.t);
+        else if (o.t === 'G') mkBot(o.lane, z);
+        else if (o.t === 'E' || o.t === 'U') mkLaser(o.lane, z, o.t === 'U');
         else if (o.t === 'c') for (var j = 0; j < o.n; j++) mkCoin(o.lane, z - j * 2.6, 1);
         else if (o.t === 'C') for (var q = 0; q < 7; q++) mkCoin(o.lane, z + 6 - q * 2, 1 + Math.sin(q / 6 * Math.PI) * 1.9);
-        else if (o.t === 'p') mkPickup(o.lane, z, pick(['magnet', 'jet', 'x2', 'jump', 'shield']));
+        else if (o.t === 'p') mkPickup(o.lane, z, rpick(['magnet', 'jet', 'x2', 'jump', 'shield']));
         else if (o.t === 'k') { var tk = mkPickup(o.lane, z, 'btok'); if (sec === SEC.TUT) tk.val = 3; }
       });
       if (sec.tips) sec.tips.forEach(function (tp) { S.tips.push({ z: z0 - tp.d * k, need: tp.need, t: tp.t, done: false }); });
@@ -656,6 +708,16 @@ window.MM = window.MM || {};
 
       S.secEnd += dz;
       while (S.secEnd > SPAWN_Z) spawnSection();
+      var zi = Math.floor(S.dist / 1000) % ZONES.length;
+      if (zi !== zoneI) { zoneFrom = zoneI; zoneI = zi; zoneT = 0; facades = FAC[zi]; ev('zone', ZONES[zi].name); }
+      if (zoneT < 1) {
+        zoneT = Math.min(1, zoneT + dt / 3);
+        var A = ZONES[zoneFrom], B = ZONES[zoneI];
+        drawSky(A.sky.map(function (c, i) { return mixHex(c, B.sky[i], zoneT); })); scene.background.needsUpdate = true;
+        scene.fog.color.set(mixHex(A.fog, B.fog, zoneT));
+        hemi.intensity = A.hemi + (B.hemi - A.hemi) * zoneT; sun.intensity = A.sun + (B.sun - A.sun) * zoneT;
+        M.cloud.color.set(mixHex(A.cloud, B.cloud, zoneT));
+      }
       if (S.pw.jet > 0) {
         S.jetAcc = (S.jetAcc || 0) + dz;
         var ahead = 22, lead = ahead / S.speed;          // koliko treba novcicu da stigne do tebe
@@ -733,13 +795,13 @@ window.MM = window.MM || {};
               if (feet < o.top - .4) { o.hit = true; if (S.invuln <= 0) crash(o.v ? 'Voz ti je došao u susret!' : 'Udario si u voz!', o); }
               else if (!o.counted) { o.counted = true; S.stats.trains++; }
             } else if (o.t === 'low') {
-              if (feet < .9 && !flying) { o.hit = true; if (S.invuln <= 0) crash('Barijera!', o); }
+              if (feet < .9 && !flying) { o.hit = true; if (S.invuln <= 0) crash(o.laser ? 'Laser!' : 'Barijera!', o); }
               else if (!o.counted) { o.counted = true; S.stats.barriers++; }
             } else if (o.t === 'high') {
               if (S.roll <= 0 && feet < 2.3 && !flying) { o.hit = true; if (S.invuln <= 0) crash('Glavom u kapiju!', o); }
               else if (!o.counted) { o.counted = true; S.stats.barriers++; }
             } else if (o.t === 'wall') {
-              if (feet < 2.8 && !flying) { o.hit = true; if (S.invuln <= 0) crash('Udario si u zid!', o); }
+              if (feet < 2.8 && !flying) { o.hit = true; if (S.invuln <= 0) crash(o.bot ? 'Doombot te je zaustavio!' : 'Udario si u zid!', o); }
             }
           }
         }

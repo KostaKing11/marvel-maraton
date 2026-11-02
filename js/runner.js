@@ -171,7 +171,7 @@ window.MM = window.MM || {};
       miss: r.miss && r.miss.day === today() ? JSON.parse(JSON.stringify(r.miss)) : dayMissions(),
       board: r.board || r.skin || 'klasik', owned: (r.owned || r.skins || ['klasik']).slice(),
       hlv: Object.assign({}, r.hlv), blv: Object.assign({}, r.blv),
-      runs: r.runs | 0, distAll: r.distAll | 0, gift: r.gift | 0, tut: r.tut | 0, mig3: r.mig3 | 0, mig4: r.mig4 | 0
+      runs: r.runs | 0, distAll: r.distAll | 0, bwins: r.bwins | 0, gift: r.gift | 0, tut: r.tut | 0, mig3: r.mig3 | 0, mig4: r.mig4 | 0
     };
     // v2.20: nivo passa trazi 250 umesto 150 poena - poeni se preracunaju da nivo ostane isti
     if (!o.mig4) { o.pass.pts = Math.round(o.pass.pts * 250 / 150); o.mig4 = 1; }
@@ -254,6 +254,8 @@ window.MM = window.MM || {};
     if (!host) return false;
     if (game) { if (!host.querySelector('.r3-over')) pause(); return true; }
     if (view === 'detail') { collection(); return true; }
+    if (view === 'lobby') { leaveLobby(); battleView(); return true; }
+    if (view === 'bresult') { battleView(); return true; }
     if (view !== 'home') { home(); return true; }
     return false;
   }
@@ -290,10 +292,15 @@ window.MM = window.MM || {};
         '</div>' +
         '<div class="r3-chips"><span>' + ico('trophy') + '<b>' + fmt(best) + '</b></span><span><b>×' + mul.toFixed(2) + '</b> poeni</span></div>' +
         '<button type="button" class="r3-go" id="r3Go">' + (r.tut ? 'IGRAJ' : 'IGRAJ · TUTORIJAL') + '</button>' +
+        '<button type="button" class="r3-battle" id="r3Bat">' + ico('target') + '<span><b>Borba sa ekipom</b><i>svi ista staza · ko poslednji padne, pobedio je</i></span></button>' +
         (r.tut ? '<button type="button" class="r3-link" id="r3Tut">Ponovi tutorijal</button>' : '') +
       '</div>');
     host.querySelector('#r3Go').onclick = function () { start(!r.tut); };
     var tb = host.querySelector('#r3Tut'); if (tb) tb.onclick = function () { start(true); };
+    host.querySelector('#r3Bat').onclick = function () {
+      if (!MM.Store.uid()) { UI.toast('Za borbu se prijavi Google nalogom (profil → Ja).'); return; }
+      UI.buzz(6); battleView();
+    };
     startPreview(host.querySelector('#r3Stage'), { hero: c.id, board: b });
   }
 
@@ -559,15 +566,15 @@ window.MM = window.MM || {};
   }
 
   /* ---------------- trka ---------------- */
-  function start(tutorial) {
+  function start(tutorial, battle) {
     stopPreview();
     var s = MM.Store.get(), r = R(s), c = charOf(s), b = boardById(r.board);
     view = 'game';
     host.innerHTML = '<div class="r3-load"><img src="' + sprite(c) + '" alt=""><b>Učitavam…</b></div>';
     load3d().then(function () {
       if (!host) return;
-      run = { c: c, revives: 0, ms: 0, msCoins: 0, tut: tutorial };
-      var mul = runMul(s, r, c);
+      run = { c: c, revives: 0, ms: 0, msCoins: 0, tut: tutorial, battle: battle || null, rep: 0 };
+      var mul = battle ? 1 : runMul(s, r, c);
       host.innerHTML = '<div class="r3-game" id="r3G">' +
         '<div class="r3-hud"><div class="r3-sc"><b id="r3S">0</b><i id="r3M">×' + mul.toFixed(1) + '</i></div>' +
           '<span class="r3-cur">' + ico('coin') + '<b id="r3C">0</b></span>' +
@@ -575,12 +582,16 @@ window.MM = window.MM || {};
         '<div class="r3-pws" id="r3W"></div>' +
         '<button type="button" class="r3-bd" id="r3B" aria-label="Hoverboard"><span class="r3-fill" id="r3BF"></span>' + ico('board') + '<em id="r3BT"></em></button>' +
         '<div class="r3-toast" id="r3T"></div>' +
+        (battle ? '<div class="r3-bstand" id="r3BS"></div>' : '') +
         '<div class="r3-tip" id="r3Tip" hidden></div></div>';
-      game = MM.Run3D.create(host.querySelector('#r3G'), {
-        hero: c.id, mul: mul, coinMul: c.p.coin || 1, accel: c.p.accel || 1, pwRate: c.p.pwRate || 1, smash: !!c.p.smash,
-        up: r.up, perk: c.p, board: { c1: b.c1, c2: b.c2, comic: b.comic }, boardPerk: b.pp, startShield: !!c.p.startShield, tutorial: tutorial,
-        onHud: hud, onEvent: onEvent, onEnd: crashed, onHidden: pause
-      });
+      // u borbi: ista staza (seme), bez moci likova, nadogradnji i boardova sa mocima - fer za sve
+      var o = battle ? { hero: c.id, mul: 1, seed: battle.seed, battle: true, board: { c1: b.c1, c2: b.c2, comic: b.comic },
+          onHud: hud, onEvent: onEvent, onEnd: crashed }
+        : { hero: c.id, mul: mul, coinMul: c.p.coin || 1, accel: c.p.accel || 1, pwRate: c.p.pwRate || 1, smash: !!c.p.smash,
+          up: r.up, perk: c.p, board: { c1: b.c1, c2: b.c2, comic: b.comic }, boardPerk: b.pp, startShield: !!c.p.startShield, tutorial: tutorial,
+          onHud: hud, onEvent: onEvent, onEnd: crashed, onHidden: pause };
+      game = MM.Run3D.create(host.querySelector('#r3G'), o);
+      if (battle) host.querySelector('.r3-hud .r3-cur').style.display = 'none';
       host.querySelector('#r3P').onclick = pause;
       host.querySelector('#r3B').onclick = function () { if (game) game.useBoard(); };
     }).catch(function () {
@@ -611,6 +622,7 @@ window.MM = window.MM || {};
     var fp = h.board > 0 ? h.board / h.max.board : h.meter / h.meterMax;
     q('#r3BF').style.height = Math.round(fp * 100) + '%';
     q('#r3BT').textContent = h.board > 0 ? Math.ceil(h.board) + ' s' : h.meter >= h.meterMax ? 'TAPNI' : h.meter + '/' + h.meterMax;
+    if (run.battle) { battleHud(h); return; }
     while (run.ms < MILES.length && h.dist >= MILES[run.ms][0]) {
       run.msCoins += MILES[run.ms][1];
       flash(fmt(MILES[run.ms][0]) + ' m · +' + MILES[run.ms][1], 'coin');
@@ -650,6 +662,14 @@ window.MM = window.MM || {};
   }
   function pause() {
     if (!game || !host || host.querySelector('.r3-over')) return;
+    if (run && run.battle) {
+      var gg = host.querySelector('#r3G'), ov = document.createElement('div');
+      ov.className = 'r3-over'; ov.innerHTML = '<div class="r3-box"><h2>Borba ide dalje</h2><p class="muted">Ostali trče. Ako izađeš, ispadaš.</p><button type="button" class="r3-go" id="r3Res">NASTAVI</button><button type="button" class="r3-ghost" id="r3Quit">Odustani</button></div>';
+      gg.appendChild(ov);
+      ov.querySelector('#r3Res').onclick = function () { ov.remove(); };
+      ov.querySelector('#r3Quit').onclick = function () { ov.remove(); var res = game.result(); res.why = 'Odustao si'; battleDead(res); };
+      return;
+    }
     game.pause();
     var g = host.querySelector('#r3G'), o = document.createElement('div');
     o.className = 'r3-over'; o.innerHTML = '<div class="r3-box"><h2>Pauza</h2><button type="button" class="r3-go" id="r3Res">NASTAVI</button><button type="button" class="r3-ghost" id="r3Quit">Završi trku</button></div>';
@@ -661,6 +681,7 @@ window.MM = window.MM || {};
   /** Pad: ponudi nastavak za kljuc (1, pa 2, pa 4), inace kraj. */
   function crashed(res) {
     if (!host || !game) return;
+    if (run.battle) { battleDead(res); return; }
     var r = R(MM.Store.get()), free = (run.c.p.freeRevive && run.revives === 0) || run.tut;
     var cost = free ? 0 : Math.pow(2, run.revives);
     if (run.revives >= 3 || (!free && r.keys < cost)) { game.stop(); game = null; finish(res); return; }
@@ -718,6 +739,127 @@ window.MM = window.MM || {};
     if (gx.up && MM.Games.levelUp) setTimeout(function () { MM.Games.levelUp(gx.lvl, gx.title); }, 500);
   }
 
+  /* ================= BORBA SA EKIPOM (battle.js) ================= */
+  var bStop = null, bRoom = null, bPlayers = [], bId = null, bHost = false;
+  function stopWatch() { if (bStop) { bStop(); bStop = null; } }
+  function leaveLobby() { stopWatch(); if (bId) MM.Battle.leave(bId, bHost && bRoom && bRoom.state === 'lobby'); bId = null; bRoom = null; }
+
+  /** Lista otvorenih borbi + nova borba. */
+  function battleView() {
+    stopWatch();
+    frame('battle', 'Borba sa ekipom', '<div class="r3-bwrap">' +
+      '<div class="r3-bhero">' + ico('target', 'huge') + '<div><b>Ko poslednji padne — pobedio je</b><span>Svi trče istu stazu. Nema novčića, moći likova ni nastavka. Samo ti i staza.</span></div></div>' +
+      '<button type="button" class="r3-go" id="r3BNew">NAPRAVI BORBU</button>' +
+      '<h3 class="r3-h3">Otvorene borbe</h3><div class="r3-list" id="r3BL"><p class="r3-note">Tražim…</p></div></div>', 'home');
+    host.querySelector('#r3BNew').onclick = function () {
+      this.disabled = true;
+      MM.Battle.create().then(function (id) { bHost = true; lobbyView(id); })
+        .catch(function () { UI.toast('Ne mogu da napravim borbu (internet ili prijava).'); battleView(); });
+    };
+    bStop = MM.Battle.watchLobbies(function (list) {
+      var el = host && host.querySelector('#r3BL'); if (!el) return;
+      el.innerHTML = list.length ? list.map(function (b) {
+        return '<div class="r3-row">' + ico('mask', 'big') + '<div class="r3-rt"><b>Borba: ' + esc(b.hostName || '?') + '</b><span>čeka igrače · ' + agoTxt(b.at) + '</span></div>' +
+          '<button type="button" class="r3-buy" data-join="' + b.id + '">Uđi</button></div>';
+      }).join('') : '<p class="r3-note">Nema otvorenih borbi. Napravi jednu i javi ekipi.</p>';
+      Array.prototype.forEach.call(el.querySelectorAll('[data-join]'), function (bt) {
+        bt.onclick = function () { var id = bt.getAttribute('data-join'); MM.Battle.join(id).then(function () { bHost = false; lobbyView(id); }).catch(function () { UI.toast('Ne mogu da uđem.'); }); };
+      });
+    });
+  }
+  function agoTxt(t) { var m = Math.max(0, Math.round((Date.now() - t) / 60000)); return m < 1 ? 'upravo' : 'pre ' + m + ' min'; }
+
+  /** Cekaonica: ko je usao; onaj ko je napravio pokrece. */
+  function lobbyView(id) {
+    stopWatch(); bId = id; view = 'lobby';
+    function draw() {
+      if (!host || view !== 'lobby') return;
+      var room = bRoom, ps = bPlayers;
+      if (!room || room.state === 'closed') { UI.toast('Borba je zatvorena.'); bId = null; battleView(); return; }
+      if (room.state === 'run') { battleRun(room); return; }
+      var host_ = room.host === MM.Store.uid();
+      host.innerHTML = '<div class="r3-screen">' + top('Čekaonica') + '<div class="r3-body"><div class="r3-bwrap">' +
+        '<div class="r3-bhero">' + ico('target', 'huge') + '<div><b>Borba: ' + esc(room.hostName || '') + '</b><span>' + (host_ ? 'Pozovi ekipu da uđe (Runner → Borba sa ekipom), pa klikni KRENI.' : 'Čeka se da ' + esc(room.hostName || 'domaćin') + ' krene.') + '</span></div></div>' +
+        '<h3 class="r3-h3">U borbi (' + ps.length + ')</h3><div class="r3-list">' + ps.map(function (p) {
+          return '<div class="r3-row"><img class="ri big" src="' + (thumbs[p.hero] || sprite(charById(p.hero) || CHARS[0])) + '" alt=""><div class="r3-rt"><b>' + esc(p.name) + (p.uid === room.host ? ' 👑' : '') + '</b><span>' + esc((charById(p.hero) || CHARS[0]).name) + '</span></div></div>';
+        }).join('') + '</div>' +
+        (host_ ? '<button type="button" class="r3-go" id="r3BGo">KRENI' + (ps.length < 2 ? '<span>možeš i sam, za probu</span>' : '<span>' + ps.length + ' igrača</span>') + '</button>' : '<p class="r3-note center">Kad krene, igra počinje sama.</p>') +
+        '<button type="button" class="r3-ghost" id="r3BLeave">Izađi</button></div></div></div>';
+      wire();
+      var g = host.querySelector('#r3BGo'); if (g) g.onclick = function () { g.disabled = true; MM.Battle.start(id); };
+      host.querySelector('#r3BLeave').onclick = function () { leaveLobby(); battleView(); };
+    }
+    bStop = MM.Battle.watch(id, function (d) { bRoom = d.room; bPlayers = d.players; if (view === 'lobby') draw(); else if (view === 'game' || view === 'bdead') renderStand(); });
+    host.innerHTML = '<div class="r3-load"><b>Ulazim…</b></div>';
+  }
+
+  /** Odbrojavanje pa trka. */
+  function battleRun(room) {
+    view = 'game';
+    var n = 3;
+    host.innerHTML = '<div class="r3-load r3-count"><b id="r3Cnt">3</b><span>Borba počinje</span></div>';
+    (function tick() {
+      if (!host) return;
+      if (n === 0) { start(false, { seed: room.seed, id: room.id }); return; }
+      var el = host.querySelector('#r3Cnt'); if (el) el.textContent = n;
+      UI.buzz(8); n--; setTimeout(tick, 800);
+    })();
+  }
+
+  function battleHud(h) {
+    var now = Date.now();
+    if (now - run.rep > 1500) { run.rep = now; MM.Battle.report(run.battle.id, { alive: true, dist: h.dist, score: h.score }); }
+    run.myDist = h.dist;
+    renderStand();
+  }
+  /** Poredak uzivo (gore desno u trci, ili na ekranu posle pada). */
+  function renderStand() {
+    if (!host) return;
+    var el = host.querySelector('#r3BS'); if (!el) return;
+    var st = MM.Battle.standings(bPlayers), me = MM.Store.uid(), live = st.filter(function (p) { return p.live; }).length;
+    el.innerHTML = '<em>' + live + ' ' + (live === 1 ? 'živ' : 'živih') + '</em>' + st.map(function (p, i) {
+      var d = p.uid === me && run && run.myDist != null && p.live ? run.myDist : p.dist;
+      return '<div class="' + (p.live ? '' : 'dead') + (p.uid === me ? ' me' : '') + '"><i>' + (i + 1) + '</i><b>' + esc(p.name) + '</b><span>' + fmt(d) + ' m</span></div>';
+    }).join('');
+    if (view === 'bdead') {
+      // svi pali (ili samo ti ostao): rezultat
+      if (!st.some(function (p) { return p.live; })) battleResult(st);
+    }
+  }
+
+  /** Pao si u borbi: nema nastavka, gledas poredak dok ostali trce. */
+  function battleDead(res) {
+    if (game) { game.stop(); game = null; }
+    view = 'bdead';
+    MM.Battle.report(run.battle.id, { alive: false, dist: res.dist, score: res.score });
+    run.myDist = res.dist;
+    host.innerHTML = '<div class="r3-screen">' + top('Borba') + '<div class="r3-body"><div class="r3-bwrap">' +
+      '<span class="r3-why">' + esc(res.why || 'Pao si') + '</span><h2 class="r3-big">' + fmt(res.dist) + ' m</h2>' +
+      '<p class="r3-note center">Ostali još trče. Rezultat čim svi padnu.</p>' +
+      '<div class="r3-bstand big" id="r3BS"></div></div></div></div>';
+    wire();
+    bPlayers = bPlayers.map(function (p) { return p.uid === MM.Store.uid() ? Object.assign({}, p, { alive: false, dist: res.dist }) : p; });
+    renderStand();
+  }
+
+  function battleResult(st) {
+    view = 'bresult';
+    var me = MM.Store.uid(), win = st[0], iWon = win && win.uid === me && st.length > 1;
+    if (bRoom && bRoom.host === me) MM.Battle.finish(bId);
+    if (iWon) save(function (r2) { r2.bwins = (r2.bwins | 0) + 1; });
+    stopWatch(); bId = null;
+    host.innerHTML = '<div class="r3-screen">' + top('Rezultat borbe') + '<div class="r3-body"><div class="r3-bwrap">' +
+      '<div class="r3-bwin">' + ico('trophy', 'huge') + '<em>POBEDNIK</em><b>' + esc(win ? win.name : '—') + '</b><span>' + (win ? fmt(win.dist) + ' m' : '') + '</span></div>' +
+      (iWon ? '<p class="r3-rec center">To si ti! Pobeda #' + (R(MM.Store.get()).bwins | 0) + '</p>' : '') +
+      '<div class="r3-list">' + st.map(function (p, i) {
+        return '<div class="r3-row' + (p.uid === me ? ' ready' : '') + '"><span class="r3-tn2">' + (i + 1) + '</span><div class="r3-rt"><b>' + esc(p.name) + '</b><span>' + esc((charById(p.hero) || CHARS[0]).name) + '</span></div><b>' + fmt(p.dist) + ' m</b></div>';
+      }).join('') + '</div>' +
+      '<button type="button" class="r3-go" id="r3BAgain">NOVA BORBA</button><button type="button" class="r3-ghost" data-v="home">Meni</button></div></div></div>';
+    wire();
+    host.querySelector('#r3BAgain').onclick = battleView;
+    UI.buzz(iWon ? [30, 60, 30, 60, 80] : [20, 40]);
+  }
+
   /** cb({score, coins, dist}) -> { xp, rec, up, lvl, title } */
   function open(cb) {
     onEnd = cb;
@@ -735,7 +877,7 @@ window.MM = window.MM || {};
         home();
       },
       onBack: function () { return back(); },
-      onClose: function () { stopPreview(); if (game) game.stop(); game = null; host = null; }
+      onClose: function () { stopPreview(); if (game) game.stop(); game = null; if (bId) { if (view === 'game') MM.Battle.report(bId, { alive: false }); leaveLobby(); } stopWatch(); host = null; }
     });
   }
 
