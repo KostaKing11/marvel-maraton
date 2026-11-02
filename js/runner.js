@@ -479,6 +479,7 @@ window.MM = window.MM || {};
     var s = MM.Store.get(), r = R(s), t = tierOf(r.pass.pts), into = r.pass.pts - t * TIER, pct = t >= TIERS ? 100 : Math.round(into / TIER * 100), wn = watchedN(s);
     function cell(w, key, n, lockedWhy) {
       var x = rew(w), got = r.pass.got[key], open = n <= t && !lockedWhy, ready = open && !got;
+      if (w.s && !got && r.owned.indexOf(w.s) >= 0) x = { ic: 'chest', t: '×3', sub: 'kutije (board već imaš)' };
       return '<div class="r3-pc' + (got ? ' got' : ready ? ' ready' : '') + (key[0] === 'm' ? ' mar' : '') + '"' + (x.board ? ' style="--b1:' + x.board.c1 + ';--b2:' + x.board.c2 + '"' : '') + '>' +
         (x.board ? '<span class="r3-deck sm"></span>' : ico(x.ic, 'big')) + '<b>' + esc(x.t) + '</b>' +
         (got ? '<i class="r3-ck">✓</i>' : ready ? '<button type="button" class="r3-buy" data-t="' + key + '">Uzmi</button>' : n <= t && lockedWhy ? '<em>' + lockedWhy + '</em>' : ico('lock', 'r3-plk')) + '</div>';
@@ -498,7 +499,7 @@ window.MM = window.MM || {};
     if (nx && nx.scrollIntoView) nx.scrollIntoView({ block: 'center' });
     each('[data-t]', function (b) {
       b.onclick = function () {
-        var key = b.getAttribute('data-t'), m = key[0] === 'm', n = +(m ? key.slice(1) : key), w = (m ? MPASS : PASS)[n - 1];
+        var comp = false, key = b.getAttribute('data-t'), m = key[0] === 'm', n = +(m ? key.slice(1) : key), w = (m ? MPASS : PASS)[n - 1];
         save(function (r2, s2) {
           if (r2.pass.got[key] || tierOf(r2.pass.pts) < n || (m && watchedN(s2) < n)) return;
           r2.pass.got[key] = 1;
@@ -507,9 +508,9 @@ window.MM = window.MM || {};
           if (w.h) r2.htok += w.h;
           if (w.t) r2.btok += w.t;
           if (w.x) r2.boxes += w.x;
-          if (w.s && r2.owned.indexOf(w.s) < 0) r2.owned.push(w.s);
+          if (w.s) { if (r2.owned.indexOf(w.s) < 0) r2.owned.push(w.s); else { r2.boxes += 3; comp = true; } }
         });
-        reward(rew(w)); passView();
+        reward(comp ? { ic: 'chest', t: '×3', sub: 'kutije — već imaš ' + boardById(w.s).name + ' board' } : rew(w)); passView();
       };
     });
   }

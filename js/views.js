@@ -1426,7 +1426,7 @@ window.MM = window.MM || {};
     { id: '2.22', title: 'Boardovi iz kutija', big: false, items: [
       '<b>Doom board</b> je sada samo finale Passa (nivo 40).',
       '<b>Ostali boardovi</b> (Mjolnir, Gama, Vibranijum, Kosmik, Stark) ispadaju iz misterioznih kutija. Na mestima u Passu gde su bili sada su kutije.',
-      'Boardovi koje već imaš ostaju tvoji.'
+      'Boardovi koje već imaš ostaju tvoji. Ako već imaš Doom board kad stigneš do nivoa 40, umesto njega dobijaš 3 kutije.'
     ] },
     { id: '2.21.2', title: 'Popravke u Runneru', big: false, items: [
       '<b>Novčići više ne lebde</b> — kad te štit ili board spase od voza, novčići sa njegovog krova nestanu zajedno sa njim.',
