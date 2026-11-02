@@ -1399,6 +1399,9 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.16.1', title: 'Kviz: 250+ pitanja', big: false, items: [
+      '<b>Marvel kviz sad ima preko 250 pitanja</b> — glumci, reditelji, negativci, kamenje, X-Meni, Netflix serije, Spider-Verse, Fantastic Four, Thunderbolts* i Doomsday.'
+    ] },
     { id: '2.16', title: 'Marvel Runner', big: true, items: [
       '<b>Marvel Runner</b> — trči ka Doomsdayu kao u Subway Surfersu: prevuci levo/desno, gore za skok, dole za klizanje. Preskači barijere, provlači se ispod greda, izbegavaj vozove, kupi novčiće.',
       '<b>Likovi se otključavaju filmovima</b> — Iron Man, Cap, Thor, Hulk, Spider-Man, Black Panther, Doctor Strange, Deadpool… svaki ima svoju moć. Doom stiže sa Doomsdayem.',
