@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.9.0';
+MM.VERSION = '2.10.0';
 
 (function () {
   'use strict';
@@ -211,6 +211,13 @@ MM.VERSION = '2.9.0';
     keys.forEach(function (k) { ids[k.split('#')[0]] = 1; });
     var s = state();
     var id = Object.keys(ids).filter(function (x) { return P.isDone(Cat.get(x), s); })[0];
+    // epizoda serije koja jos nije gotova: oceni bas tu epizodu
+    var epKey = keys.filter(function (k) { return k.indexOf('#') !== -1; }).pop();
+    if (!id && epKey && keys.length <= 3) {
+      if (MM.Badges.busy()) pendingRate = epKey;
+      else setTimeout(function () { rateBar(epKey); }, 500);
+      return;
+    }
     if (id && Store.uid() && !MM.Reviews.mine(id)) {
       if (MM.Badges.busy()) pendingRate = id;      // posle slavlja
       else setTimeout(function () { rateBar(id); }, 500);
@@ -230,19 +237,30 @@ MM.VERSION = '2.9.0';
      ============================================================ */
 
   var rbTimer = null;
-  function rateBar(id) {
+  /** Traka za ocenu. key = 'id' (film / cela sezona) ili 'id#ep' (jedna epizoda). */
+  function rateBar(key) {
+    var parts = String(key).split('#'), id = parts[0], ep = parts[1] ? +parts[1] : 0;
     var it = Cat.get(id);
     if (!it) return;
     var el = $('#ratebar');
     if (!el) { el = document.createElement('div'); el.id = 'ratebar'; document.body.appendChild(el); }
+    var ea = !ep && Cat.isSeries(it) ? V.epAvg(state(), id) : null;
+    var label = ep ? 'Oceni epizodu ' + ep : ea ? 'Sezona gotova · ★ ' + (Math.round(ea.avg * 10) / 10).toFixed(1) : 'Oceni';
     el.innerHTML = '<div class="rb">' + UI.poster(it, 'thumb') +
-      '<div class="rb-t"><b>Oceni</b><span>' + esc(Cat.cleanTitle(it)) + '</span></div><div class="rb-s">' +
-      [1, 2, 3, 4, 5].map(function (n) { return '<button type="button" data-n="' + n + '">★</button>'; }).join('') +
-      '</div><button type="button" class="rb-x" aria-label="Zatvori">✕</button></div>';
+      '<div class="rb-t"><b>' + esc(label) + '</b><span>' + esc(Cat.cleanTitle(it)) + '</span></div>' +
+      (ea ? '<button type="button" class="btn sm primary rb-go">Recenzija</button>'
+        : '<div class="rb-s">' + [1, 2, 3, 4, 5].map(function (n) { return '<button type="button" data-n="' + n + '">★</button>'; }).join('') + '</div>') +
+      '<button type="button" class="rb-x" aria-label="Zatvori">✕</button></div>';
     el.className = 'in';
     el.querySelector('.rb-x').onclick = hideRateBar;
+    if (ea) el.querySelector('.rb-go').onclick = function () { hideRateBar(); openRate(id, 0); };
     UI.$all('.rb-s button', el).forEach(function (b) {
-      b.onclick = function () { hideRateBar(); openRate(id, +b.getAttribute('data-n')); };
+      b.onclick = function () {
+        var n = +b.getAttribute('data-n');
+        hideRateBar();
+        if (ep) { setEpStar(id, ep, n); UI.toast('Ep ' + ep + ': ' + '★'.repeat(n)); }
+        else openRate(id, n);
+      };
     });
     clearTimeout(rbTimer);
     rbTimer = setTimeout(hideRateBar, 8000);
@@ -253,9 +271,21 @@ MM.VERSION = '2.9.0';
     if (el) el.className = '';
   }
 
+  function setEpStar(id, ep, n) {
+    Store.mutate(function (s) {
+      s.epStars = s.epStars || {};
+      var m = s.epStars[id] = s.epStars[id] || {};
+      if (m[ep] === n) delete m[ep]; else m[ep] = n;
+      if (!Object.keys(m).length) delete s.epStars[id];
+    });
+  }
+
   function openRate(id, n) {
+    var it = Cat.get(id);
+    if (it && Cat.isSeries(it) && !P.isDone(it, state())) { UI.toast('Recenziju pišeš kad odgledaš celu sezonu.'); return; }
     var mine = MM.Reviews.mine(id);
-    UIS.rate = { id: id, stars: n || (mine ? mine.stars : 0), text: mine ? mine.text : '' };
+    var ea = it && Cat.isSeries(it) ? V.epAvg(state(), id) : null;
+    UIS.rate = { id: id, stars: ea ? Math.round(ea.avg) : n || (mine ? mine.stars : 0), text: mine ? mine.text : '' };
     UI.openSheet({ cls: 'small', render: function () { return V.rateSheet(ctx()); } });
   }
 
@@ -634,13 +664,19 @@ MM.VERSION = '2.9.0';
 
     /* --- ocene / ekipa --- */
     'rate': function (el) { openRate(el.getAttribute('data-id'), 0); },
+    'ep-star': function (el) {
+      setEpStar(el.getAttribute('data-id'), +el.getAttribute('data-ep'), +el.getAttribute('data-n'));
+      UI.buzz(8);
+    },
     'rate-star': function (el) { UIS.rate.stars = +el.getAttribute('data-n'); UI.buzz(8); UI.refreshSheets(); },
     'rate-save': function (el) {
       var r = UIS.rate;
       var t = $('#rateText');
       if (t) r.text = t.value;
       el.disabled = true;
-      MM.Reviews.save(r.id, r.stars, r.text).then(function () {
+      var ea = Cat.isSeries(Cat.get(r.id)) ? V.epAvg(state(), r.id) : null;
+      if (ea) r.stars = Math.max(1, Math.round(ea.avg));
+      MM.Reviews.save(r.id, r.stars, r.text, ea ? { avg: ea.avg, eps: ea.n } : null).then(function () {
         UI.closeTop(); UI.toast('Objavljeno ★' + r.stars); schedule();
         var st = state(), pr = P.progress(st), ach = MM.Badges.checkAch(st, pr, P.streak(st));
         if (ach.length) setTimeout(function () {
@@ -1117,6 +1153,9 @@ MM.VERSION = '2.9.0';
     });
 
     document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') hiddenAt = Date.now();
+      // vratio se posle 10+ minuta = "ponovo usao"
+      if (document.visibilityState === 'visible' && hiddenAt && Date.now() - hiddenAt > 600000) { dosadanShown = false; setTimeout(maybeDosadan, 800); }
       if (document.visibilityState === 'visible') { render(); if (UIS.tab === 'ekipa') loadReviews(false); }
     });
 
@@ -1291,6 +1330,21 @@ MM.VERSION = '2.9.0';
      start
      ============================================================ */
 
+  /** Kad god Vićovac otvori aplikaciju: obaveštenje da je dosadan. */
+  var dosadanShown = false, hiddenAt = 0;
+  function isVicovac() {
+    var u = Store.user() || {};
+    var n = [state().displayName, u.name, u.email].join(' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return /vicovac/.test(n);
+  }
+  function maybeDosadan() {
+    if (dosadanShown || !isVicovac()) return;
+    if (UI.topSheet()) { setTimeout(maybeDosadan, 1500); return; }
+    dosadanShown = true;
+    UI.buzz([30, 60, 30]);
+    UI.openSheet({ id: 'dosadan', center: true, cls: 'ds-sheet', render: function () { return V.dosadanSheet(); } });
+  }
+
   function boot() {
     var fresh = !localStorage.getItem('mm-state-v1');
     fitShell();
@@ -1311,6 +1365,7 @@ MM.VERSION = '2.9.0';
           if (!state().displayName) setTimeout(function () { if (!UI.topSheet()) A.profile(); }, 1200);
           publishProgress();
           if (!firstAuth) setTimeout(maybeNews, 1500);
+          setTimeout(maybeDosadan, 1200);
         }
         firstAuth = false;
         schedule();
@@ -1336,6 +1391,7 @@ MM.VERSION = '2.9.0';
       setTimeout(refreshSeasonPosters, 6000);
       setTimeout(function () { dailyNotification(); idleWarning(); writeMeta(); registerPeriodic(); }, 2500);
       setTimeout(function () { if (!UI.topSheet()) checkNotice(); }, 3500);
+      setTimeout(maybeDosadan, 1100);
     }).catch(function (e) {
       console.error(e);
       var b = $('#boot');

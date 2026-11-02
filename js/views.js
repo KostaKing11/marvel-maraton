@@ -102,6 +102,20 @@ window.MM = window.MM || {};
   function nNaslov(n) { return n + ' ' + plural(n, 'naslov', 'naslova', 'naslova'); }
   function nDan(n) { return n + ' ' + plural(n, 'dan', 'dana', 'dana'); }
 
+  /* ---------------- ocene epizoda ---------------- */
+
+  /** Prosek ocena epizoda jedne sezone: { avg, n } ili null. */
+  function epAvg(s, id) {
+    var m = (s.epStars || {})[id] || {}, ks = Object.keys(m).filter(function (k) { return m[k] >= 1; });
+    if (!ks.length) return null;
+    return { avg: ks.reduce(function (a, k) { return a + m[k]; }, 0) / ks.length, n: ks.length };
+  }
+  function avgStr(v) { return (Math.round(v * 10) / 10).toFixed(1); }
+  /** Zvezdice uz ocenu: serija pokazuje prosek epizoda. */
+  function revStars(r) {
+    return stars(Math.round(r.avg || r.stars)) + (r.avg ? '<em class="rv-avg">' + avgStr(r.avg) + ' · prosek ' + (r.eps || '') + ' ep</em>' : '');
+  }
+
   /* ---------------- scene posle spice ---------------- */
 
   function scenes(n) { return n + ' ' + plural(n, 'scena', 'scene', 'scena'); }
@@ -797,7 +811,7 @@ window.MM = window.MM || {};
         var mine = r.uid === me;
         out += '<div class="rev" data-k="rv-' + esc(r.itemId + r.uid) + '">' +
           '<button type="button" class="rev-art" data-a="item" data-id="' + esc(it.id) + '">' + UI.poster(it, 'thumb') + '</button>' +
-          '<div class="rev-b"><div class="rev-top">' + stars(r.stars) + '<span>' + esc(r.name || 'Bez imena') + (mine ? ' · ti' : '') + '</span></div>' +
+          '<div class="rev-b"><div class="rev-top">' + revStars(r) + '<span>' + esc(r.name || 'Bez imena') + (mine ? ' · ti' : '') + '</span></div>' +
             '<div class="rev-t">#' + it.order + ' ' + esc(Cat.cleanTitle(it)) + '</div>' +
             revText(r, it, ctx) + reactRow(r, ctx) + '</div>' +
           (mine ? '<button type="button" class="ib sm pen" data-a="rate" data-id="' + esc(it.id) + '" aria-label="Izmeni">' + ICON.pen + '</button>' : '') +
@@ -1168,7 +1182,19 @@ window.MM = window.MM || {};
           out += '<button type="button" class="ep' + (on ? ' on' : '') + (future ? ' soon' : '') + '" data-a="ep" data-id="' + esc(id) + '" data-ep="' + e + '"' +
             (future ? ' title="izlazi ' + esc(UI.dateLabel(av)) + '"' : '') + '>' + e + '</button>';
         }
-        out += '</div><p class="muted small">Drži prst na epizodi = označi sve do nje.</p>' +
+        out += '</div><p class="muted small">Drži prst na epizodi = označi sve do nje.</p>';
+        if (seen.length) {
+          var ea = epAvg(s, id), em = (s.epStars || {})[id] || {};
+          out += '<div class="ep-rates"><div class="eps-h"><h3>Ocene epizoda</h3>' +
+            (ea ? '<span class="ep-avg">★ <b>' + avgStr(ea.avg) + '</b> prosek · ' + ea.n + '/' + it.episodes + '</span>' : '<span class="muted small">oceni svaku epizodu</span>') + '</div>';
+          seen.forEach(function (e) {
+            out += '<div class="ep-rate"><span class="ep-n">ep ' + e + '</span><span class="ep-st">';
+            for (var n = 1; n <= 5; n++) out += '<button type="button" class="' + (n <= (em[e] || 0) ? 'on' : '') + '" data-a="ep-star" data-id="' + esc(id) + '" data-ep="' + e + '" data-n="' + n + '">★</button>';
+            out += '</span></div>';
+          });
+          out += '</div>';
+        }
+        out += '' +
           '<div class="btn-row">' +
           (done ? '<button type="button" class="btn ghost" data-a="item-toggle" data-id="' + esc(id) + '">Poništi sve</button>'
                 : '<button type="button" class="btn primary" data-a="item-toggle" data-id="' + esc(id) + '">' + ICON.check + ' Cela sezona odgledana</button>') +
@@ -1183,9 +1209,12 @@ window.MM = window.MM || {};
     if (!isGoal) {
       out += '<div class="sec"><div class="eps-h"><h3>Ocene ekipe</h3>' + (avg ? '<span>' + stars(Math.round(avg)) + ' <b>' + avg.toFixed(1) + '</b> (' + revs.length + ')</span>' : '<span class="muted">još nema</span>') + '</div>';
       revs.slice(0, 6).forEach(function (r) {
-        out += '<div class="rev-mini">' + stars(r.stars) + '<b>' + esc(r.name || 'Bez imena') + '</b>' + revText(r, it, ctx) + '</div>';
+        out += '<div class="rev-mini">' + revStars(r) + '<b>' + esc(r.name || 'Bez imena') + '</b>' + revText(r, it, ctx) + '</div>';
       });
-      if (ctx.user) out += '<button type="button" class="btn ghost sm" data-a="rate" data-id="' + esc(id) + '">' + (mine ? 'Izmeni svoju ocenu' : '★ Oceni') + '</button>';
+      if (ctx.user) {
+        if (Cat.isSeries(it) && !done) out += '<p class="muted small">Recenziju pišeš kad odgledaš celu sezonu — ocena je prosek tvojih ocena epizoda.</p>';
+        else out += '<button type="button" class="btn ghost sm" data-a="rate" data-id="' + esc(id) + '">' + (mine ? 'Izmeni svoju ocenu' : (Cat.isSeries(it) ? '★ Napiši recenziju sezone' : '★ Oceni')) + '</button>';
+      }
       out += '</div>';
     }
 
@@ -1232,15 +1261,23 @@ window.MM = window.MM || {};
     var r = ctx.ui.rate, it = Cat.get(r.id);
     if (!it) return '';
     var mine = MM.Reviews.mine(r.id);
+    var ea = Cat.isSeries(it) ? epAvg(ctx.s, r.id) : null;
     var out = '<div class="pad-sheet rate"><div class="rate-h">' + UI.poster(it, 'thumb') +
-      '<div><h2>Kako ti je bio?</h2><span class="muted">#' + it.order + ' ' + esc(it.title) + '</span></div></div>' +
-      '<div class="star-pick">';
-    for (var n = 1; n <= 5; n++) out += '<button type="button" class="sp' + (n <= r.stars ? ' on' : '') + '" data-a="rate-star" data-n="' + n + '">★</button>';
-    out += '</div><label class="field"><span>Kratak utisak (opciono)</span>' +
+      '<div><h2>' + (ea ? 'Kakva je bila sezona?' : 'Kako ti je bio?') + '</h2><span class="muted">#' + it.order + ' ' + esc(it.title) + '</span></div></div>';
+    if (ea) {
+      out += '<div class="rate-avg"><div class="star-pick fixed">';
+      for (var k = 1; k <= 5; k++) out += '<span class="sp' + (k <= Math.round(ea.avg) ? ' on' : '') + '">★</span>';
+      out += '</div><p><b>' + avgStr(ea.avg) + '</b> — prosek tvojih ocena za ' + ea.n + ' ' + plural(ea.n, 'epizodu', 'epizode', 'epizoda') + '</p></div>';
+    } else {
+      out += '<div class="star-pick">';
+      for (var n = 1; n <= 5; n++) out += '<button type="button" class="sp' + (n <= r.stars ? ' on' : '') + '" data-a="rate-star" data-n="' + n + '">★</button>';
+      out += '</div>';
+    }
+    out += '<label class="field"><span>' + (ea ? 'Recenzija cele sezone (opciono)' : 'Kratak utisak (opciono)') + '</span>' +
       '<textarea id="rateText" maxlength="500" rows="3" placeholder="U jednoj rečenici…">' + esc(r.text || '') + '</textarea></label>' +
       '<div class="btn-row">' +
       (mine ? '<button type="button" class="btn danger" data-a="rate-del">Obriši</button>' : '<button type="button" class="btn ghost" data-a="sheet-close">Preskoči</button>') +
-      '<button type="button" class="btn primary" data-a="rate-save"' + (r.stars ? '' : ' disabled') + '>Objavi</button></div></div>';
+      '<button type="button" class="btn primary" data-a="rate-save"' + (r.stars || ea ? '' : ' disabled') + '>Objavi</button></div></div>';
     return out;
   }
 
@@ -1254,6 +1291,18 @@ window.MM = window.MM || {};
       '<label class="field"><span>Ime</span><input id="profName" type="text" maxlength="40" placeholder="npr. Kosta" value="' + esc(p.name) + '"></label>' +
       '<div class="btn-row"><button type="button" class="btn ghost" data-a="sheet-close">Odustani</button>' +
       '<button type="button" class="btn primary" data-a="profile-save">Sačuvaj</button></div></div>';
+  }
+
+  /** Svaki put kad Vićovac otvori aplikaciju. */
+  var DOSADAN = [
+    'Vićovac, dosadan si.', 'Opet ti? Dosadan si, Vićovac.', 'Vićovac je ušao. Atmosfera je pala.',
+    'Upozorenje: Vićovac je dosadan.', 'Doom je video ko je ušao. Zevnuo je.', 'Vićovac, čak i Howard the Duck je zanimljiviji.',
+    'Ulogovao se Vićovac. Svi glumimo da nismo primetili.', 'Vićovac, dosadan si kao Eternals.'
+  ];
+  function dosadanSheet() {
+    var t = DOSADAN[Math.floor(Math.random() * DOSADAN.length)];
+    return '<div class="dosadan" data-a="sheet-close"><div class="ds-emoji">🥱</div><div class="ds-k">OBAVEŠTENJE</div>' +
+      '<h2>' + esc(t) + '</h2><p class="muted">— Kosta</p><button type="button" class="btn primary wide" data-a="sheet-close">Znam, izvini</button></div>';
   }
 
   function welcomeSheet(ctx) {
@@ -1289,6 +1338,11 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.10', title: 'Ocene epizoda', big: false, items: [
+      '<b>Oceni svaku epizodu</b> — posle svake epizode iskoči traka sa zvezdicama. Sve ocene su i u detaljima sezone.',
+      '<b>Ocena sezone = prosek</b> tvojih ocena epizoda. Recenziju (tekst) pišeš tek kad odgledaš celu sezonu.',
+      'Vićovac je dosadan. To nije novost, ali sad i aplikacija to zna.'
+    ] },
     { id: '2.9', title: 'OG izgled', big: false, items: [
       '<b>OG</b> — aplikacija izgleda kao prva verzija: crveno odbrojavanje do sekunde, plamen niza, „Dnevno / Ove nedelje“ i veliki poster koji prevlačiš (desno odgledano, levo nazad, gore preskoči).',
       'Pet tabova kao nekad: Danas, Kalendar, Ekipa, Biblioteka, Ja. Sve novo (150 naslova, plan, predmeti) je i dalje tu.',
@@ -1402,7 +1456,7 @@ window.MM = window.MM || {};
   MM.Views = {
     danas: danas, plan: planView, ekipa: ekipa, katalog: katalog, ja: ja,
     itemSheet: itemSheet, customSheet: customSheet, filterSheet: filterSheet, rateSheet: rateSheet, profileSheet: profileSheet,
-    welcomeSheet: welcomeSheet, chooseSheet: chooseSheet, newsSheet: newsSheet, countdownSheet: countdownSheet, ogCountdown: ogCountdown, crew: crew, NEWS: NEWS, recapSheet: recapSheet, mondayOf: mondayOf, streakSheet: streakSheet, doomSheet: doomSheet,
+    welcomeSheet: welcomeSheet, chooseSheet: chooseSheet, newsSheet: newsSheet, countdownSheet: countdownSheet, dosadanSheet: dosadanSheet, epAvg: epAvg, ogCountdown: ogCountdown, crew: crew, NEWS: NEWS, recapSheet: recapSheet, mondayOf: mondayOf, streakSheet: streakSheet, doomSheet: doomSheet,
     clock: clock, countdownParts: countdownParts, ICON: ICON, scopeName: scopeName
   };
 })();

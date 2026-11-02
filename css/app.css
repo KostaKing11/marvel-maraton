@@ -1614,6 +1614,33 @@ body.skin-og {
 .lk-prev.og i:last-child { flex: 1; background: linear-gradient(#3a3a2a, #111); }
 .skin-opts .og-o { grid-column: 1 / -1; }
 
+/* ocene epizoda */
+.ep-rates { margin-top: 14px; }
+.ep-avg { font-size: 13px; color: var(--mu); }
+.ep-avg b { color: #ffc93c; font-size: 15px; }
+.ep-rate { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-top: 1px solid rgba(255, 255, 255, .05); }
+.ep-n { font-size: 13.5px; font-weight: 700; color: var(--mu); }
+.ep-st { display: flex; }
+.ep-st button { width: 34px; height: 32px; font-size: 21px; color: #3a3a46; transition: transform .12s, color .12s; }
+.ep-st button.on { color: #ffc93c; }
+.ep-st button:active { transform: scale(1.25); }
+.rate-avg { text-align: center; }
+.rate-avg p { color: var(--mu); font-size: 13.5px; }
+.rate-avg p b { color: #ffc93c; font-size: 18px; }
+.star-pick.fixed .sp { display: inline-flex; align-items: center; justify-content: center; }
+.rv-avg { font-style: normal; font-size: 11.5px; color: var(--mu); margin-left: 6px; }
+.rb-go { flex: none; }
+.skin-retro .ep-st button { color: #cdb88a; }
+.skin-retro .ep-st button.on { color: #f2a500; }
+
+/* Vicovac */
+.dosadan { padding: 26px 20px 20px; text-align: center; cursor: pointer; }
+.ds-emoji { font-size: 64px; line-height: 1; animation: dsYawn 2.4s ease-in-out infinite; }
+@keyframes dsYawn { 50% { transform: scale(1.12) rotate(-6deg); } }
+.ds-k { margin-top: 10px; font-size: 11px; font-weight: 900; letter-spacing: 2.5px; color: var(--red); }
+.dosadan h2 { margin-top: 6px; font-size: 24px; font-weight: 900; line-height: 1.2; }
+.dosadan .btn { margin-top: 16px; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }

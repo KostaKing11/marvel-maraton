@@ -78,7 +78,7 @@ window.MM = window.MM || {};
     return { counts: counts, mine: uid ? map[uid] || '' : '' };
   }
 
-  async function save(itemId, stars, text) {
+  async function save(itemId, stars, text, extra) {
     var f = await MM.Store.firestore();
     if (!f) throw new Error('offline');
     var uid = MM.Store.uid();
@@ -93,6 +93,8 @@ window.MM = window.MM || {};
       text: String(text || '').slice(0, 500),
       at: Date.now()
     };
+    // serija: ocena je prosek epizoda (stars je zaokruzen, avg ima decimalu)
+    if (extra && extra.avg) { rec.avg = Math.round(extra.avg * 10) / 10; rec.eps = extra.eps || 0; }
     await f.setDoc(f.doc(f.db, 'reviews', rec.itemId + '__' + uid), rec);
     // ubaci lokalno da se odmah vidi, bez ponovnog citanja
     cache = cache.filter(function (r) { return !(r.itemId === rec.itemId && r.uid === uid); });
@@ -168,7 +170,7 @@ window.MM = window.MM || {};
   function avg(id) {
     var rs = forItem(id);
     if (!rs.length) return null;
-    var sum = rs.reduce(function (a, r) { return a + (r.stars || 0); }, 0);
+    var sum = rs.reduce(function (a, r) { return a + (r.avg || r.stars || 0); }, 0);
     return Math.round(sum / rs.length * 10) / 10;
   }
   function isStale() { return Date.now() - loadedAt > 60000; }
