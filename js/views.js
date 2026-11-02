@@ -68,6 +68,39 @@ window.MM = window.MM || {};
       ? '<img class="av ' + (cls || '') + '" src="' + esc(photo) + '" alt="" referrerpolicy="no-referrer" draggable="false">'
       : '<span class="av ' + (cls || '') + '">' + esc((name || '?').slice(0, 1).toUpperCase()) + '</span>';
   }
+  /**
+   * Podijum: top 3 (drugi levo, prvi u sredini, treci desno) + ostali ispod.
+   * rows: [{ k, name, photo, poster(item), mine, v (glavni broj), sub, a (data-a), id }]
+   */
+  function podium(rows, opts) {
+    opts = opts || {};
+    if (!rows.length) return '<p class="muted pad">' + (opts.empty || 'Još nema nikog.') + '</p>';
+    var top = rows.slice(0, 3), rest = rows.slice(3, opts.max || 50);
+    function face(r, big) {
+      if (r.item) return '<span class="pd-post">' + UI.poster(r.item, 'thumb') + '</span>';
+      return avatar(r.name, r.photo, big ? 'pd-av xl' : 'pd-av');
+    }
+    function act(r) { return r.a ? ' data-a="' + r.a + '" data-id="' + esc(r.id) + '"' : ''; }
+    var order = [1, 0, 2], out = '<div class="pd' + (opts.posters ? ' posters' : '') + (top.length < 3 ? ' n' + top.length : '') + '">';
+    order.forEach(function (i) {
+      var r = top[i]; if (!r) { out += '<div class="pd-c ghost p' + (i + 1) + '"></div>'; return; }
+      out += '<' + (r.a ? 'button type="button"' : 'div') + ' class="pd-c p' + (i + 1) + (r.mine ? ' me' : '') + '"' + act(r) + ' style="--d:' + (i === 0 ? 0 : i === 1 ? .12 : .24) + 's">' +
+        (i === 0 ? '<span class="pd-crown">👑</span>' : '') + face(r, i === 0) +
+        '<b class="pd-n">' + esc(r.name || 'Bez imena') + '</b>' +
+        '<span class="pd-v">' + r.v + '</span>' + (r.sub ? '<i class="pd-s">' + r.sub + '</i>' : '') +
+        '<span class="pd-step"><em>' + (i + 1) + '</em></span></' + (r.a ? 'button' : 'div') + '>';
+    });
+    out += '</div>';
+    if (rest.length) {
+      out += '<div class="pd-rest">' + rest.map(function (r, k) {
+        return '<' + (r.a ? 'button type="button"' : 'div') + ' class="pd-r' + (r.mine ? ' me' : '') + '"' + act(r) + '><span class="pd-rk">' + (k + 4) + '</span>' + face(r) +
+          '<span class="pd-rt"><b>' + esc(r.name || 'Bez imena') + (r.mine ? ' <em>· ti</em>' : '') + '</b>' + (r.sub ? '<i>' + r.sub + '</i>' : '') + (r.bar != null ? '<u><q style="width:' + r.bar + '%"></q></u>' : '') + '</span>' +
+          '<strong>' + r.v + '</strong></' + (r.a ? 'button' : 'div') + '>';
+      }).join('') + '</div>';
+    }
+    return out;
+  }
+
   function stars(n) {
     var o = '<span class="stars">';
     for (var i = 1; i <= 5; i++) o += '<i class="' + (i <= n ? 'on' : '') + '">★</i>';
@@ -767,20 +800,32 @@ window.MM = window.MM || {};
     }
     ppl.sort(function (a, b) { return (b.percent || 0) - (a.percent || 0); });
 
-    out += '<section class="card" data-k="lb"><div class="card-h"><h2>Dokle su stigli</h2></div><div class="people">';
-    ppl.forEach(function (p, i) {
-      var mine = p.uid === me;
-      var ahead = (p.percent || 0) / 100 >= time;
-      out += '<div class="person' + (mine ? ' me' : '') + '" data-k="pp-' + esc(p.uid) + '">' +
-        '<span class="rank">' + (i + 1) + '</span>' + avatar(p.name, p.photo) +
-        '<div class="pmain"><div class="pname">' + esc(p.name || 'Bez imena') + (mine ? ' <em>· ti</em>' : '') +
-          (p.streak ? '<span class="pstreak">' + ICON.flame + p.streak + '</span>' : '') + '</div>' +
-          '<div class="pbar2' + (ahead ? ' ahead' : '') + '"><i style="width:' + Math.min(100, p.percent || 0) + '%"></i>' +
-            '<span class="ptick" style="left:' + (time * 100).toFixed(1) + '%"></span></div></div>' +
-        '<div class="pnum"><b>' + (p.percent || 0) + '%</b><span>' + (p.watched || 0) + '/' + (p.total || 0) + '</span></div>' +
-        '</div>';
+    out += '<section class="card" data-k="lb"><div class="card-h"><h2>Dokle su stigli</h2><span class="muted">Doom je na ' + Math.round(time * 100) + '%</span></div>' +
+      podium(ppl.map(function (p) {
+        var ahead = (p.percent || 0) / 100 >= time;
+        return { name: p.name, photo: p.photo, mine: p.uid === me, v: (p.percent || 0) + '%',
+          sub: (p.watched || 0) + '/' + (p.total || 0) + (p.streak ? ' · 🔥' + p.streak : '') + (ahead ? ' · ispred Dooma' : ''), bar: Math.min(100, p.percent || 0) };
+      })) + '</section>';
+
+    /* najbolje ocenjeno (prosek ekipe) */
+    var agg = {};
+    MM.Reviews.cached().forEach(function (r) {
+      if (!Cat.get(r.itemId)) return;
+      var a = agg[r.itemId] = agg[r.itemId] || { n: 0, sum: 0 };
+      a.n++; a.sum += r.avg || r.stars || 0;
     });
-    out += '</div></section>';
+    var films = Object.keys(agg).map(function (id) { return { id: id, it: Cat.get(id), n: agg[id].n, avg: agg[id].sum / agg[id].n }; })
+      .filter(function (f) { return f.n >= (ctx.ui.topAll ? 1 : Math.min(2, Object.keys(who0()).length)); });
+    function who0() { var w = {}; MM.Reviews.cached().forEach(function (r) { w[r.uid] = 1; }); return w; }
+    var worst = ctx.ui.topSort === 'worst';
+    films.sort(function (a, b) { return worst ? a.avg - b.avg || b.n - a.n : b.avg - a.avg || b.n - a.n; });
+    if (films.length) {
+      out += '<section class="card" data-k="topf"><div class="card-h"><h2>' + (worst ? 'Najslabije ocenjeno' : 'Najbolje ocenjeno') + '</h2>' +
+        '<div class="tseg mini"><button type="button" class="' + (worst ? '' : 'on') + '" data-a="top-sort" data-v="best">Top</button><button type="button" class="' + (worst ? 'on' : '') + '" data-a="top-sort" data-v="worst">Dno</button></div></div>' +
+        podium(films.slice(0, 10).map(function (f) {
+          return { item: f.it, name: Cat.cleanTitle(f.it), v: '★ ' + f.avg.toFixed(1), sub: f.n + ' ' + (f.n === 1 ? 'ocena' : f.n < 5 ? 'ocene' : 'ocena'), a: 'item', id: f.id };
+        }), { posters: true }) + '</section>';
+    }
 
     /* ocene */
     var all = MM.Reviews.cached().filter(function (r) { return Cat.get(r.itemId); });
@@ -1020,14 +1065,22 @@ window.MM = window.MM || {};
     out += '</div></section>';
 
     // rang lista ekipe
-    out += '<section class="card" data-k="gxrank"><div class="card-h"><h2>Rang lista</h2><span class="muted">nivo igrača</span></div><div class="gx-rank">';
-    ppl.forEach(function (p, i) {
-      var l = G.lvlOf(p.xp || 0);
-      out += '<div class="gx-row' + (p.mine ? ' me' : '') + '"><span class="rank">' + (i === 0 && p.xp ? '👑' : i + 1) + '</span>' + avatar(p.name, p.photo) +
-        '<div class="gx-rn"><b>' + esc(p.name || 'Bez imena') + (p.mine ? ' <em>· ti</em>' : '') + '</b><span>' + esc(l.title) + '</span></div>' +
-        '<b class="gx-lv">' + l.n + '<i>nivo</i></b></div>';
-    });
-    out += '</div>';
+    var gt = ctx.ui.gxTab || 'lvl', rows;
+    if (gt === 'run') {
+      rows = ppl.filter(function (p) { return (p.gbest || {}).runner; }).sort(function (a, b) { return (b.gbest.runner || 0) - (a.gbest.runner || 0); })
+        .map(function (p) { return { name: p.name, photo: p.photo, mine: p.mine, v: (p.gbest.runner || 0).toLocaleString('sr-RS'), sub: 'poena' }; });
+    } else if (gt === 'inf') {
+      var eSum = function (p) { var b = p.gbest || {}, t = 0; Object.keys(b).forEach(function (k) { if (/_e$/.test(k)) t += b[k] | 0; }); return t; };
+      rows = ppl.filter(function (p) { return eSum(p); }).sort(function (a, b) { return eSum(b) - eSum(a); })
+        .map(function (p) { var b = p.gbest || {}; return { name: p.name, photo: p.photo, mine: p.mine, v: eSum(p), sub: ['stones', 'quiz', 'doom'].map(function (k) { return b[k + '_e'] ? G.REG[k].emo + b[k + '_e'] : ''; }).filter(Boolean).join(' ') || 'beskonačno' }; });
+    } else {
+      rows = ppl.map(function (p) { var l = G.lvlOf(p.xp || 0); return { name: p.name, photo: p.photo, mine: p.mine, v: 'Nv ' + l.n, sub: esc(l.title), bar: l.pct }; });
+    }
+    out += '<section class="card" data-k="gxrank"><div class="card-h"><h2>Rang lista</h2></div>' +
+      '<div class="tseg three gx-tabs"><button type="button" class="' + (gt === 'lvl' ? 'on' : '') + '" data-a="gx-tab" data-v="lvl">Nivo</button>' +
+      '<button type="button" class="' + (gt === 'run' ? 'on' : '') + '" data-a="gx-tab" data-v="run">Runner</button>' +
+      '<button type="button" class="' + (gt === 'inf' ? 'on' : '') + '" data-a="gx-tab" data-v="inf">♾️ Beskonačno</button></div>' +
+      podium(rows, { empty: gt === 'run' ? 'Niko još nije trčao.' : 'Niko još nije igrao beskonačno.' });
     var recs = ['runner', 'classic'].concat(ids).map(function (id) {
       var top = teamBest(ppl, id);
       var r = id === 'classic' ? { emo: '🏆', name: 'Klasika' } : id === 'runner' ? { emo: '🏃', name: 'Marvel Runner' } : G.REG[id];
@@ -1082,19 +1135,28 @@ window.MM = window.MM || {};
 
     /* izgled */
     var look = s.look === 'mini' ? 'mini' : 'full';
-    out += '<section class="card" data-k="look" id="ja-look"><div class="card-h"><h2>Izgled</h2></div><div class="look-opts">' +
-      '<button type="button" class="look-o' + (look === 'full' ? ' on' : '') + '" data-a="look" data-v="full">' +
-        '<span class="lk-prev full"><i></i><i></i><i></i><i></i></span><b>Puno</b><em>mapa, lista za danas, predmeti</em></button>' +
-      '<button type="button" class="look-o' + (look === 'mini' ? ' on' : '') + '" data-a="look" data-v="mini">' +
-        '<span class="lk-prev mini"><i></i><i></i></span><b>Minimalno</b><em>samo dani i poster, prevlačiš</em></button>' +
-      '</div><div class="skin-opts">' +
-      '<button type="button" class="look-o' + (s.skin !== 'retro' && s.skin !== 'og' ? ' on' : '') + '" data-a="skin" data-v="dark">' +
-        '<span class="lk-prev dark full"><i></i><i></i><i></i></span><b>Tamno</b><em>moderno, tamna tema</em></button>' +
-      '<button type="button" class="look-o' + (s.skin === 'retro' ? ' on' : '') + '" data-a="skin" data-v="retro">' +
-        '<span class="lk-prev retro"><i></i><i></i><i></i></span><b>Retro strip</b><em>stari stripovi, papir, POW!</em></button>' +
-      '<button type="button" class="look-o og-o' + (s.skin === 'og' ? ' on' : '') + '" data-a="skin" data-v="og">' +
-        '<span class="lk-prev og"><i></i><i></i><i></i></span><b>OG</b><em>kao prva verzija aplikacije: odbrojavanje do sekunde, poster koji prevlačiš</em></button>' +
-      '</div>' + (s.skin === 'og' ? '<p class="muted small">OG ima svoj početni ekran, pa Puno/Minimalno tad ne menja Danas.</p>' : '') + '</section>';
+    var skin = s.skin === 'retro' || s.skin === 'og' ? s.skin : 'dark';
+    var TH = MM.Themes, thCur = TH.current(s), thOpen = TH.unlocked(s), thPick = ctx.ui.thPick || thCur.id, thSel = TH.byId(thPick);
+    out += '<section class="card look-card" data-k="look" id="ja-look"><div class="card-h"><h2>Izgled</h2></div>' +
+      '<div class="set-row"><span>Početni ekran</span><div class="tseg seg2">' +
+        '<button type="button" class="' + (look === 'full' ? 'on' : '') + '" data-a="look" data-v="full">Puno</button>' +
+        '<button type="button" class="' + (look === 'mini' ? 'on' : '') + '" data-a="look" data-v="mini">Minimalno</button></div></div>' +
+      '<div class="set-row"><span>Stil</span><div class="tseg seg3">' +
+        '<button type="button" class="' + (skin === 'dark' ? 'on' : '') + '" data-a="skin" data-v="dark">Tamno</button>' +
+        '<button type="button" class="' + (skin === 'retro' ? 'on' : '') + '" data-a="skin" data-v="retro">Strip</button>' +
+        '<button type="button" class="' + (skin === 'og' ? 'on' : '') + '" data-a="skin" data-v="og">OG</button></div></div>' +
+      (skin === 'og' ? '<p class="muted small">OG ima svoj početni ekran: odbrojavanje do sekunde i poster koji prevlačiš.</p>' : '') +
+      (skin === 'retro' ? '<p class="muted small">Strip: papir, crni obrisi, POW! kad nešto odgledaš.</p>' : '') +
+      '<div class="th-h"><b>Teme</b><em>' + thOpen.length + ' / ' + TH.LIST.length + ' otključano</em></div>' +
+      '<div class="th-row no-drag">' + TH.LIST.map(function (t) {
+        var open = thOpen.indexOf(t.id) >= 0;
+        return '<button type="button" class="th-sw' + (t.id === thCur.id && skin === 'dark' ? ' on' : '') + (open ? '' : ' lock') + (t.id === thPick ? ' pick' : '') + '" data-a="theme" data-v="' + t.id + '" style="--a:' + t.c1 + ';--b:' + t.c2 + '">' +
+          '<span class="th-dot">' + (open ? '' : '<i>🔒</i>') + '</span><b>' + esc(t.name) + '</b></button>';
+      }).join('') + '</div>' +
+      '<p class="th-note">' + (thOpen.indexOf(thSel.id) >= 0
+        ? (skin === 'dark' ? '<b>' + esc(thSel.name) + '</b> — tema je uključena.' : 'Teme idu uz stil <b>Tamno</b>.')
+        : '🔒 <b>' + esc(thSel.name) + '</b>: ' + esc(thSel.req.how) + ' · <b>' + Math.min(thSel.req.need, thSel.req.have(s)) + ' / ' + thSel.req.need + '</b>') + '</p>' +
+      '</section>';
 
     /* novo u aplikaciji - dok ne procitas */
     if (s.seenNews !== NEWS[0].id) {

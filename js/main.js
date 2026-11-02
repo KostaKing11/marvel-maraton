@@ -474,6 +474,14 @@ MM.VERSION = '2.24.0';
       UI.buzz(8);
       UI.toast(v === 'mini' ? 'Minimalno: prevuci poster desno kad odgledaš.' : 'Pun izgled.');
     },
+    'theme': function (el) {
+      var id = el.getAttribute('data-v'), t = MM.Themes.byId(id);
+      UIS.thPick = id;
+      if (MM.Themes.isOpen(t, state())) {
+        Store.mutate(function (s) { s.theme = id; if (s.skin === 'retro' || s.skin === 'og') s.skin = 'dark'; });
+        UI.buzz(8);
+      } else { UI.buzz([10, 30, 10]); render(); }
+    },
     'skin': function (el) {
       var v = { retro: 'retro', og: 'og' }[el.getAttribute('data-v')] || 'dark';
       Store.mutate(function (s) { s.skin = v; });
@@ -625,6 +633,8 @@ MM.VERSION = '2.24.0';
     'map-jump': function (el) { MM.Doom.jump(el.getAttribute('data-v')); UI.buzz(6); },
     'rev-who': function (el) { UIS.rev.who = el.getAttribute('data-v'); render(); },
     'rev-sort': function (el) { UIS.rev.sort = el.getAttribute('data-v'); render(); },
+    'top-sort': function (el) { UIS.topSort = el.getAttribute('data-v'); render(); },
+    'gx-tab': function (el) { UIS.gxTab = el.getAttribute('data-v'); render(); },
     'lib-filters': function () { UI.openSheet({ id: 'filters', render: function () { return V.filterSheet(ctx()); } }); },
     'lib-clear': function () { UIS.lib.q = ''; render(); },
     'lib-status-go': function (el) {
@@ -804,7 +814,7 @@ MM.VERSION = '2.24.0';
         endlessBest: function () { return V.gamesOf(state()).best[id + '_e'] || 0; },
         // beskonacno: 2 XP po predjenom nivou (klasika 6), rekord u best[id_e]
         onEndless: function (n) {
-          return award(n * (id === 'classic' ? 6 : 2), function (gg) {
+          return award(Math.round(n * ({ classic: 6, quiz: 1, doom: .5 }[id] || 2)), function (gg) {
             if ((gg.best[id + '_e'] || 0) < n) { gg.best[id + '_e'] = n; return true; }
             return false;
           });
@@ -996,12 +1006,42 @@ MM.VERSION = '2.24.0';
   }
 
   /* ============================================================
+     teme: javi kad se otkljuca nova
+     ============================================================ */
+  var thChecked = false;
+  function checkThemes() {
+    if (!MM.Themes) return;
+    var s = state(), open = MM.Themes.unlocked(s), got = s.thGot;
+    if (!got) { Store.mutate(function (st) { st.thGot = open; }); return; }   // prvi put: tiho
+    var fresh = open.filter(function (id) { return got.indexOf(id) < 0; });
+    if (!fresh.length || thChecked) return;
+    thChecked = true;
+    setTimeout(function () {
+      thChecked = false;
+      Store.mutate(function (st) { st.thGot = MM.Themes.unlocked(st); });
+      var t = MM.Themes.byId(fresh[0]);
+      if (MM.Sfx) MM.Sfx.play('reward');
+      UI.toast('🎨 Nova tema otključana: ' + t.name, { action: 'Uključi', ms: 6000, onAction: function () {
+        Store.mutate(function (st) { st.theme = t.id; if (st.skin === 'retro' || st.skin === 'og') st.skin = 'dark'; });
+      } });
+    }, 2500);
+  }
+
+  /* ============================================================
      retro stil (strip)
      ============================================================ */
 
-  var skinNow = '';
+  var skinNow = '', thNow = '';
   function applySkin() {
     var sk = state().skin === 'retro' || state().skin === 'og' ? state().skin : 'dark';
+    var th = sk === 'dark' && MM.Themes ? MM.Themes.current(state()).id : '';
+    if (th !== thNow) {
+      thNow = th;
+      if (th && th !== 'avengers') document.body.setAttribute('data-th', th); else document.body.removeAttribute('data-th');
+      var mc = document.querySelector('meta[name="theme-color"]');
+      if (mc) mc.setAttribute('content', getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#09090c');
+    }
+    checkThemes();
     if (sk === skinNow) return;
     skinNow = sk;
     document.body.classList.toggle('skin-retro', sk === 'retro');

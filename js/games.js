@@ -291,6 +291,7 @@ window.MM = window.MM || {};
   /* ---------------- 1. Uhvati Dooma ---------------- */
   // Mamci (Ultron, Loki) oduzimaju 2, promasaj 1. Glava je sve manja i brza.
   function game1() {
+    if (endless && only) return doomEndless();
     clearAll();
     var need = Math.min(32, 12 + 2 * L), left = 15, delay = Math.max(380, 760 - 30 * L), minDelay = Math.max(290, 460 - 15 * L);
     var size = Math.max(36, 58 - 2 * L), bait = Math.round(size * .62), decoys = Math.min(3, 1 + Math.floor(L / 2)), hits = 0, done = false;
@@ -337,6 +338,7 @@ window.MM = window.MM || {};
 
   /* ---------------- 2. Kamenje (Simon) ---------------- */
   function game2() {
+    if (endless && only) return stonesEndless();
     clearAll();
     var seq = [], len = Math.min(17, 7 + L), pos = 0, input = false;
     var step = Math.max(320, 620 - 20 * L), lit = Math.max(200, 400 - 12 * L);
@@ -372,8 +374,164 @@ window.MM = window.MM || {};
     });
   }
 
+  /* ---------------- beskonacno: prave verzije ----------------
+     Kamenje: klasican "Simon" - niz raste za jedan kamen svaki krug.
+     Kviz: pitanje za pitanjem do prve greske (vreme se skracuje).
+     Doom: prezivljavanje - svaki pogodak dodaje vreme, mamci ga oduzimaju. */
+  var COLORS = ['plavi', 'žuti', 'crveni', 'ljubičasti', 'zeleni', 'narandžasti'];
+  function snd(n) { if (MM.Sfx) MM.Sfx.play(n); }
+
+  function stonesEndless() {
+    clearAll();
+    var seq = [], pos = 0, input = false;
+    box.innerHTML = '<div class="gm-h"><span class="gm-step">BESKONAČNO · NIZ RASTE</span><h2>Kamenje beskonačnosti</h2><p class="muted">Zapamti niz i ponovi ga. Svaki krug dodaje još jedan kamen na kraj.</p></div>' +
+      '<div class="gm-bar"><b id="g2s">Gledaj…</b><b id="g2p">Niz: 1</b></div><div class="gm-stones simon">' +
+      STONES.map(function (st, i) { return '<button type="button" class="gm-st" data-i="' + i + '"><img src="img/map/stone-' + st + '.webp" alt="" draggable="false"></button>'; }).join('') + '</div>' +
+      '<div class="gm-seq" id="g2q"></div>';
+    function byStone(i) { return box.querySelector('.gm-st[data-i="' + i + '"]'); }
+    function flash(i, ms) { var b = byStone(i); if (!b) return; b.classList.remove('lit'); void b.offsetWidth; b.classList.add('lit'); later(function () { b.classList.remove('lit'); }, ms); }
+    function dots() {
+      var q = box.querySelector('#g2q'); if (!q) return;
+      q.innerHTML = seq.map(function (n, k) { return '<i class="' + (k < pos ? 'ok' : '') + '"></i>'; }).join('');
+    }
+    function round() {
+      seq.push(Math.floor(Math.random() * 6));
+      pos = 0; input = false;
+      var step = Math.max(330, 640 - seq.length * 16), lit = Math.round(step * .62);
+      box.querySelector('#g2s').textContent = 'Gledaj…';
+      box.querySelector('#g2p').textContent = 'Niz: ' + seq.length;
+      box.querySelector('.gm-stones').classList.add('watch');
+      dots();
+      seq.forEach(function (n, k) { later(function () { flash(n, lit); snd('tick'); }, 650 + k * step); });
+      later(function () {
+        input = true; box.querySelector('#g2s').textContent = 'Tvoj red';
+        box.querySelector('.gm-stones').classList.remove('watch');
+      }, 650 + seq.length * step);
+    }
+    Array.prototype.forEach.call(box.querySelectorAll('.gm-st'), function (b) {
+      b.addEventListener('click', function () {
+        if (!input) return;
+        var i = +b.getAttribute('data-i');
+        flash(i, 220); UI.buzz(6);
+        if (i !== seq[pos]) {
+          input = false; b.classList.add('wrong'); byStone(seq[pos]).classList.add('should');
+          streak = seq.length - 1;
+          later(function () { fail('Pogrešan kamen — trebalo je ' + COLORS[seq[pos]] + '. Najduži niz: ' + streak + '.'); }, 900);
+          return;
+        }
+        pos++; dots(); snd('tap');
+        if (pos === seq.length) {
+          input = false; streak = seq.length; snd('ok');
+          box.querySelector('#g2s').textContent = '✓ Bravo';
+          later(round, 750);
+        }
+      });
+    });
+    round();
+  }
+
+  function quizEndless() {
+    clearAll();
+    // obicna pitanja + pitanja iz filmova koje si vec gledao (bez spojlera)
+    var pool = QUIZ.slice(), st = MM.Store.get();
+    if (MM.QUIZ) Object.keys(MM.QUIZ).forEach(function (id) {
+      var it = MM.Cat.get(id); if (!it || !MM.Plan.isDone(it, st)) return;
+      MM.QUIZ[id].forEach(function (r) { pool.push([r[0] + ' (' + MM.Cat.cleanTitle(it) + ')', r.slice(1), 0]); });
+    });
+    pool = shuffle(pool);
+    var k = 0, answered = false;
+    function ask() {
+      answered = false;
+      var q = pool[k % pool.length], secs = Math.max(5, 13 - Math.floor(streak / 4));
+      var opts = shuffle(q[1].map(function (t, i) { return { t: t, ok: i === q[2] }; }));
+      box.innerHTML = '<div class="gm-h"><span class="gm-step">BESKONAČNO · DO PRVE GREŠKE</span><h2>Marvel kviz</h2><p class="muted">Svako tačno je +1. Što dalje ideš, manje vremena.</p></div>' +
+        '<div class="gm-bar"><b>Tačnih: ' + streak + '</b><b id="g3t">' + secs + ' s</b></div><div class="gm-tbar"><i id="g3b"></i></div><p class="gm-q">' + esc(q[0]) + '</p><div class="gm-opts">' +
+        opts.map(function (o) { return '<button type="button" class="btn ghost wide gm-o" data-ok="' + (o.ok ? 1 : 0) + '">' + esc(o.t) + '</button>'; }).join('') + '</div>';
+      var bar = box.querySelector('#g3b'); bar.style.transition = 'none'; bar.style.width = '100%';
+      requestAnimationFrame(function () { requestAnimationFrame(function () { if (bar) { bar.style.transition = 'width ' + secs + 's linear'; bar.style.width = '0%'; } }); });
+      Array.prototype.forEach.call(box.querySelectorAll('.gm-o'), function (b) {
+        b.addEventListener('click', function () {
+          if (answered) return;
+          answered = true;
+          if (b.getAttribute('data-ok') !== '1') {
+            b.classList.add('bad'); UI.buzz([20, 40, 20]); snd('bad');
+            var g = box.querySelector('.gm-o[data-ok="1"]'); if (g) g.classList.add('good');
+            later(function () { fail('Netačno — tačno je „' + q[1][q[2]] + '“.'); }, 1200);
+            return;
+          }
+          b.classList.add('good'); UI.buzz(8); snd('ok');
+          streak++; k++;
+          later(ask, 500);
+        });
+      });
+      var t = secs, myK = k;
+      (function tick() {
+        if (answered || k !== myK || !box) return;
+        var el = box.querySelector('#g3t'); if (el) el.textContent = t + ' s';
+        if (t <= 3 && t > 0) snd('tick');
+        if (t-- <= 0) { answered = true; var g = box.querySelector('.gm-o[data-ok="1"]'); if (g) g.classList.add('good'); later(function () { fail('Isteklo vreme — tačno je „' + q[1][q[2]] + '“.'); }, 1000); return; }
+        later(tick, 1000);
+      })();
+    }
+    ask();
+  }
+
+  function doomEndless() {
+    clearAll();
+    var left = 10, hits = 0, done = false, delay = 820, size = 58, last = Date.now();
+    box.innerHTML = '<div class="gm-h"><span class="gm-step">BESKONAČNO · PREŽIVI</span><h2>Uhvati Dooma</h2><p class="muted">Svaki pogodak dodaje vreme. Mamci ga oduzimaju. Doom je sve brži i manji.</p></div>' +
+      '<div class="gm-bar"><b id="g1h">0 pogodaka</b><b id="g1t">10,0 s</b></div><div class="gm-tbar"><i id="g1b" style="width:66%"></i></div><div class="gm-arena" id="g1a">' +
+      '<button type="button" class="gm-doom" id="g1d" style="width:58px;height:58px"><img src="img/map/doomhead.jpg" alt="" draggable="false"></button>' +
+      [0, 1, 2].map(function (i) { return '<span class="gm-decoy" data-i="' + i + '" style="width:36px;height:36px;font-size:18px;' + (i ? 'display:none' : '') + '">' + ['🤖', '🐍', '👾'][i] + '</span>'; }).join('') + '</div>';
+    var arena = box.querySelector('#g1a'), d = box.querySelector('#g1d'), dec = box.querySelectorAll('.gm-decoy');
+    function place(el, w, avoid) {
+      var x, y, n = 0;
+      do { x = Math.round(Math.random() * (arena.clientWidth - w)); y = Math.round(Math.random() * (arena.clientHeight - w)); }
+      while (avoid && n++ < 30 && Math.abs(x - avoid[0]) < size + 12 && Math.abs(y - avoid[1]) < size + 12);
+      el.style.left = x + 'px'; el.style.top = y + 'px'; return [x, y];
+    }
+    function move() {
+      var at = place(d, size), nd = Math.min(3, 1 + Math.floor(hits / 12));
+      Array.prototype.forEach.call(dec, function (el, i) { el.style.display = i < nd ? '' : 'none'; if (i < nd) place(el, 36, at); });
+    }
+    function loop() { if (done) return; move(); later(loop, delay); }
+    function show() {
+      box.querySelector('#g1h').textContent = hits + ' ' + (hits === 1 ? 'pogodak' : 'pogodaka');
+      var t = box.querySelector('#g1t'); t.textContent = left.toFixed(1).replace('.', ',') + ' s'; t.classList.toggle('hot', left < 3);
+      box.querySelector('#g1b').style.width = Math.min(100, left / 15 * 100) + '%';
+    }
+    arena.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      if (done) return;
+      if (e.target.closest('#g1d')) {
+        hits++; UI.buzz(8); snd('coin');
+        var add = Math.max(.35, .95 - hits * .012);
+        left = Math.min(15, left + add);
+        plus(arena, e, '+' + add.toFixed(1).replace('.', ',') + ' s', 'ok');
+        delay = Math.max(300, delay - 14);
+        if (hits % 6 === 0 && size > 34) { size -= 3; d.style.width = d.style.height = size + 'px'; }
+        d.classList.remove('hit'); void d.offsetWidth; d.classList.add('hit');
+        move();
+      } else if (e.target.closest('.gm-decoy')) {
+        left = Math.max(0, left - 2); plus(arena, e, '−2 s', 'bad'); UI.buzz([30, 30, 30]); snd('bad');
+        arena.classList.remove('bad'); void arena.offsetWidth; arena.classList.add('bad');
+      } else return;
+      show();
+    });
+    loop();
+    (function tick() {
+      if (done) return;
+      var now = Date.now(); left = Math.max(0, left - (now - last) / 1000); last = now;
+      show();
+      if (left <= 0) { done = true; streak = hits; fail('Isteklo vreme — Doom je pobegao.'); return; }
+      later(tick, 100);
+    })();
+  }
+
+
   /* ---------------- 3. Kviz ---------------- */
   function game3() {
+    if (endless && only) return quizEndless();
     clearAll();
     var total = Math.min(15, 6 + L), secs = Math.max(5, 12 - Math.floor(L / 2)), qs = shuffle(QUIZ).slice(0, total), k = 0, answered = false;
     function ask() {
@@ -516,7 +674,7 @@ window.MM = window.MM || {};
     clearAll(); if (MM.Sfx) MM.Sfx.play('lose');
     if (endless) {
       var res = menuInfo.onEndless ? menuInfo.onEndless(streak) : null;
-      box.innerHTML = '<div class="gm-end"><div class="gm-emo">♾️</div><h2>' + streak + ' ' + (streak === 1 ? 'nivo' : 'nivoa') + '</h2><p class="muted">' + esc(why) + '</p>' +
+      box.innerHTML = '<div class="gm-end"><div class="gm-emo">♾️</div><h2>' + streak + ' ' + unit(streak) + '</h2><p class="muted">' + esc(why) + '</p>' +
         (res && res.rec ? '<p><b class="gm-up">Novi rekord u beskonačnom!</b></p>' : '') + (res && res.xp ? '<p><b class="gm-xp">+' + res.xp + ' XP</b></p>' : '') +
         '<button type="button" class="btn primary wide" id="gmRe">Ponovo</button><button type="button" class="btn ghost wide" id="gmMenu">Meni igre</button></div>';
       box.querySelector('#gmRe').onclick = startEndless;
@@ -529,6 +687,15 @@ window.MM = window.MM || {};
       '<button type="button" class="btn primary wide" id="gmRe">Ponovo</button><button type="button" class="btn ghost wide" id="gmMenu">Meni igre</button></div>';
     box.querySelector('#gmRe').onclick = first;
     box.querySelector('#gmMenu').onclick = menuView;
+  }
+
+  /** Sta se broji u beskonacnom (po igri). */
+  function unit(n) {
+    var one = n % 10 === 1 && n % 100 !== 11, few = n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20);
+    if (only === 'stones') return one ? 'kamen u nizu' : few ? 'kamena u nizu' : 'kamenova u nizu';
+    if (only === 'quiz') return one ? 'tačan' : few ? 'tačna' : 'tačnih';
+    if (only === 'doom') return one ? 'pogodak' : few ? 'pogotka' : 'pogodaka';
+    return one ? 'nivo' : 'nivoa';
   }
 
   function confetti() {
@@ -581,7 +748,7 @@ window.MM = window.MM || {};
       '<div class="gmm-stats"><div><b>' + best + '/' + MAXLV + '</b><i>tvoj rekord</i></div><div><b>+' + xpFor(id || 'classic', next) + ' XP</b><i>za nivo ' + next + '</i></div>' +
         '<div><b>' + (team ? esc(team.n) : '—') + '</b><i>' + (team ? 'najbolji u ekipi · ' + team.v : 'rekord ekipe') + '</i></div></div>' +
       '<button type="button" class="gmm-play" id="gmmGo"><b>IGRAJ</b><span>nivo ' + next + '</span></button>' +
-      '<button type="button" class="gmm-endless" id="gmmInf"><b>♾️ Beskonačno</b><span>nivoi idu dok ne pogrešiš · rekord ' + eb + '</span></button></div>';
+      '<button type="button" class="gmm-endless" id="gmmInf"><b>♾️ Beskonačno</b><span>' + ({ stones: 'niz raste za jedan kamen', quiz: 'pitanja do prve greške', doom: 'preživi što duže' }[id] || 'nivoi idu dok ne pogrešiš') + ' · rekord ' + eb + '</span></button></div>';
     box.querySelector('#gmmGo').onclick = function () { L = next - 1; UI.buzz(8); first(); };
     box.querySelector('#gmmInf').onclick = startEndless;
     Array.prototype.forEach.call(box.querySelectorAll('.gmm-n:not([disabled])'), function (b) {

@@ -27,7 +27,7 @@ window.MM = window.MM || {};
     var q = f.query(
       f.collection(f.db, 'reviews'),
       f.orderBy('at', 'desc'),
-      f.limit(80)
+      f.limit(400)
     );
     var snap = await f.getDocs(q);
     cache = [];

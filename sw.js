@@ -35,6 +35,7 @@ const SHELL = [
   './js/battle.js?v=' + V,
   './js/quizbank.js?v=' + V,
   './js/quiz.js?v=' + V,
+  './js/themes.js?v=' + V,
   './js/finale.js?v=' + V,
   './img/run/stanlee.webp',
   './js/vendor/three.min.js?v=149',
