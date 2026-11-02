@@ -1317,7 +1317,25 @@ window.MM = window.MM || {};
     'Multiverzum ima beskonačno Vićovaca. Svi su dosadni.', 'Vićovac, Quicksilver bi zaspao dok pričaš.', 'Galactus bi te vratio u restoran.',
     'Vićovac, ti si razlog zašto su izmislili dugme za preskakanje uvoda.', 'Bucky je imao težak život. Ti si mu ga otežao.',
     'Vićovac, Jarvis je ugasio sebe kad si ušao.', 'Ovde ni Loki nema šta da laže. Sve je istina: dosadan si.',
-    'Vićovac, Shang-Chi ima deset prstenova. Ti ni jednu šalu.', 'Gledaš Marvel, a i dalje si DC.', 'Vićovac, ovo je poruka 50+. Nisi se promenio.'
+    'Vićovac, Shang-Chi ima deset prstenova. Ti ni jednu šalu.', 'Gledaš Marvel, a i dalje si DC.', 'Vićovac, ovo je poruka 50+. Nisi se promenio.',
+    'Vićovac, Silver Surfer bi radije surfovao kroz crnu rupu.', 'Ti si ono kad film ima 3 sata i nijednu scenu posle špice.',
+    'Vićovac, She-Hulk bi te tužila za dosadu.', 'Moon Knight ima tri ličnosti. Ti nemaš ni jednu.', 'Vićovac, Wanda je prepravila stvarnost. Tebe nije mogla.',
+    'Daredevil je slep, a i on vidi koliko si dosadan.', 'Vićovac, Punisher je imao milost. Prema svima osim tebi.', 'Ms. Marvel bi napisala fan fiction o bilo kom drugom.',
+    'Vićovac, ti si tutorial nivo.', 'Falcon leti. Tvoje priče puze.', 'Vićovac, Agatha je bacila kletvu dosade i ispalo je da je već bačena.',
+    'Echo je gluva, a i dalje te čuje kako smaraš.', 'Vićovac, Thunderbolts* imaju zvezdicu. Ti imaš upozorenje.', 'Fantastična četvorka. Ti si dosadna jedinica.',
+    'Vićovac, Mister Fantastic se rasteže. Ti rasteš dosadu.', 'Human Torch se zapali od uzbuđenja. Ti od nule.', 'Vićovac, Thing je od kamena i zanimljiviji je.',
+    'Sentry je imao Void. Ti imaš prazninu u razgovoru.', 'Vićovac, Yelena ti ne bi ni odgovorila.', 'Red Guardian priča gluposti, ali bar je zabavan.',
+    'Vićovac, Brand New Day? Ne, isti stari dosadni dan.', 'VisionQuest traži smisao. Kod tebe ga nema.', 'Vićovac, Doomsday dolazi. Ti već jesi kraj sveta za zabavu.',
+    'Ni Kraven ne bi lovio ovako dosadnu metu.', 'Vićovac, Carnage je haos. Ti si pauza.', 'Eddie Brock priča sam sa sobom. I to je zanimljivije.',
+    'Vićovac, Miles bi skočio u drugi univerzum samo da pobegne.', 'Spider-Verse ima 1000 Spajdermena. Nijedan ne zna ko si.',
+    'Vićovac, X-Meni primaju mutante. Moć dosade nije na listi.', 'Profesor X ti je čitao misli. Zaspao je.', 'Vićovac, Magneto privlači metal. Ti odbijaš ljude.',
+    'Mystique može da bude bilo ko. Nikad ne bira tebe.', 'Vićovac, Storm pravi oluju. Ti pravi tišinu.', 'Cyclops ima lasere. Ti imaš monolog.',
+    'Vićovac, Logan je imao 200 godina strpljenja. Potrošio ga je na tebe.', 'Juggernaut ne može da se zaustavi. Tvoja priča isto, nažalost.',
+    'Vićovac, Blade lovi vampire. Ti ubijaš atmosferu.', 'Ghost Rider ima plamenu glavu. Ti hladan humor.', 'Vićovac, Howard the Duck te je blokirao.',
+    'Elektra je umrla i vratila se. Tvoje šale nikad nisu ni došle.', 'Vićovac, Man-Thing bi rekao nešto pametnije, a ne govori.',
+    'Ti si razlog što TVA briše vremenske linije.', 'Vićovac, Miss Minutes ti je skratila vreme za 50%.', 'He Who Remains je ostao. Nažalost, i ti.',
+    'Vićovac, Watcher samo gleda. Zato što nema šta da kaže tebi.', 'What If… Vićovac nije bio dosadan? Ta epizoda ne postoji.',
+    'Vićovac, I Am Groot ima više zapleta od tvojih priča.', 'Ovo je bila poruka 100+. Doom je zaspao, Vićovac.'
   ];
   function dosadanLine() { return DOSADAN[Math.floor(Math.random() * DOSADAN.length)]; }
   function dosadanSheet() {
