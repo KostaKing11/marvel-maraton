@@ -1,5 +1,7 @@
 # Firestore pravila za kodove
 
+> Ceo skup pravila je sada u `firestore.rules` i objavljuje se sam — vidi `docs/firestore-pravila.md`.
+
 Kodovi se čuvaju u kolekciji `codes`. Da bi radili, u Firebase konzoli
 (**Firestore Database → Rules**) dodaj ovaj blok **unutar**
 `match /databases/{database}/documents { ... }`, pored postojećih pravila

@@ -318,7 +318,7 @@ window.MM = window.MM || {};
     if (colTab === 'h') {
       CHARS.forEach(function (c) {
         var on = unlocked(c, s), l = r.hlv[c.id] || 1, need = H_TOK[l - 1];
-        if (c.secret && !on) { body += secretCard(); return; }
+        if (c.secret && !on) return;
         body += '<button type="button" class="r3-card' + (on ? '' : ' locked') + (c.id === cur.id ? ' sel' : '') + '" data-h="' + c.id + '">' +
           '<span class="r3-ci"><img src="' + (thumbs[c.id] || sprite(c)) + '" data-th="' + c.id + '" alt="" loading="lazy"></span>' +
           (on ? '<em class="r3-x">×' + +hMul(l).toFixed(2) + '</em>' : ico('lock', 'r3-lk')) +
@@ -330,7 +330,7 @@ window.MM = window.MM || {};
     } else {
       BOARDS.forEach(function (b) {
         var own = r.owned.indexOf(b.id) >= 0, l = r.blv[b.id] || 1, need = B_TOK[l - 1];
-        if (b.secret && !own) { body += secretCard(); return; }
+        if (b.secret && !own) return;
         var tier = PASS.map(function (w, i) { return w.s === b.id ? i + 1 : 0; }).filter(Boolean)[0];
         body += '<button type="button" class="r3-card' + (own ? '' : ' locked') + (r.board === b.id ? ' sel' : '') + '" data-b="' + b.id + '" style="--b1:' + b.c1 + ';--b2:' + b.c2 + '">' +
           '<span class="r3-ci"><span class="r3-deck' + (b.comic ? ' comic' : '') + '"></span></span>' +
@@ -347,10 +347,6 @@ window.MM = window.MM || {};
     each('[data-h]', function (b) { b.onclick = function () { heroDetail(b.getAttribute('data-h')); }; });
     each('[data-b]', function (b) { b.onclick = function () { boardDetail(b.getAttribute('data-b')); }; });
     if (colTab === 'h') makeThumbs();
-  }
-
-  function secretCard() {
-    return '<div class="r3-card locked secret"><span class="r3-ci"><b class="r3-q">?</b></span>' + ico('lock', 'r3-lk') + '<b>Tajno</b><span class="r3-lb"><s>Samo iz posebnog koda</s></span></div>';
   }
 
   // slicice junaka iz 3D modela (jednom, posle ucitavanja)

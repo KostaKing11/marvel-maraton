@@ -1000,7 +1000,7 @@ window.MM = window.MM || {};
     var R = MM.Runner, rc = R.charOf(s), sm = R.summary(s), nUn = R.CHARS.filter(function (c) { return R.unlocked(c, s); }).length;
     out += '<button type="button" class="rn-big" data-k="rn" data-a="runner">' +
       '<span class="rnb-bg"></span><img class="rnb-hero" src="' + R.sprite(rc) + '" alt="">' +
-      '<span class="rnb-t"><em>GLAVNA IGRA</em><b>MARVEL RUNNER</b><span>Trči do Doomsdaya · ' + nUn + '/' + R.CHARS.length + ' likova</span>' +
+      '<span class="rnb-t"><em>GLAVNA IGRA</em><b>MARVEL RUNNER</b><span>Trči do Doomsdaya · ' + nUn + '/' + R.CHARS.filter(function (c) { return !c.secret || R.unlocked(c, s); }).length + ' likova</span>' +
         '<span class="rnb-pass"><i>' + sm.tier + '</i><s><u style="width:' + sm.pct + '%"></u></s>PASS' + (sm.claim ? '<em class="rnb-dot">' + sm.claim + '</em>' : '') + '</span>' +
         (g.best.runner ? '<span class="rnb-rec">🏆 ' + g.best.runner.toLocaleString('sr-RS') + '</span>' : '') +
       '</span><span class="rnb-go">TRČI ▶</span></button>';
@@ -1064,7 +1064,7 @@ window.MM = window.MM || {};
     out += '<section class="card code-card" data-k="codes"><div class="card-h"><h2>Kod za nagradu</h2></div>' +
       '<div class="code-row"><input id="codeIn" type="text" placeholder="MM-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="16">' +
       '<button type="button" class="btn primary" data-a="code-redeem">Iskoristi</button></div>' +
-      '<p class="muted small">Kodove deli Kosta. Neki daju tajne stvari u Marvel Runneru.</p>' +
+      '<p class="muted small">Kodove deli Kosta — daju nagrade u Marvel Runneru.</p>' +
       (MM.Codes && MM.Codes.isAdmin() ? '<button type="button" class="btn ghost wide" data-a="code-admin">Napravi kodove (admin)</button>' : '') +
       '</section>';
 
@@ -1423,10 +1423,8 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
-    { id: '2.21', title: 'Kodovi, tajni junak i kutije', big: true, items: [
+    { id: '2.21', title: 'Kodovi i kutije', big: true, items: [
       '<b>Kod za nagradu</b> — u profilu (Ja) unesi kod koji ti pošalje Kosta i dobijaš nagradu u Marvel Runneru.',
-      '<b>Tajni junak: Stan Lee</b> — samo iz posebnog koda. Excelsior: kreće sa štitom, sve moći traju 50% duže i češće se pojavljuju, +25% poena.',
-      '<b>Tajni board: Strip</b> — žut kao stripovi, sa POW! i BAM!. Magnet i dupli novčići dok voziš, traje 40 s i kreće pun.',
       '<b>Misteriozne kutije</b> — nasumične nagrade (obično, retko, epsko, legendarno). Kupuješ ih u Moćima, dobijaš ih za sve tri misije i u Maraton passu.'
     ], cta: { a: 'runner', label: 'Igraj' } },
     { id: '2.20.2', title: 'Board i tutorijal popravljeni', big: false, items: [
