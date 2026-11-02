@@ -127,7 +127,7 @@ window.MM = window.MM || {};
       pass: { pts: (r.pass && r.pass.pts) | 0, got: Object.assign({}, r.pass && r.pass.got) },
       miss: r.miss && r.miss.day === today() ? JSON.parse(JSON.stringify(r.miss)) : dayMissions(),
       skin: r.skin || 'klasik', skins: (r.skins || ['klasik']).slice(),
-      runs: r.runs | 0, distAll: r.distAll | 0
+      runs: r.runs | 0, distAll: r.distAll | 0, gift: r.gift | 0
     };
   }
   function save(fn) { MM.Store.mutate(function (s) { var r = R(s); fn(r, s); s.runner = r; }); }
@@ -165,7 +165,21 @@ window.MM = window.MM || {};
       '<button type="button" class="r3-x" data-a="sheet-close" aria-label="Zatvori">✕</button></div>';
   }
 
+  /** Jednokratni poklon za stari napredak: svaki predjen nivo mini igara
+      (i izbacenih) = 50 novcica, stari rekord u Runneru / 20, kljuc na 10 nivoa. */
+  function oldGift(s) {
+    var best = (s.games && s.games.best) || {}, lv = 0;
+    Object.keys(best).forEach(function (k) { if (k !== 'runner' && k !== '_v') lv += best[k] | 0; });
+    var old = s.gameBest || {}; Object.keys(old).forEach(function (k) { if (!best[{ g0: 'classic', g1: 'doom', g2: 'stones', g3: 'quiz' }[k]]) lv += old[k] | 0; });
+    return { coins: Math.min(5000, lv * 50 + Math.floor((best.runner | 0) / 20)), keys: lv ? 1 + Math.floor(lv / 10) : 0, lv: lv };
+  }
   function home() {
+    var s0 = MM.Store.get();
+    if (!R(s0).gift) {
+      var gf = oldGift(s0);
+      save(function (r2) { r2.gift = 1; r2.wallet += gf.coins; r2.keys += gf.keys; });
+      if (gf.coins || gf.keys) setTimeout(function () { reward({ ico: '🎁', t: '+' + fmt(gf.coins) + ' · 🔑 ' + gf.keys, sub: 'poklon za stari napredak (' + gf.lv + ' pređenih nivoa)' }, 3200); }, 350);
+    }
     var s = MM.Store.get(), r = R(s), c = charOf(s), fb = filmBonus(s), best = ((s.games || {}).best || {}).runner || 0;
     var un = CHARS.filter(function (x) { return unlocked(x, s); }), claim = canClaim(r);
     var sk = SKINS.filter(function (x) { return x.id === r.skin; })[0] || SKINS[0];
@@ -319,13 +333,14 @@ window.MM = window.MM || {};
   }
 
   /** Mala animacija nagrade preko ekrana. */
-  function reward(x) {
+  function reward(x, ms) {
+    ms = ms || 1300;
     UI.buzz([15, 40, 25]);
     var el = document.createElement('div'); el.className = 'r3-rew';
     el.innerHTML = '<div><span>' + (x.skin ? '<s class="r3-mini" style="--b1:' + x.skin.col + ';--b2:' + x.skin.col2 + '"></s>' : x.ico) + '</span><b>' + esc(x.t) + '</b><i>' + esc(x.sub) + '</i></div>';
     (host && host.closest('.sheet') || document.body).appendChild(el);
-    setTimeout(function () { el.classList.add('out'); }, 1300);
-    setTimeout(function () { el.remove(); }, 1700);
+    setTimeout(function () { el.classList.add('out'); }, ms);
+    setTimeout(function () { el.remove(); }, ms + 400);
   }
 
   /* ---------------- trka ---------------- */

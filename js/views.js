@@ -957,18 +957,20 @@ window.MM = window.MM || {};
      ============================================================ */
 
   /** Stanje igara (stari gameBest g0..g3 se prevodi u nove id-jeve).
-      v2: XP je 5x manji nego ranije (bilo je previse naduvano). */
+      XP skala v3: nova kriva nivoa je tacno upola stara, pa stari XP / 2
+      = isti nivo i isti procenat do sledeceg. Niko ne gubi nivo.
+      (v2 je bio XP / 5 - to se vraca: x 2.5.) */
+  function xpScale(x, v) { return v === 3 ? x : v === 2 ? Math.round(x * 2.5) : Math.round(x / 2); }
   function gamesOf(s) {
-    var g = s.games && typeof s.games === 'object' ? s.games : { xp: 0, wins: 0, best: {}, xpv: 2 };
-    var xp = g.xp | 0;
-    if (g.xpv !== 2) xp = Math.round(xp / 5);
-    g = { xp: xp, xpv: 2, wins: g.wins | 0, runs: g.runs | 0, best: Object.assign({}, g.best || {}) };
+    var g = s.games && typeof s.games === 'object' ? s.games : { xp: 0, wins: 0, best: {}, xpv: 3 };
+    var xp = xpScale(g.xp | 0, g.xpv);
+    g = { xp: xp, xpv: 3, wins: g.wins | 0, runs: g.runs | 0, best: Object.assign({}, g.best || {}) };
     var old = s.gameBest || {}, map = { g0: 'classic', g1: 'doom', g2: 'stones', g3: 'quiz' };
     Object.keys(map).forEach(function (k) { if ((old[k] || 0) > (g.best[map[k]] || 0)) g.best[map[k]] = old[k]; });
     return g;
   }
-  /** XP drugara: stari profili (bez gbest._v = 2) su na staroj skali. */
-  function peerXp(p) { var x = p.gxp || 0; return p.gbest && p.gbest._v === 2 ? x : Math.round(x / 5); }
+  /** XP drugara, prebacen na istu skalu (gbest._v kaze koja je). */
+  function peerXp(p) { return xpScale(p.gxp || 0, p.gbest && p.gbest._v); }
   /** Ekipa sa mojim svezim brojevima, sortirana po XP. */
   function gamePeople(ctx) {
     var s = ctx.s, g = gamesOf(s), me = ctx.user && ctx.user.uid;
@@ -1413,6 +1415,11 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.18.1', title: 'Niko ne gubi napredak', big: false, items: [
+      '<b>Nivo ostaje isti</b> — XP je prebačen na novu skalu tako da svako ima tačno isti nivo i procenat kao pre. Rang lista računa sve isto.',
+      '<b>Poklon za stare rekorde</b> — svaki pređen nivo u mini igrama (i u igrama koje su izbačene) i stari rekord u Runneru pretvoreni su u novčiće i ključeve. Čeka te kad otvoriš Runner.',
+      'Runner daje više XP-a nego u 2.18 (1 XP na 50 m, do 60 po trci).'
+    ], cta: { a: 'runner', label: 'Uzmi poklon' } },
     { id: '2.18', title: 'Marvel Runner 3D', big: true, items: [
       '<b>Prava 3D igra</b> — kamera iza tebe kao u Subway Surfersu, grad, grafiti, šine i vozovi u 3D.',
       '<b>Penji se na vozove</b> — rampe vode na krov, trčiš po vagonima. Neki vozovi idu ka tebi (upaljeni farovi).',
@@ -1421,7 +1428,7 @@ window.MM = window.MM || {};
       '<b>Marvel Pass</b> — 40 nivoa nagrada (novčići, ključevi, boardovi, izgledi). Što dalje trčiš, više dobiješ.',
       '<b>Dnevne misije</b>, nadogradnje moći za novčiće i nastavak posle pada za ključ.',
       '<b>Manje, a bolje mini igre</b> — 5 najboljih, svaka sa svojim menijem i stazom od 10 nivoa.',
-      '<b>XP je smanjen 5×</b> (bio je naduvan) — nivo ostaje pošten, plus novi ekran za level up.'
+      '<b>Tvoj nivo ostaje isti</b> — XP je prebačen na novu skalu, a stari rekordi iz igara postaju poklon u Runneru (novčići i ključevi).'
     ], cta: { a: 'runner', label: 'Igraj' } },
     { id: '2.17', title: 'Novi Marvel Runner', big: false, items: [
       '<b>Pravi likovi</b> — svih 13 junaka i Doom oslikani u Figmi, vide se s leđa dok trče.',

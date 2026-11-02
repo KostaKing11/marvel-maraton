@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.18.0';
+MM.VERSION = '2.18.1';
 
 (function () {
   'use strict';
@@ -669,8 +669,8 @@ MM.VERSION = '2.18.0';
     'rate': function (el) { openRate(el.getAttribute('data-id'), 0); },
     'runner': function () {
       MM.Runner.open(function (res) {
-        // XP: 1 na svakih 100 m, najvise 40 po trci
-        var before = MM.Games.lvlOf(V.gamesOf(state()).xp), xp = Math.min(40, Math.round(res.dist / 100)), rec = false;
+        // XP: 1 na svakih 50 m, najvise 60 po trci
+        var before = MM.Games.lvlOf(V.gamesOf(state()).xp), xp = Math.min(60, Math.round(res.dist / 50)), rec = false;
         Store.mutate(function (s) {
           var gg = s.games = V.gamesOf(s);
           gg.xp += xp; gg.runs = (gg.runs || 0) + 1;
@@ -1248,7 +1248,7 @@ MM.VERSION = '2.18.0';
       var s = state(), p = P.progress(s);
       var g = V.gamesOf(s);
       Store.publishProfile({ watched: p.watched, total: p.total, minutes: p.watchedMin, percent: p.percent, streak: P.streak(s).n,
-        gxp: g.xp, gbest: Object.assign({ _v: 2 }, g.best) });
+        gxp: g.xp, gbest: Object.assign({ _v: 3 }, g.best) });
     }, 2500);
   }
 
