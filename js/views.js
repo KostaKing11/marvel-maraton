@@ -977,11 +977,13 @@ window.MM = window.MM || {};
 
     /* poruke o dosadi (samo za Vicovca) */
     if (ctx.ui.vic) {
-      out += '<section class="card mute-card" data-k="mute"><div class="card-h"><h2>Poruke o dosadi</h2><span class="' + (s.dosadanOff ? 'ok-line' : 'mute-on') + '">' +
-        (s.dosadanOff ? 'isključene' : 'UKLJUČENE') + '</span></div>' +
-        (s.dosadanOff ? '<p class="muted small">Prešao si sve tri igre. Tišina je zaslužena.</p>'
-          : '<p class="muted small">Isključuju se samo ako pređeš tri igre zaredom: uhvati Dooma, ponovi kamenje i Marvel kviz bez greške.</p>' +
-            '<button type="button" class="btn primary wide" data-a="mute-games">🎮 Isključi (3 igre)</button>') + '</section>';
+      var off = Date.now() < (s.dosadanUntil || 0), lvl = (s.dosadanLevel || 0) + 1;
+      var left = off ? Math.ceil((s.dosadanUntil - Date.now()) / 60000) : 0;
+      out += '<section class="card mute-card" data-k="mute"><div class="card-h"><h2>Poruke o dosadi</h2><span class="' + (off ? 'ok-line' : 'mute-on') + '">' +
+        (off ? 'isključene' : 'UKLJUČENE') + '</span></div>' +
+        (off ? '<p class="muted small">Tišina još <b>' + Math.floor(left / 60) + 'h ' + (left % 60) + 'm</b>. Posle se vraćaju, a sledeći put je <b>nivo ' + lvl + '</b>.</p>'
+          : '<p class="muted small">Isključuju se na 24 sata ako pređeš tri igre zaredom. <b>Nivo ' + lvl + '</b>' + (lvl > 1 ? ' — teže nego prošli put.' : '.') + '</p>' +
+            '<button type="button" class="btn primary wide" data-a="mute-games">🎮 Isključi (nivo ' + lvl + ')</button>') + '</section>';
     }
 
     /* izgled */

@@ -1648,6 +1648,11 @@ body.skin-og {
 .gm-doom { position: absolute; width: 64px; height: 64px; border-radius: 50%; transition: left .16s ease, top .16s ease; }
 .gm-doom img { width: 100%; height: 100%; border-radius: 50%; border: 3px solid var(--doom); box-shadow: 0 0 16px rgba(57, 217, 122, .7); }
 .gm-doom.hit img { animation: gmHit .25s ease; }
+.gm-doom { z-index: 2; }
+.gm-decoy { position: absolute; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 26px; background: #2a1414;
+  border: 3px solid #e62429; transition: left .16s ease, top .16s ease; z-index: 1; }
+.gm-arena.bad { animation: gmBad .3s ease; }
+@keyframes gmBad { 30% { background: #4a0f12; transform: translateX(-6px); } 60% { transform: translateX(6px); } }
 @keyframes gmHit { 50% { transform: scale(.75); filter: brightness(2); } }
 .gm-stones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 18px; }
 .gm-st { aspect-ratio: 1; border-radius: 20px; background: var(--s2); border: 2px solid var(--line); display: flex; align-items: center; justify-content: center; transition: transform .1s; }

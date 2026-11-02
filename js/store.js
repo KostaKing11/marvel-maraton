@@ -57,9 +57,10 @@ window.MM = window.MM || {};
       ach: null,            // dostignuca: { id: vreme otkljucavanja } (null = jos nije provereno)
       recapSeen: '',        // ponedeljak nedelje ciji je pregled vec otvoren/sakriven
       look: 'full',         // izgled: 'full' (sve) | 'mini' (samo dani i poster koji se prevlaci)
-      epStars: {},
+      epStars: {},          // ocene epizoda: { 'loki-s1': { '3': 4 } } - prosek je ocena sezone
       dosadan: false,       // obelezen nalog (ostaje i kad promeni ime)
-      dosadanOff: false,    // presao je tri igre i iskljucio poruke          // ocene epizoda: { 'loki-s1': { '3': 4 } } - prosek je ocena sezone
+      dosadanUntil: 0,      // do kad su poruke iskljucene (presao igre; traje 24 h)
+      dosadanLevel: 0,      // koliko puta je presao igre - svaki put je teze
       skin: 'dark',         // stil: 'dark' | 'retro' (strip: papir, crni obrisi, POW!)
       updatedAt: 0
     };

@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.11.0';
+MM.VERSION = '2.12.0';
 
 (function () {
   'use strict';
@@ -665,7 +665,9 @@ MM.VERSION = '2.11.0';
     /* --- ocene / ekipa --- */
     'rate': function (el) { openRate(el.getAttribute('data-id'), 0); },
     'mute-games': function () {
-      MM.Games.open(function () { Store.mutate(function (s) { s.dosadanOff = true; }); });
+      MM.Games.open(state().dosadanLevel || 0, function () {
+        Store.mutate(function (s) { s.dosadanUntil = Date.now() + 24 * 3600 * 1000; s.dosadanLevel = (s.dosadanLevel || 0) + 1; });
+      });
     },
     'ep-star': function (el) {
       setEpStar(el.getAttribute('data-id'), +el.getAttribute('data-ep'), +el.getAttribute('data-n'));
@@ -1351,12 +1353,15 @@ MM.VERSION = '2.11.0';
     return false;
   }
 
+  function muted() { return Date.now() < (state().dosadanUntil || 0); }
+
   /** Poruke koje stalno lete preko ekrana (ne blokiraju dodir). */
   var flameTimer = null;
   function startFlames() {
-    if (flameTimer || !isVicovac() || state().dosadanOff) return;
+    if (flameTimer || !isVicovac()) return;
+    // tajmer radi stalno: dok traje tisina samo preskace, posle 24 h poruke se same vrate
     flameTimer = setInterval(function () {
-      if (state().dosadanOff) { clearInterval(flameTimer); flameTimer = null; return; }
+      if (muted()) return;
       if (document.visibilityState !== 'visible') return;
       var el = document.createElement('div');
       el.className = 'flame-pop';
@@ -1372,8 +1377,8 @@ MM.VERSION = '2.11.0';
   function maybeDosadan() {
     if (!isVicovac()) return;
     if (!UIS.vic) { UIS.vic = true; schedule(); }
-    if (state().dosadanOff) return;
     startFlames();
+    if (muted()) return;
     if (dosadanShown) return;
     if (UI.topSheet()) { setTimeout(maybeDosadan, 1500); return; }
     dosadanShown = true;
