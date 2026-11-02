@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.21.1';
+MM.VERSION = '2.21.2';
 
 (function () {
   'use strict';

@@ -490,8 +490,8 @@ window.MM = window.MM || {};
         var z = z0 - o.d * k;
         if (o.t === 'T') mkTrain(o.lane, z, o.len, false);
         else if (o.t === 'R') {
-          mkRamp(o.lane, z); mkTrain(o.lane, z - RL, o.len, false);
-          for (var i = 0; i < Math.floor(o.len / 2.6); i++) mkCoin(o.lane, z - RL - 1.5 - i * 2.6, TRAIN_H + 1);
+          mkRamp(o.lane, z); var rt = mkTrain(o.lane, z - RL, o.len, false); rt.roofCoins = [];
+          for (var i = 0; i < Math.floor(o.len / 2.6); i++) rt.roofCoins.push(mkCoin(o.lane, z - RL - 1.5 - i * 2.6, TRAIN_H + 1));
         }
         else if (o.t === 'M') {
           // krece dalje i brze: stigne do reda kad i ti
@@ -581,12 +581,13 @@ window.MM = window.MM || {};
       S.stumbleAt = S.t; S.doomT = 5; S.invuln = .5; ev('stumble');
     }
     function clearNear() {
-      S.objs = S.objs.filter(function (o) {
-        if (o.t === 'coin' || o.t === 'pw' || o.t === 'btok') return true;
+      // skloni prepreke ispred; novcici sa krova sklonjenog voza idu sa njim (inace lebde)
+      S.objs.forEach(function (o) {
+        if (o.t === 'coin' || o.t === 'pw' || o.t === 'btok') return;
         var f = o.m.position.z;
-        if (f > -28 && f - o.len < 3) { scene.remove(o.m); return false; }
-        return true;
+        if (f > -28 && f - o.len < 3) { o.gone = true; if (o.roofCoins) o.roofCoins.forEach(function (c) { c.gone = true; }); }
       });
+      S.objs = S.objs.filter(function (o) { if (o.gone) { scene.remove(o.m); return false; } return true; });
     }
     var endTimer = 0, shake = 0;
     /** Udarac spreda: stit, board ili Hulk ga upiju, inace pad. */
@@ -607,7 +608,7 @@ window.MM = window.MM || {};
     function take(kind, val) {
       if (kind === 'btok') {
         S.stats.btok++;
-        if (S.board > 0) { S.board = Math.min(dur('board') + 10, S.board + 2); ev('btokplus'); return; }
+        if (S.board > 0) { S.board = Math.min(dur('board'), S.board + 2); ev('btokplus'); return; }
         if (S.meter < METER) { S.meter = Math.min(METER, S.meter + (val || 1)); ev(S.meter === METER ? 'boardready' : 'btok'); }
         return;
       }
@@ -855,6 +856,7 @@ window.MM = window.MM || {};
         if (cv.parentNode) cv.parentNode.removeChild(cv);
       },
       _take: function (k) { take(k); },
+      _clearNear: function () { clearNear(); },
       _state: function () { return S; }
     };
   }
