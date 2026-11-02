@@ -60,7 +60,8 @@ window.MM = window.MM || {};
       epStars: {},          // ocene epizoda: { 'loki-s1': { '3': 4 } } - prosek je ocena sezone
       dosadan: false,       // obelezen nalog (ostaje i kad promeni ime)
       dosadanUntil: 0,      // do kad su poruke iskljucene (presao igre; traje 24 h)
-      dosadanLevel: 0,      // koliko puta je presao igre - svaki put je teze
+      dosadanLevel: 0,
+      gameBest: {},         // mini igre iz profila: najvisi predjeni nivo { g0: 3, g1: 5 }      // koliko puta je presao igre - svaki put je teze
       skin: 'dark',         // stil: 'dark' | 'retro' (strip: papir, crni obrisi, POW!)
       updatedAt: 0
     };

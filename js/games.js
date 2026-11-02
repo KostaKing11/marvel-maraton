@@ -53,13 +53,15 @@ window.MM = window.MM || {};
   ];
   var STONES = ['space', 'mind', 'reality', 'power', 'time', 'soul'];
 
-  var box = null, onWin = null, timers = [], L = 0;   // L = nivo: svaka pobeda = teze sledeci put
+  var box = null, onWin = null, timers = [], L = 0;
+  var only = 0;          // vezba: 0 = sve tri zaredom, 1/2/3 = samo ta igra
+  var practice = false;  // vezba iz profila (ne gasi poruke)   // L = nivo: svaka pobeda = teze sledeci put
 
   function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
   function clearAll() { timers.forEach(clearTimeout); timers = []; }
   function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function head(step, title, sub) {
-    return '<div class="gm-h"><span class="gm-step">NIVO ' + (L + 1) + ' · IGRA ' + step + ' / 3</span><h2>' + esc(title) + '</h2><p class="muted">' + esc(sub) + '</p></div>';
+    return '<div class="gm-h"><span class="gm-step">NIVO ' + (L + 1) + (only ? '' : ' · IGRA ' + step + ' / 3') + '</span><h2>' + esc(title) + '</h2><p class="muted">' + esc(sub) + '</p></div>';
   }
 
   /* ---------------- 1. Uhvati Dooma ---------------- */
@@ -97,7 +99,7 @@ window.MM = window.MM || {};
       } else if (e.target.closest('.gm-decoy')) { hits = Math.max(0, hits - 2); UI.buzz([30, 30, 30]); arena.classList.remove('bad'); void arena.offsetWidth; arena.classList.add('bad'); }
       else return;
       show();
-      if (hits >= need) { done = true; clearAll(); later(game2, 500); }
+      if (hits >= need) { done = true; clearAll(); later(only ? win : game2, 500); }
     });
     loop();
     (function tick() {
@@ -135,7 +137,7 @@ window.MM = window.MM || {};
         if (i !== seq[pos]) { input = false; fail('Pogrešan kamen. Thanos se smeje.'); return; }
         pos++;
         box.querySelector('#g2p').textContent = pos + ' / ' + len;
-        if (pos === len) { input = false; later(game3, 600); }
+        if (pos === len) { input = false; later(only ? win : game3, 600); }
       });
     });
   }
@@ -173,23 +175,38 @@ window.MM = window.MM || {};
     ask();
   }
 
+  function first() { return [game1, game1, game2, game3][only](); }
+
   function fail(why) {
     clearAll();
-    box.innerHTML = '<div class="gm-end"><div class="gm-emo">🥱</div><h2>Pao si.</h2><p class="muted">' + esc(why) + ' Kreće se od prve igre.</p>' +
-      '<button type="button" class="btn primary wide" id="gmRe">Ponovo</button><button type="button" class="btn ghost wide" data-a="sheet-close">Odustajem, dosadan sam</button></div>';
-    box.querySelector('#gmRe').onclick = game1;
+    box.innerHTML = '<div class="gm-end"><div class="gm-emo">' + (practice ? '😵' : '🥱') + '</div><h2>Pao si.</h2><p class="muted">' + esc(why) +
+      (only ? '' : ' Kreće se od prve igre.') + '</p>' +
+      '<button type="button" class="btn primary wide" id="gmRe">Ponovo</button><button type="button" class="btn ghost wide" data-a="sheet-close">' +
+      (practice ? 'Zatvori' : 'Odustajem, dosadan sam') + '</button></div>';
+    box.querySelector('#gmRe').onclick = first;
   }
 
   function win() {
     clearAll();
+    if (practice) {
+      box.innerHTML = '<div class="gm-end"><div class="gm-emo">🏆</div><h2>Prešao si nivo ' + (L + 1) + '!</h2>' +
+        '<p class="muted">' + (only ? 'Probaj teži nivo.' : 'Sve tri igre zaredom. Ozbiljno.') + '</p>' +
+        '<button type="button" class="btn primary wide" id="gmNext">Nivo ' + (L + 2) + '</button><button type="button" class="btn ghost wide" data-a="sheet-close">Zatvori</button></div>';
+      box.querySelector('#gmNext').onclick = function () { L++; first(); };
+      if (onWin) onWin(L + 1);
+      return;
+    }
     box.innerHTML = '<div class="gm-end"><div class="gm-emo">🏆</div><h2>Zaslužio si tišinu.</h2><p class="muted">Poruke su isključene 24 sata. Posle se vraćaju, a sledeći put je nivo ' + (L + 2) + ' — teže.</p>' +
       '<button type="button" class="btn primary wide" data-a="sheet-close">Hvala</button></div>';
     if (onWin) onWin();
   }
 
-  function open(level, cb) {
+  /** opts: { practice, only } - vezba iz profila: bira se igra i nivo. */
+  function open(level, cb, opts) {
     L = level || 0;
     onWin = cb;
+    opts = opts || {};
+    practice = !!opts.practice; only = opts.only || 0;
     UI.openSheet({
       id: 'games', full: true, cls: 'gm-sheet',
       render: function () {
@@ -198,6 +215,7 @@ window.MM = window.MM || {};
       },
       onOpen: function (el) {
         box = el.querySelector('#gmBox');
+        if (practice) { first(); return; }
         box.innerHTML = '<div class="gm-end"><div class="gm-emo">🎮</div><h2>Isključi poruke</h2>' +
           '<p class="muted">Nivo ' + (L + 1) + '. Tri igre zaredom: uhvati Dooma, ponovi kamenje, Marvel kviz na vreme bez greške. Padneš bilo gde — ispočetka. Tišina traje 24 sata.</p>' +
           '<button type="button" class="btn primary wide" id="gmGo">Kreni</button></div>';

@@ -1633,6 +1633,17 @@ body.skin-og {
 .skin-retro .ep-st button { color: #cdb88a; }
 .skin-retro .ep-st button.on { color: #f2a500; }
 
+/* mini igre u profilu */
+.lvl-pick { display: inline-flex; align-items: center; gap: 8px; }
+.lvl-pick b { font-size: 13px; min-width: 52px; text-align: center; }
+.game-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.game-b { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px; border-radius: 14px; text-align: left; background: var(--s2); border: 1px solid var(--line); }
+.game-b span { font-size: 24px; }
+.game-b b { font-size: 13.5px; line-height: 1.2; }
+.game-b i { font-style: normal; font-size: 11.5px; color: var(--mu); }
+.game-b.all { grid-column: 1 / -1; background: linear-gradient(100deg, rgba(230, 36, 41, .16), rgba(230, 36, 41, .04)), var(--s2); border-color: rgba(230, 36, 41, .4); }
+.game-b:active { transform: scale(.97); }
+
 /* Vicovac: igre za iskljucivanje */
 .mute-on { font-size: 12px; font-weight: 900; letter-spacing: 1px; color: var(--red2); }
 .gm-sheet .sheet { background: var(--bg); height: var(--appH); }

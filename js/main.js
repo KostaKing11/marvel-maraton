@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.12.1';
+MM.VERSION = '2.13.0';
 
 (function () {
   'use strict';
@@ -664,6 +664,13 @@ MM.VERSION = '2.12.1';
 
     /* --- ocene / ekipa --- */
     'rate': function (el) { openRate(el.getAttribute('data-id'), 0); },
+    'play-game': function (el) {
+      var only = +el.getAttribute('data-g') || 0, lvl = (UIS.gameLvl || 1) - 1;
+      MM.Games.open(lvl, function (passed) {
+        Store.mutate(function (s) { s.gameBest = s.gameBest || {}; var k = 'g' + only; if ((s.gameBest[k] || 0) < passed) s.gameBest[k] = passed; });
+      }, { practice: true, only: only });
+    },
+    'game-lvl': function (el) { UIS.gameLvl = Math.max(1, Math.min(10, (UIS.gameLvl || 1) + (+el.getAttribute('data-d')))); UI.buzz(6); render(); },
     'mute-games': function () {
       MM.Games.open(state().dosadanLevel || 0, function () {
         Store.mutate(function (s) { s.dosadanUntil = Date.now() + 24 * 3600 * 1000; s.dosadanLevel = (s.dosadanLevel || 0) + 1; });
@@ -1364,7 +1371,7 @@ MM.VERSION = '2.12.1';
       if (muted()) return;
       if (document.visibilityState !== 'visible') return;
       var top = UI.topSheet();
-      if (top && top.id === 'games') return;            // dok igra - mir
+      if (top && top.id === 'games') return;            // dok igra - mir (i u vezbi)
       var el = document.createElement('div');
       el.className = 'flame-pop';
       el.style.left = (6 + Math.random() * 46).toFixed(1) + '%';

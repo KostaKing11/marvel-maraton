@@ -986,6 +986,16 @@ window.MM = window.MM || {};
             '<button type="button" class="btn primary wide" data-a="mute-games">🎮 Isključi (nivo ' + lvl + ')</button>') + '</section>';
     }
 
+    /* mini igre - za svakoga */
+    var gl = ctx.ui.gameLvl || 1, gb = s.gameBest || {};
+    function gBtn(g, emo, name) {
+      return '<button type="button" class="game-b' + (g ? '' : ' all') + '" data-a="play-game" data-g="' + g + '"><span>' + emo + '</span><b>' + name + '</b>' +
+        '<i>' + (gb['g' + g] ? 'rekord: nivo ' + gb['g' + g] : 'još nije pređeno') + '</i></button>';
+    }
+    out += '<section class="card" data-k="games"><div class="card-h"><h2>Mini igre</h2>' +
+      '<span class="lvl-pick"><button type="button" class="ib sm" data-a="game-lvl" data-d="-1">−</button><b>nivo ' + gl + '</b><button type="button" class="ib sm" data-a="game-lvl" data-d="1">+</button></span></div>' +
+      '<div class="game-grid">' + gBtn(0, '🏆', 'Sve tri zaredom') + gBtn(1, '🎯', 'Uhvati Dooma') + gBtn(2, '💎', 'Kamenje') + gBtn(3, '❓', 'Marvel kviz') + '</div></section>';
+
     /* izgled */
     var look = s.look === 'mini' ? 'mini' : 'full';
     out += '<section class="card" data-k="look" id="ja-look"><div class="card-h"><h2>Izgled</h2></div><div class="look-opts">' +
@@ -1388,6 +1398,10 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.13', title: 'Mini igre', big: false, items: [
+      '<b>Mini igre u profilu</b> — Uhvati Dooma, Kamenje beskonačnosti i Marvel kviz. Igraš svaku posebno ili sve tri zaredom.',
+      'Biraš nivo (1–10); pamti se tvoj rekord za svaku igru.'
+    ] },
     { id: '2.10', title: 'Ocene epizoda', big: false, items: [
       '<b>Oceni svaku epizodu</b> — posle svake epizode iskoči traka sa zvezdicama. Sve ocene su i u detaljima sezone.',
       '<b>Ocena sezone = prosek</b> tvojih ocena epizoda. Recenziju (tekst) pišeš tek kad odgledaš celu sezonu.',
