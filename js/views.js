@@ -1503,6 +1503,9 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.25.2', title: 'Runner: mirnija kamera', big: false, items: [
+      'Kamera se više ne naginje kad skrećeš, pa se ekran ne trese.'
+    ] },
     { id: '2.25.1', title: 'Kviz uživo među igrama', big: false, items: [
       '<b>Kviz uživo</b> je sada obična kartica u Mini igrama, pored ostalih. Na kartici piše koliko si puta pobedio.'
     ] },

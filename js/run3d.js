@@ -939,7 +939,6 @@ window.MM = window.MM || {};
       if (Math.abs(cam.fov - fov) > .05) { cam.fov = fov; cam.updateProjectionMatrix(); }
       if (shake > 0) { shake -= dt; cam.position.x += (Math.random() - .5) * shake; cam.position.y += (Math.random() - .5) * shake; }
       cam.lookAt(S.x * .45, fly ? S.y : 1.5 + S.y * .6, -12);
-      cam.rotation.z += lean * .035;      // blago naginjanje kamere pri promeni trake
       renderer.render(scene, cam);
     }
 
