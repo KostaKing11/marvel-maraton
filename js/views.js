@@ -1052,10 +1052,6 @@ window.MM = window.MM || {};
         (g.best.runner ? '<span class="rnb-rec">🏆 ' + g.best.runner.toLocaleString('sr-RS') + '</span>' : '') +
       '</span><span class="rnb-go">TRČI ▶</span></button>';
 
-    // kviz uzivo sa ekipom
-    out += '<button type="button" class="lq-card" data-k="lq" data-a="livequiz"><span class="lqc-bolt">⚡</span><span class="lqc-t"><em>NOVO · SA EKIPOM</em><b>Kviz uživo</b>' +
-      '<i>Svi u isto vreme · brži tačan = više poena · pobednik dobija kutiju</i></span><span class="lqc-go">IGRAJ</span></button>';
-
     // mini igre: svaka ima svoj meni
     var ids = Object.keys(G.REG);
     out += '<section class="card" data-k="gxlist"><div class="card-h"><h2>Mini igre</h2><span class="muted">20 nivoa + beskonačno</span></div><div class="mg-grid">';
@@ -1064,6 +1060,9 @@ window.MM = window.MM || {};
       out += '<button type="button" class="mg-c" style="--gc:' + r.col + '" data-a="play-game" data-g="' + id + '"><span class="mg-emo">' + r.emo + '</span><b>' + esc(r.name) + '</b>' +
         '<i>' + esc(r.desc) + '</i><span class="mg-prog"><u><q style="width:' + (best / 20 * 100) + '%"></q></u>' + best + '/20' + (g.best[id + '_e'] ? ' · ♾️ ' + g.best[id + '_e'] : '') + '</span></button>';
     });
+    var lqw = s.lqWins | 0;
+    out += '<button type="button" class="mg-c" style="--gc:#f5b83d" data-a="livequiz"><span class="mg-emo">⚡</span><b>Kviz uživo</b>' +
+      '<i>sa ekipom, u isto vreme</i><span class="mg-prog">' + (lqw ? '🏆 ' + lqw + (lqw === 1 ? ' pobeda' : lqw < 5 ? ' pobede' : ' pobeda') : 'do 10 pitanja · uživo') + '</span></button>';
     out += '<button type="button" class="mg-c wide" style="--gc:#ffb400" data-a="play-game" data-g="classic"><span class="mg-emo">🏆</span><b>Klasika: tri zaredom</b>' +
       '<i>Dooma, Kamenje i Kviz bez pada · trostruki XP</i><span class="mg-prog"><u><q style="width:' + ((g.best.classic || 0) / 20 * 100) + '%"></q></u>' + (g.best.classic || 0) + '/20' + (g.best.classic_e ? ' · ♾️ ' + g.best.classic_e : '') + '</span></button>';
     out += '</div></section>';
@@ -1504,6 +1503,9 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.25.1', title: 'Kviz uživo među igrama', big: false, items: [
+      '<b>Kviz uživo</b> je sada obična kartica u Mini igrama, pored ostalih. Na kartici piše koliko si puta pobedio.'
+    ] },
     { id: '2.25', title: 'Kviz uživo, teme i novi junaci', big: true, items: [
       '<b>Kviz uživo</b> — Igre → Kviz uživo. Napravi kviz, ekipa uđe, ti klikneš KRENI. Svi dobijaju ista pitanja u isto vreme, <b>brži tačan odgovor = više poena</b>. Posle svakog pitanja poredak, na kraju podijum. Pobednik dobija kutiju.',
       '<b>Podijumi</b> — rang liste su sada pravi podijumi (1, 2, 3), ostali ispod. Ekipa, igre (Nivo · Runner · Beskonačno) i nova lista <b>Najbolje ocenjeno</b> sa posterima.',

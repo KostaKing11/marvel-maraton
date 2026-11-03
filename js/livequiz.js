@@ -151,7 +151,7 @@ window.MM = window.MM || {};
       var r = ranked(), me = MM.Store.uid();
       if (r[0] && r[0].uid === me && r.length > 1 && (r[0].score || 0) > 0) {
         if (MM.Runner && MM.Runner.grant) MM.Runner.grant({ t: 'box', n: 1 });
-        V.won = true; sfx('win'); if (MM.Games.confetti) MM.Games.confetti();
+        V.won = true; sfx('win'); MM.Store.mutate(function (st) { st.lqWins = (st.lqWins | 0) + 1; }); if (MM.Games.confetti) MM.Games.confetti();
         if (V.room && V.room.host === me) MM.Battle.finish(V.id);
       } else sfx('reward');
       V.dirty = true; tick();
