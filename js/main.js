@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.25.2';
+MM.VERSION = '2.25.3';
 
 (function () {
   'use strict';
@@ -388,7 +388,14 @@ MM.VERSION = '2.25.2';
               '<button type="button" class="btn ghost sm" data-a="code-copy" data-c="' + c.code + '">Podeli</button>' +
               '<button type="button" class="btn danger sm" data-a="code-del" data-c="' + c.code + '">Obriši</button></div>';
           }).join('') + '</div>') +
-        '<p class="muted small">Kodovi rade tek kad u Firebase dodaš pravila iz docs/firestore-kodovi.md.</p></div>';
+        '<p class="muted small">Kodovi rade tek kad u Firebase dodaš pravila iz docs/firestore-kodovi.md.</p>' +
+        // samo za admina: namesti predjene nivoe u mini igrama (dobijes i XP kao da si igrao)
+        '<h3>Igre (samo ti)</h3><div class="code-list">' + Object.keys(MM.Games.REG).concat(['classic']).map(function (id) {
+          var r = id === 'classic' ? { emo: '🏆', name: 'Klasika' } : MM.Games.REG[id], b = V.gamesOf(state()).best[id] || 0;
+          return '<div class="code-it"><div><b>' + r.emo + ' ' + UI.esc(r.name) + '</b><span>pređeno ' + b + ' / 20</span></div>' +
+            '<button type="button" class="btn ghost sm" data-a="adm-game" data-g="' + id + '" data-v="1"' + (b >= 20 ? ' disabled' : '') + '>+1 nivo</button>' +
+            '<button type="button" class="btn primary sm" data-a="adm-game" data-g="' + id + '" data-v="20"' + (b >= 20 ? ' disabled' : '') + '>Pređi sve</button></div>';
+        }).join('') + '</div></div>';
     } });
   }
 
@@ -729,6 +736,18 @@ MM.VERSION = '2.25.2';
     'quiz': function (el) { MM.Quiz.open(el.getAttribute('data-id')); },
     'finale': function () { if (MM.Finale) MM.Finale.open(); },
     'livequiz': function () { MM.LiveQuiz.open(); },
+    'adm-game': function (el) {
+      if (!MM.Codes.isAdmin()) return;
+      var id = el.getAttribute('data-g'), add = +el.getAttribute('data-v'), from = 0, to = 0, xp = 0;
+      Store.mutate(function (s) {
+        var gg = s.games = V.gamesOf(s);
+        from = gg.best[id] || 0; to = Math.min(20, add >= 20 ? 20 : from + add);
+        for (var l = from + 1; l <= to; l++) xp += MM.Games.xpFor(id, l);
+        gg.best[id] = to; gg.xp += xp; gg.wins = (gg.wins || 0) + (to - from);
+      });
+      publishProgress(); UI.buzz(8); UI.refreshSheets();
+      UI.toast((id === 'classic' ? 'Klasika' : MM.Games.REG[id].name) + ': pređeno ' + to + ' / 20 · +' + xp + ' XP');
+    },
     'runner': function () {
       MM.Runner.open(function (res) {
         // XP: 1 na svakih 120 m, najvise 40 po trci

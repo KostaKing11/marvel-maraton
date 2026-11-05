@@ -1503,6 +1503,9 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.25.3', title: 'Sitne popravke', big: false, items: [
+      'Sitne popravke u igrama.'
+    ] },
     { id: '2.25.2', title: 'Runner: mirnija kamera', big: false, items: [
       'Kamera se više ne naginje kad skrećeš, pa se ekran ne trese.'
     ] },
