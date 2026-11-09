@@ -1507,13 +1507,12 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
-    { id: '2.26', title: 'Tvoj tier list', big: true, items: [
-      '<b>Tier list</b> — kad odgledaš film ili celu sezonu (posle kviza), biraš gde ide: <b>S, A, B, C, D ili F</b>. Odmah vidiš u kom je društvu.',
-      'Ceo tier list je u <b>Ja → Moj tier list</b>: svi posteri po redovima. Tapni poster da ga premestiš.',
-      'Već si gledao gomilu filmova? <b>Rangiraj redom</b> — ide jedan po jedan, samo tapkaš S–F.',
-      '<b>Sačuvaj kao sliku</b> i pošalji ekipi, pa svađa može da počne.',
-      'Na stranici svakog odgledanog naslova vidiš njegov tier i možeš da ga promeniš.'
-    ], cta: { a: 'tierlist', label: 'Otvori tier list' } },
+    { id: '2.26.1', title: 'Tvoja rang lista', big: true, items: [
+      '<b>Rang lista</b> — kad odgledaš film ili celu sezonu (posle kviza), ubaciš ga na svoje mesto: <b>na vrh, između dva naslova ili na dno</b>. Prvi film je #1, a svaki sledeći staviš iznad ili ispod.',
+      'Posle ga pomeraš <b>▲ gore / ▼ dole</b> ili odmah na vrh.',
+      'Cela lista je u <b>Ja → Moja rang lista</b>. Tapni naslov da ga pomeriš. Već odgledane ubacuješ sa <b>Rangiraj redom</b>, jedan po jedan.',
+      '<b>Sačuvaj kao sliku</b> (top 20) i pošalji ekipi.'
+    ], cta: { a: 'tierlist', label: 'Otvori rang listu' } },
     { id: '2.25.3', title: 'Sitne popravke', big: false, items: [
       'Sitne popravke u igrama.'
     ] },

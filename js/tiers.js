@@ -1,9 +1,10 @@
 /* ============================================================
-   tiers.js  -  moj tier list (S A B C D F)
+   tiers.js  -  moja rang lista (1, 2, 3, ...)
    ------------------------------------------------------------
-   Posle svakog filma / cele sezone biras gde ide u tvom tier
-   listu. Ceo tier list je u "Ja" (i na stranici naslova).
-   Stanje: state.tiers = { id: { t: 'S', at } }
+   Posle svakog filma / cele sezone ubacis ga na mesto koje hoces:
+   na vrh, izmedju dva naslova ili na dno. Posle ga pomeras gore/dole.
+   Stanje: state.rank = [id, id, ...]  (prvi = najbolji)
+   (Stari tier list iz 2.26.0 se jednom pretvori u redosled S > A > ... > F.)
    ============================================================ */
 window.MM = window.MM || {};
 
@@ -11,127 +12,138 @@ window.MM = window.MM || {};
   'use strict';
 
   var UI = MM.UI, esc = UI.esc;
-  var TIERS = [
-    { t: 'S', c: '#ff5f6d', d: 'remek-delo' },
-    { t: 'A', c: '#ff9f43', d: 'odlično' },
-    { t: 'B', c: '#ffd54a', d: 'dobro' },
-    { t: 'C', c: '#7bd88f', d: 'okej' },
-    { t: 'D', c: '#5aa9ff', d: 'slabo' },
-    { t: 'F', c: '#a77bff', d: 'katastrofa' }
-  ];
-  function tierOf(t) { return TIERS.filter(function (x) { return x.t === t; })[0]; }
   function sfx(n) { if (MM.Sfx) MM.Sfx.play(n); }
-  function all() { return MM.Store.get().tiers || {}; }
-  function get(id) { var x = all()[id]; return x ? x.t : ''; }
-  function set(id, t) {
-    MM.Store.mutate(function (s) {
-      s.tiers = s.tiers || {};
-      if (t) s.tiers[id] = { t: t, at: Date.now() }; else delete s.tiers[id];
-    });
+  function list() {
+    var s = MM.Store.get();
+    if (!s.rank && s.tiers && Object.keys(s.tiers).length) {
+      var ord = 'SABCDF', t = s.tiers;
+      return Object.keys(t).filter(function (id) { return MM.Cat.get(id); })
+        .sort(function (a, b) { return ord.indexOf(t[a].t) - ord.indexOf(t[b].t) || (t[a].at || 0) - (t[b].at || 0); });
+    }
+    return (s.rank || []).filter(function (id) { return MM.Cat.get(id); });
   }
-  /** Odgledani naslovi bez mesta u tier listu (najnovije odgledano prvo). */
+  function save(arr) { MM.Store.mutate(function (s) { s.rank = arr.slice(); }); }
+  function pos(id) { return list().indexOf(id) + 1; }        // 0 = nije na listi
+  function get(id) { return pos(id) ? '#' + pos(id) : ''; }
+  function place(id, at) {                                    // at: 0 = prvo mesto
+    var a = list().filter(function (x) { return x !== id; });
+    at = Math.max(0, Math.min(a.length, at)); a.splice(at, 0, id); save(a); return at;
+  }
+  function remove(id) { save(list().filter(function (x) { return x !== id; })); }
   function unrated() {
-    var s = MM.Store.get(), tt = s.tiers || {}, log = s.log || {}, last = {};
+    var s = MM.Store.get(), r = list(), log = s.log || {}, last = {};
     Object.keys(log).forEach(function (k) { var id = k.split('#')[0], t = (log[k] && log[k].t) || 0; if (!last[id] || t > last[id]) last[id] = t || 1; });
-    return MM.Cat.all().filter(function (it) { return !tt[it.id] && MM.Plan.isDone(it, s); })
+    return MM.Cat.all().filter(function (it) { return r.indexOf(it.id) < 0 && MM.Plan.isDone(it, s); })
       .sort(function (a, b) { return (last[b.id] || 0) - (last[a.id] || 0) || b.order - a.order; });
   }
-  function rows() {
-    var tt = all(), by = {};
-    TIERS.forEach(function (x) { by[x.t] = []; });
-    Object.keys(tt).forEach(function (id) { var it = MM.Cat.get(id); if (it && by[tt[id].t]) by[tt[id].t].push({ it: it, at: tt[id].at || 0 }); });
-    TIERS.forEach(function (x) { by[x.t].sort(function (a, b) { return a.at - b.at; }); });
-    return by;
-  }
+  function medal(n) { return n === 1 ? '🥇' : n === 2 ? '🥈' : n === 3 ? '🥉' : ''; }
+  function title(it) { return esc(MM.Cat.cleanTitle(it)); }
 
-  /* ---------------- izbor posle gledanja ---------------- */
-  // opts: { onStars(n), stars: bool (ponudi i ocenu za ekipu), queue: [ids] (rangiranje redom), onClose }
+  /* ---------------- ubacivanje na mesto ----------------
+     opts: { stars, onStars(n), queue: [ids], move } */
   var P = null;
   function pick(id, opts) {
     opts = opts || {};
-    var it = MM.Cat.get(id); if (!it) return;
-    P = { id: id, it: it, chosen: get(id), done: false, opts: opts };
+    if (!MM.Cat.get(id)) return;
+    P = { id: id, placed: opts.move ? pos(id) - 1 : -1, opts: opts };
+    if (P.placed < 0 && !list().length) { place(id, 0); P.placed = 0; P.first = true; }   // prvi naslov: odmah #1
     UI.openSheet({
-      id: 'tier', cls: 'tier-sheet', render: renderPick,
+      id: 'rank', full: true, cls: 'rk-sheet', render: renderPick,
       onOpen: function (el) {
         el.addEventListener('click', function (e) {
-          var b = e.target.closest('[data-tp]'); if (!b || !P) return;
-          var a = b.getAttribute('data-tp');
-          if (a === 'tier') choose(b.getAttribute('data-v'));
+          var b = e.target.closest('[data-rk]'); if (!b || !P) return;
+          var a = b.getAttribute('data-rk');
+          if (a === 'slot') { P.placed = place(P.id, +b.getAttribute('data-at')); sfx('ok'); UI.buzz(10); redraw(true); }
+          else if (a === 'up' || a === 'down' || a === 'top' || a === 'bottom') {
+            var at = a === 'top' ? 0 : a === 'bottom' ? 1e9 : P.placed + (a === 'up' ? -1 : 1);
+            P.placed = place(P.id, at); sfx('tap'); redraw(true);
+          }
           else if (a === 'star') { var n = +b.getAttribute('data-n'), cb = P.opts.onStars; UI.closeTop(); if (cb) setTimeout(function () { cb(n); }, 280); }
-          else if (a === 'skip') next(true);
-          else if (a === 'remove') { set(P.id, ''); UI.closeTop(); }
+          else if (a === 'skip' || a === 'next') next();
+          else if (a === 'remove') { remove(P.id); UI.closeTop(); }
           else if (a === 'list') { UI.closeTop(); setTimeout(open, 280); }
-          else if (a === 'next') next(false);
           else if (a === 'close') UI.closeTop();
         });
+        scrollToMe(el);
       },
-      onClose: function () { var cb = P && P.opts.onClose; P = null; if (cb) cb(); }
+      onClose: function () { P = null; }
     });
   }
-  function choose(t) {
-    set(P.id, t); P.chosen = t; P.done = true;
-    sfx(t === 'S' ? 'win' : t === 'F' ? 'bad' : 'ok'); UI.buzz(t === 'S' ? [15, 40, 25] : 10);
-    if (P.opts.queue && P.opts.queue.length) { setTimeout(function () { if (P && P.done) next(false); }, 650); }
-    else if (P.opts.move) { setTimeout(function () { if (P && P.done) UI.closeTop(); }, 450); }
-    UI.refreshSheets();
-  }
-  function next(skipped) {
+  function redraw(scroll) { UI.refreshSheets(); if (scroll) setTimeout(function () { var el = document.querySelector('.rk-sheet'); if (el) scrollToMe(el); }, 30); }
+  function scrollToMe(el) { var me = el.querySelector('.rk-row.me') || el.querySelector('.rk-slot.mid'); if (me) me.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+  function next() {
     var q = P.opts.queue || [];
     if (!q.length) { UI.closeTop(); return; }
-    var id = q.shift();
-    P.id = id; P.it = MM.Cat.get(id); P.chosen = get(id); P.done = false; P.n = (P.n || 0) + 1;
-    UI.refreshSheets();
-  }
-  function renderPick() {
-    if (!P) return '';
-    var it = P.it, q = P.opts.queue, ch = P.chosen, by = ch ? rows()[ch] : null;
-    var out = '<div class="tp no-drag">' +
-      (q ? '<div class="tp-q">Rangiranje · još ' + (q.length + 1) + '</div>' : '') +
-      '<div class="tp-head" data-k="tp-' + esc(it.id) + '">' + UI.poster(it, 'tp-art') + '<div><em>' + (P.opts.move ? 'PREMESTI' : 'GDE IDE U TVOM TIER LISTU?') + '</em><b>' + esc(MM.Cat.cleanTitle(it)) + '</b>' +
-      '<span>' + esc([it.year, MM.Cat.col(it.col).name].join(' · ')) + '</span></div></div>' +
-      '<div class="tp-row">' + TIERS.map(function (x) {
-        return '<button type="button" class="tp-t' + (ch === x.t ? ' on' : '') + (ch && ch !== x.t ? ' dim' : '') + '" data-tp="tier" data-v="' + x.t + '" style="--c:' + x.c + '"><b>' + x.t + '</b><i>' + x.d + '</i></button>';
-      }).join('') + '</div>';
-    if (P.done && by && !q) {
-      out += '<div class="tp-got" style="--c:' + tierOf(ch).c + '"><span class="tp-l">' + ch + '</span><div class="tp-strip">' +
-        by.slice(-6).map(function (x) { return UI.poster(x.it, 'thumb' + (x.it.id === it.id ? ' new' : '')); }).join('') + '</div></div>';
-      if (P.opts.stars) out += '<div class="tp-stars"><span>Oceni i za ekipu</span><div>' + [1, 2, 3, 4, 5].map(function (n) { return '<button type="button" data-tp="star" data-n="' + n + '">★</button>'; }).join('') + '</div></div>';
-      out += '<div class="tp-acts"><button type="button" class="btn ghost" data-tp="list">Ceo tier list</button><button type="button" class="btn primary" data-tp="close">Gotovo</button></div>';
-    } else if (q) {
-      out += '<div class="tp-acts"><button type="button" class="btn ghost" data-tp="skip">Preskoči</button><button type="button" class="btn ghost" data-tp="close">Dosta za sad</button></div>';
-    } else {
-      out += '<div class="tp-acts">' + (P.opts.move && ch ? '<button type="button" class="btn ghost" data-tp="remove">Izbaci iz liste</button>' : '') +
-        '<button type="button" class="btn ghost" data-tp="close">' + (P.opts.move ? 'Zatvori' : 'Kasnije') + '</button></div>';
-    }
-    return out + '</div>';
+    P.id = q.shift(); P.placed = -1; P.first = false; redraw(false);
+    var el = document.querySelector('.rk-sheet .sheet-in'); if (el) el.scrollTop = 0;
   }
 
-  /* ---------------- ceo tier list ---------------- */
-  function renderList() {
-    var by = rows(), un = unrated(), n = Object.keys(all()).length;
-    var out = '<div class="tl no-drag"><div class="tl-top"><button type="button" class="ib close" data-a="sheet-close" aria-label="Zatvori">✕</button>' +
-      '<div><em>MARVEL MARATON</em><h2>Moj tier list</h2><span>' + n + ' ' + (n === 1 ? 'naslov' : 'naslova') + ' rangirano</span></div></div>' +
-      '<div class="tl-board">' + TIERS.map(function (x) {
-        return '<div class="tl-row" style="--c:' + x.c + '"><div class="tl-l"><b>' + x.t + '</b><i>' + x.d + '</i></div><div class="tl-items">' +
-          (by[x.t].length ? by[x.t].map(function (r) { return '<button type="button" class="tl-it" data-tl="move" data-id="' + esc(r.it.id) + '">' + UI.poster(r.it, 'thumb') + '</button>'; }).join('') : '<span class="tl-empty">—</span>') +
-          '</div></div>';
-      }).join('') + '</div>';
-    if (un.length) {
-      out += '<div class="tl-un"><div class="tl-unh"><b>Neocenjeno · ' + un.length + '</b><button type="button" class="btn primary sm" data-tl="rank">Rangiraj redom</button></div><div class="tl-items">' +
-        un.slice(0, 40).map(function (it) { return '<button type="button" class="tl-it" data-tl="move" data-id="' + esc(it.id) + '">' + UI.poster(it, 'thumb') + '</button>'; }).join('') + '</div></div>';
+  function renderPick() {
+    if (!P) return '';
+    var it = MM.Cat.get(P.id), r = list(), placed = P.placed >= 0, q = P.opts.queue;
+    var out = '<div class="rk no-drag"><div class="rk-top">' +
+      '<button type="button" class="ib close" data-rk="close" aria-label="Zatvori">✕</button>' +
+      (q ? '<span class="rk-q">Rangiranje · još ' + (q.length + 1) + '</span>' : '<span></span>') + '</div>' +
+      '<div class="rk-head" data-k="rkh-' + esc(it.id) + '">' + UI.poster(it, 'rk-art') + '<div><em>' + (placed ? (P.first ? 'PRVI NA TVOJOJ LISTI' : 'NA TVOJOJ LISTI') : 'GDE IDE NA TVOJOJ LISTI?') + '</em><b>' + title(it) + '</b>' +
+      (placed ? '<span class="rk-big">#' + (P.placed + 1) + ' <small>od ' + r.length + '</small></span>' : '<span>Tapni mesto: iznad ili ispod nekog naslova.</span>') + '</div></div>';
+
+    if (placed) {
+      out += '<div class="rk-ctl"><button type="button" class="btn ghost sm" data-rk="top"' + (P.placed === 0 ? ' disabled' : '') + '>⤒ Na vrh</button>' +
+        '<button type="button" class="btn ghost sm" data-rk="up"' + (P.placed === 0 ? ' disabled' : '') + '>▲ Gore</button>' +
+        '<button type="button" class="btn ghost sm" data-rk="down"' + (P.placed >= r.length - 1 ? ' disabled' : '') + '>▼ Dole</button></div>';
     }
-    if (n) out += '<button type="button" class="btn ghost wide tl-share" data-tl="share">Sačuvaj kao sliku</button>';
+    // lista: kad nije ubacen, izmedju svaka dva naslova je mesto za ubacivanje
+    out += '<div class="rk-list">';
+    var mid = Math.floor(r.length / 2);
+    if (!placed) out += slot(0, r.length ? 'Na prvo mesto' : 'Ovde', mid === 0);
+    r.forEach(function (id, i) {
+      var x = MM.Cat.get(id), me = placed && i === P.placed;
+      out += '<div class="rk-row' + (me ? ' me' : '') + '" data-k="rr-' + esc(id) + '"><span class="rk-n">' + (medal(i + 1) || (i + 1)) + '</span>' + UI.poster(x, 'thumb') +
+        '<span class="rk-t"><b>' + title(x) + '</b><i>' + x.year + ' · ' + esc(MM.Cat.col(x.col).name) + '</i></span>' +
+        (me ? '<span class="rk-new">' + (P.opts.move ? 'OVDE' : 'NOVO') + '</span>' : '') + '</div>';
+      if (!placed) out += slot(i + 1, i === r.length - 1 ? 'Na poslednje mesto' : '', i + 1 === mid);
+    });
+    out += '</div>';
+
+    out += '<div class="rk-foot">';
+    if (placed && P.opts.stars && !q) out += '<div class="tp-stars"><span>Oceni i za ekipu</span><div>' + [1, 2, 3, 4, 5].map(function (n) { return '<button type="button" data-rk="star" data-n="' + n + '">★</button>'; }).join('') + '</div></div>';
+    if (q) out += '<div class="tp-acts"><button type="button" class="btn ghost" data-rk="skip">Preskoči</button>' + (placed ? '<button type="button" class="btn primary" data-rk="next">Sledeći</button>' : '<button type="button" class="btn ghost" data-rk="close">Dosta za sad</button>') + '</div>';
+    else if (placed) out += '<div class="tp-acts">' + (P.opts.move ? '<button type="button" class="btn ghost" data-rk="remove">Izbaci</button>' : '<button type="button" class="btn ghost" data-rk="list">Cela lista</button>') + '<button type="button" class="btn primary" data-rk="close">Gotovo</button></div>';
+    else out += '<div class="tp-acts"><button type="button" class="btn ghost" data-rk="close">Kasnije</button></div>';
+    return out + '</div></div>';
+  }
+  function slot(at, label, mid) {
+    return '<button type="button" class="rk-slot' + (mid ? ' mid' : '') + (label ? ' lab' : '') + '" data-rk="slot" data-at="' + at + '"><i>+</i>' + (label ? '<span>' + label + '</span>' : '<span>ovde</span>') + '</button>';
+  }
+
+  /* ---------------- cela lista ---------------- */
+  function renderList() {
+    var r = list(), un = unrated();
+    var out = '<div class="rk no-drag"><div class="tl-top"><button type="button" class="ib close" data-a="sheet-close" aria-label="Zatvori">✕</button>' +
+      '<div><em>MARVEL MARATON</em><h2>Moja rang lista</h2><span>' + (r.length ? r.length + ' ' + (r.length === 1 ? 'naslov' : 'naslova') + ' · tapni naslov da ga pomeriš' : 'Još ništa — rangiraj šta si gledao') + '</span></div></div>';
+    if (r.length) {
+      out += '<div class="rk-list full">' + r.map(function (id, i) {
+        var x = MM.Cat.get(id);
+        return '<button type="button" class="rk-row' + (i < 3 ? ' top' : '') + '" data-rl="move" data-id="' + esc(id) + '"><span class="rk-n">' + (medal(i + 1) || (i + 1)) + '</span>' + UI.poster(x, 'thumb') +
+          '<span class="rk-t"><b>' + title(x) + '</b><i>' + x.year + ' · ' + esc(MM.Cat.col(x.col).name) + '</i></span><em class="rk-go">⇅</em></button>';
+      }).join('') + '</div>';
+    }
+    if (un.length) {
+      out += '<div class="tl-un"><div class="tl-unh"><b>Nije na listi · ' + un.length + '</b><button type="button" class="btn primary sm" data-rl="rank">Rangiraj redom</button></div><div class="tl-items">' +
+        un.slice(0, 40).map(function (it) { return '<button type="button" class="tl-it" data-rl="add" data-id="' + esc(it.id) + '">' + UI.poster(it, 'thumb') + '</button>'; }).join('') + '</div></div>';
+    }
+    if (r.length) out += '<button type="button" class="btn ghost wide tl-share" data-rl="share">Sačuvaj kao sliku</button>';
     return out + '</div>';
   }
   function open() {
     UI.openSheet({
-      id: 'tierlist', full: true, cls: 'tl-sheet', render: renderList,
+      id: 'ranklist', full: true, cls: 'tl-sheet', render: renderList,
       onOpen: function (el) {
         el.addEventListener('click', function (e) {
-          var b = e.target.closest('[data-tl]'); if (!b) return;
-          var a = b.getAttribute('data-tl');
-          if (a === 'move') pick(b.getAttribute('data-id'), { move: !!get(b.getAttribute('data-id')) });
+          var b = e.target.closest('[data-rl]'); if (!b) return;
+          var a = b.getAttribute('data-rl'), id = b.getAttribute('data-id');
+          if (a === 'move') pick(id, { move: true });
+          else if (a === 'add') pick(id, {});
           else if (a === 'rank') { var q = unrated().map(function (it) { return it.id; }); if (q.length) pick(q.shift(), { queue: q }); }
           else if (a === 'share') share(false);
         });
@@ -139,7 +151,7 @@ window.MM = window.MM || {};
     });
   }
 
-  /* ---------------- slika ---------------- */
+  /* ---------------- slika (top 20) ---------------- */
   function loadImg(src) {
     return new Promise(function (res) {
       if (!src) return res(null);
@@ -149,72 +161,48 @@ window.MM = window.MM || {};
   }
   async function share(np) {
     UI.toast('Pravim sliku…');
-    var by = rows(), s = MM.Store.get(), W = 1080, PW = 96, PH = 144, GAP = 8, LW = 150, PAD = 30;
-    var per = Math.floor((W - PAD * 2 - LW - 16 + GAP) / (PW + GAP));
-    var hs = TIERS.map(function (x) { return Math.max(1, Math.ceil(by[x.t].length / per)) * (PH + GAP) + GAP; });
-    var H = 200 + hs.reduce(function (a, b) { return a + b + 10; }, 0) + 80;
+    var r = list().slice(0, 20), s = MM.Store.get(), W = 1080, PAD = 40, RH = 150, H = 230 + r.length * (RH + 12) + 90;
     var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-    var c = cv.getContext('2d'), F = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+    var c = cv.getContext('2d'), F = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', tainted = false;
     c.fillStyle = '#0b0b10'; c.fillRect(0, 0, W, H);
-    c.fillStyle = '#e62429'; c.font = '900 30px ' + F; c.fillText('MARVEL MARATON', PAD, 70);
-    c.fillStyle = '#fff'; c.font = '900 64px ' + F; c.fillText('Tier list' + (s.displayName ? ' · ' + s.displayName.split(' ')[0] : ''), PAD, 145);
-    var y = 190, tainted = false;
-    for (var i = 0; i < TIERS.length; i++) {
-      var x = TIERS[i], h = hs[i];
-      c.fillStyle = '#16161d'; c.fillRect(PAD, y, W - PAD * 2, h);
-      c.fillStyle = x.c; c.fillRect(PAD, y, LW, h);
-      c.fillStyle = '#111'; c.font = '900 72px ' + F; c.textAlign = 'center'; c.fillText(x.t, PAD + LW / 2, y + h / 2 + 24); c.textAlign = 'left';
-      for (var k = 0; k < by[x.t].length; k++) {
-        var it = by[x.t][k].it, px = PAD + LW + 16 + (k % per) * (PW + GAP), py = y + GAP + Math.floor(k / per) * (PH + GAP);
-        var im = np ? null : await loadImg(MM.Posters.urlFor(it, s));
-        if (im) { try { c.drawImage(im, px, py, PW, PH); c.getImageData(px, py, 1, 1); } catch (e) { tainted = true; im = null; } }
-        if (!im) {
-          c.fillStyle = '#2a2a35'; c.fillRect(px, py, PW, PH);
-          c.fillStyle = '#fff'; c.font = '700 15px ' + F;
-          wrap(c, MM.Cat.cleanTitle(it), px + 6, py + 22, PW - 12, 18);
-        }
-      }
-      y += h + 10;
+    c.fillStyle = '#e62429'; c.font = '900 30px ' + F; c.fillText('MARVEL MARATON', PAD, 80);
+    c.fillStyle = '#fff'; c.font = '900 64px ' + F; c.fillText('Moja rang lista' + (s.displayName ? ' · ' + s.displayName.split(' ')[0] : ''), PAD, 160);
+    for (var i = 0; i < r.length; i++) {
+      var it = MM.Cat.get(r[i]), y = 210 + i * (RH + 12);
+      c.fillStyle = i < 3 ? ['#3a2e0c', '#2a2d33', '#33210f'][i] : '#16161d'; c.fillRect(PAD, y, W - PAD * 2, RH);
+      c.fillStyle = i < 3 ? ['#f5c542', '#c7d0dc', '#d98b4e'][i] : '#6d6d7a'; c.font = '900 56px ' + F; c.textAlign = 'center'; c.fillText(String(i + 1), PAD + 60, y + RH / 2 + 20); c.textAlign = 'left';
+      var im = np ? null : await loadImg(MM.Posters.urlFor(it, s));
+      if (im) { try { c.drawImage(im, PAD + 120, y + 8, 89, RH - 16); c.getImageData(PAD + 120, y + 8, 1, 1); } catch (e) { tainted = true; } }
+      else { c.fillStyle = '#2a2a35'; c.fillRect(PAD + 120, y + 8, 89, RH - 16); }
+      c.fillStyle = '#fff'; c.font = '800 38px ' + F; c.fillText(MM.Cat.cleanTitle(it).slice(0, 34), PAD + 235, y + 70);
+      c.fillStyle = '#a0a0ad'; c.font = '600 26px ' + F; c.fillText(it.year + ' · ' + MM.Cat.col(it.col).name, PAD + 235, y + 112);
     }
-    if (tainted) return share(true);   // poster je zakljucao platno: ponovo, samo nazivi
-    c.fillStyle = '#6d6d7a'; c.font = '700 24px ' + F; c.fillText('DOOMSDAY · 18. 12. 2026', PAD, H - 34);
-    done(cv);
-  }
-  function wrap(c, text, x, y, w, lh) {
-    var words = String(text).split(' '), line = '', n = 0;
-    words.forEach(function (wd) {
-      var t = line ? line + ' ' + wd : wd;
-      if (c.measureText(t).width > w && line) { if (n < 6) c.fillText(line, x, y + n * lh); n++; line = wd; } else line = t;
-    });
-    if (line && n < 6) c.fillText(line, x, y + n * lh);
-  }
-  function done(cv) {
+    if (tainted) return share(true);
+    c.fillStyle = '#6d6d7a'; c.font = '700 24px ' + F; c.fillText('DOOMSDAY · 18. 12. 2026', PAD, H - 40);
     cv.toBlob(function (blob) {
       if (!blob) { UI.toast('Slika nije napravljena.'); return; }
-      var file = new File([blob], 'moj-tier-list.png', { type: 'image/png' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) navigator.share({ files: [file], title: 'Moj Marvel tier list' }).catch(function () {});
+      var file = new File([blob], 'moja-rang-lista.png', { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) navigator.share({ files: [file], title: 'Moja Marvel rang lista' }).catch(function () {});
       else { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
     }, 'image/png');
   }
 
   /** Kartica za "Ja". */
   function card() {
-    var by = rows(), n = Object.keys(all()).length, un = unrated().length;
-    if (!n && !un) return '';
-    var top = TIERS.map(function (x) { return by[x.t].map(function (r) { return { it: r.it, t: x }; }); }).reduce(function (a, b) { return a.concat(b); }, []).slice(0, 6);
-    return '<button type="button" class="card tl-card" data-k="tlcard" data-a="tierlist"><div class="tlc-h"><div><em>MOJ TIER LIST</em><b>' + (n ? n + ' rangirano' : 'Rangiraj šta si gledao') + '</b>' +
+    var r = list(), un = unrated().length;
+    if (!r.length && !un) return '';
+    return '<button type="button" class="card tl-card" data-k="tlcard" data-a="tierlist"><div class="tlc-h"><div><em>MOJA RANG LISTA</em><b>' + (r.length ? r.length + ' rangirano' : 'Rangiraj šta si gledao') + '</b>' +
       (un ? '<span>' + un + ' čeka na mesto</span>' : '') + '</div><span class="tlc-go">›</span></div>' +
-      (top.length ? '<div class="tlc-strip">' + top.map(function (x) { return '<span class="tlc-p" style="--c:' + x.t.c + '">' + UI.poster(x.it, 'thumb') + '<i>' + x.t.t + '</i></span>'; }).join('') + '</div>'
-        : '<div class="tlc-tiers">' + TIERS.map(function (x) { return '<i style="--c:' + x.c + '">' + x.t + '</i>'; }).join('') + '</div>') +
+      (r.length ? '<div class="tlc-strip">' + r.slice(0, 6).map(function (id, i) { return '<span class="tlc-p">' + UI.poster(MM.Cat.get(id), 'thumb') + '<i>' + (i + 1) + '</i></span>'; }).join('') + '</div>' : '') +
       '</button>';
   }
   /** Red na stranici naslova. */
   function line(id) {
-    var t = get(id), x = t && tierOf(t);
+    var n = pos(id), tot = list().length;
     return '<button type="button" class="tl-line" data-a="tier-pick" data-id="' + esc(id) + '">' +
-      (x ? '<span class="tl-badge" style="--c:' + x.c + '">' + t + '</span><span><b>Tier ' + t + '</b><i>' + x.d + ' · promeni</i></span>'
-        : '<span class="tl-badge none">?</span><span><b>Tier list</b><i>gde ide u tvom tier listu?</i></span>') + '<em>›</em></button>';
+      (n ? '<span class="tl-badge rk">' + (medal(n) || '#' + n) + '</span><span><b>#' + n + ' na tvojoj listi</b><i>od ' + tot + ' · pomeri gore/dole</i></span>'
+        : '<span class="tl-badge none">#?</span><span><b>Rang lista</b><i>ubaci ga na svoje mesto</i></span>') + '<em>›</em></button>';
   }
 
-  MM.Tiers = { TIERS: TIERS, get: get, set: set, pick: pick, open: open, card: card, line: line, unrated: unrated };
+  MM.Tiers = { get: get, pos: pos, list: list, place: place, pick: pick, open: open, card: card, line: line, unrated: unrated };
 })();

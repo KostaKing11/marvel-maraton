@@ -2683,3 +2683,42 @@ body[data-th] .logo { background: var(--red); }
 .tl-line span:not(.tl-badge) { flex: 1; display: flex; flex-direction: column; }
 .tl-line i { font-style: normal; font-size: 12px; color: var(--mu); }
 .tl-line em { font-style: normal; font-size: 22px; color: var(--mu); }
+
+/* ============================================================
+   rang lista (tiers.js)
+   ============================================================ */
+.rk-sheet .sheet { background: var(--bg); }
+.rk-sheet .grab { display: none; }
+.rk { padding: calc(var(--safeT) + 8px) 12px calc(var(--safeB) + 20px); }
+.rk-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.rk-q { font-size: 11.5px; font-weight: 900; letter-spacing: 1.5px; color: var(--mu); text-transform: uppercase; }
+.rk-head { display: flex; align-items: center; gap: 14px; padding: 10px 4px 14px; animation: qzIn .35s var(--ease) both; }
+.art.rk-art { width: 70px; aspect-ratio: 2/3; border-radius: 10px; flex: none; box-shadow: 0 10px 24px rgba(0,0,0,.5); }
+.rk-head em { display: block; font-style: normal; font-size: 10.5px; font-weight: 900; letter-spacing: 1.6px; color: var(--amber); }
+.rk-head b { display: block; font-size: 21px; font-weight: 900; letter-spacing: -.02em; line-height: 1.15; margin: 3px 0 2px; }
+.rk-head span { font-size: 13px; color: var(--mu); }
+.rk-big { display: block; font-size: 30px !important; font-weight: 950; color: var(--tx) !important; letter-spacing: -.03em; margin-top: 2px; }
+.rk-big small { font-size: 14px; color: var(--mu); font-weight: 700; letter-spacing: 0; }
+.rk-ctl { display: flex; gap: 6px; margin: 0 0 10px; position: sticky; top: 0; z-index: 2; padding: 6px 0; background: var(--bg); }
+.rk-ctl .btn { flex: 1; }
+.rk-list { display: flex; flex-direction: column; gap: 4px; }
+.rk-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 10px; border-radius: 12px; background: var(--s1); border: 1px solid var(--line); text-align: left; transition: background .25s, border-color .25s; }
+.rk-row .art.thumb { width: 34px; height: 51px; border-radius: 6px; }
+.rk-n { width: 30px; flex: none; text-align: center; font-weight: 950; font-size: 16px; color: var(--mu); }
+.rk-row.top .rk-n, .rk-row .rk-n:not(:empty) { font-size: 17px; }
+.rk-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.rk-t b { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rk-t i { font-style: normal; font-size: 11.5px; color: var(--mu); }
+.rk-row.me { background: color-mix(in srgb, var(--amber) 16%, var(--s1)); border-color: var(--amber); box-shadow: 0 0 0 1px var(--amber), 0 8px 24px rgba(245,184,61,.15); animation: qzPop .4s var(--ease); }
+.rk-new { font-size: 10.5px; font-weight: 900; letter-spacing: 1px; padding: 4px 8px; border-radius: 8px; background: var(--amber); color: #2a1800; }
+.rk-go { font-style: normal; color: var(--mu2); font-size: 18px; }
+.rk-row.top { background: linear-gradient(90deg, rgba(245,197,66,.10), var(--s1) 60%); }
+.rk-slot { display: flex; align-items: center; justify-content: center; gap: 8px; height: 34px; border-radius: 10px; border: 1.5px dashed color-mix(in srgb, var(--amber) 45%, transparent); color: var(--amber); font-weight: 800; font-size: 13px; background: rgba(245,184,61,.04); }
+.rk-slot i { font-style: normal; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: var(--amber); color: #2a1800; font-weight: 950; }
+.rk-slot:not(.lab) span { opacity: .75; }
+.rk-slot:active { background: rgba(245,184,61,.2); transform: scale(.98); }
+.rk-slot.lab { height: 42px; border-style: solid; }
+.rk-foot { position: sticky; bottom: 0; padding: 10px 0 0; background: linear-gradient(transparent, var(--bg) 18%); }
+.tl-badge.rk { background: var(--s3); color: var(--tx); font-size: 16px; }
+.tlc-p .art.thumb { box-shadow: 0 0 0 1px var(--line); }
+.tlc-p i { background: var(--amber); }
