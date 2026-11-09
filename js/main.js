@@ -6,7 +6,7 @@
    zakazano za sledeci frejm - vise promena = jedno crtanje.
    ============================================================ */
 window.MM = window.MM || {};
-MM.VERSION = '2.25.3';
+MM.VERSION = '2.26.0';
 
 (function () {
   'use strict';
@@ -194,9 +194,19 @@ MM.VERSION = '2.25.3';
   /** Posle "Odgledano": novi predmeti, kamenje, dostignuca -> slavlje preko celog ekrana. */
   var pendingRate = null, pendingQuiz = null;
 
-  /** Kviz o naslovu (ako postoji i nije radjen), pa traka za ocenu. */
+  /** Tier list (ako jos nema mesto), uz ponudu ocene za ekipu; inace traka za ocenu. */
+  function tierThenRate(id) {
+    var canRate = !!(Store.uid() && !MM.Reviews.mine(id));
+    if (MM.Tiers && !MM.Tiers.get(id)) {
+      MM.Tiers.pick(id, { stars: canRate, onStars: function (n) { openRate(id, n); } });
+      return;
+    }
+    if (canRate) setTimeout(function () { rateBar(id); }, 200);
+  }
+
+  /** Kviz o naslovu (ako postoji i nije radjen), pa tier list i ocena. */
   function quizThenRate(id) {
-    var rate = function () { if (Store.uid() && !MM.Reviews.mine(id)) setTimeout(function () { rateBar(id); }, 200); };
+    var rate = function () { setTimeout(function () { tierThenRate(id); }, 200); };
     var top = UI.topSheet(), busy = top && (top.id === 'celebrate' || top.id === 'quiz' || top.id === 'games' || top.id === 'finale');
     if (MM.Quiz && MM.Quiz.has(id) && !MM.Quiz.done(id) && !busy) MM.Quiz.open(id, { onClose: rate });
     else rate();
@@ -216,7 +226,7 @@ MM.VERSION = '2.25.3';
       me: { name: s.displayName || 'Ti', photo: s.avatar },
       onClose: function () {
         if (pendingQuiz) { var q = pendingQuiz; pendingQuiz = null; setTimeout(function () { quizThenRate(q); }, 300); return; }
-        if (pendingRate) { var id = pendingRate; pendingRate = null; setTimeout(function () { rateBar(id); }, 300); }
+        if (pendingRate) { var id = pendingRate; pendingRate = null; setTimeout(function () { if (id.indexOf('#') < 0) tierThenRate(id); else rateBar(id); }, 300); }
       }
     });
   }
@@ -240,9 +250,9 @@ MM.VERSION = '2.25.3';
       else setTimeout(function () { quizThenRate(id); }, 500);
       return;
     }
-    if (id && Store.uid() && !MM.Reviews.mine(id)) {
+    if (id && ((MM.Tiers && !MM.Tiers.get(id)) || (Store.uid() && !MM.Reviews.mine(id)))) {
       if (MM.Badges.busy()) pendingRate = id;      // posle slavlja
-      else setTimeout(function () { rateBar(id); }, 500);
+      else setTimeout(function () { tierThenRate(id); }, 500);
     }
   }
 
@@ -736,6 +746,8 @@ MM.VERSION = '2.25.3';
     'quiz': function (el) { MM.Quiz.open(el.getAttribute('data-id')); },
     'finale': function () { if (MM.Finale) MM.Finale.open(); },
     'livequiz': function () { MM.LiveQuiz.open(); },
+    'tierlist': function () { MM.Tiers.open(); },
+    'tier-pick': function (el) { var id = el.getAttribute('data-id'); MM.Tiers.pick(id, { move: !!MM.Tiers.get(id) }); },
     'adm-game': function (el) {
       if (!MM.Codes.isAdmin()) return;
       var id = el.getAttribute('data-g'), add = +el.getAttribute('data-v'), from = 0, to = 0, xp = 0;

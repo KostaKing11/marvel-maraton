@@ -1104,6 +1104,7 @@ window.MM = window.MM || {};
     var out = '';
 
     if (MM.Finale) out += MM.Finale.card('ja');
+    if (MM.Tiers) out += MM.Tiers.card();
 
     /* nalog */
     out += '<section class="card acct" data-k="acct">';
@@ -1375,6 +1376,9 @@ window.MM = window.MM || {};
       }
     }
 
+    /* tier list */
+    if (done && MM.Tiers) out += MM.Tiers.line(id);
+
     /* kviz o naslovu */
     if (!isGoal && done && MM.Quiz && MM.Quiz.has(id)) {
       var qr = MM.Quiz.result(id);
@@ -1503,6 +1507,13 @@ window.MM = window.MM || {};
    * ostalo ceka u profilu (tackica na slici gore desno dok ne procitas).
    */
   var NEWS = [
+    { id: '2.26', title: 'Tvoj tier list', big: true, items: [
+      '<b>Tier list</b> — kad odgledaš film ili celu sezonu (posle kviza), biraš gde ide: <b>S, A, B, C, D ili F</b>. Odmah vidiš u kom je društvu.',
+      'Ceo tier list je u <b>Ja → Moj tier list</b>: svi posteri po redovima. Tapni poster da ga premestiš.',
+      'Već si gledao gomilu filmova? <b>Rangiraj redom</b> — ide jedan po jedan, samo tapkaš S–F.',
+      '<b>Sačuvaj kao sliku</b> i pošalji ekipi, pa svađa može da počne.',
+      'Na stranici svakog odgledanog naslova vidiš njegov tier i možeš da ga promeniš.'
+    ], cta: { a: 'tierlist', label: 'Otvori tier list' } },
     { id: '2.25.3', title: 'Sitne popravke', big: false, items: [
       'Sitne popravke u igrama.'
     ] },
